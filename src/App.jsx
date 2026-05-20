@@ -818,7 +818,7 @@ export default function App() {
         <section className="mt-10" style={{backgroundColor:SCD}}>
           <div className="max-w-6xl mx-auto px-4 py-10 text-center">
             <h3 className="text-white text-xl font-bold mb-1">📬 세계를 알리다 뉴스레터 구독</h3>
-            <p className="text-green-200 text-sm mb-4">매주 월요일 아침, 캠퍼스 주요 소식을 이메일로 받아보세요.</p>
+            <p className="text-green-200 text-sm mb-4">매주 목요일 아침 주요 소식을 이메일로 받아보세요.</p>
             {subscribed
               ?<p className="text-green-300 font-medium text-sm">✅ 구독이 완료되었습니다!</p>
               :<div className="flex flex-col sm:flex-row justify-center gap-2 max-w-sm mx-auto">
