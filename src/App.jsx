@@ -1,6 +1,5 @@
 ﻿import { useState, useEffect } from "react";
 import { Search, Menu, X, TrendingUp, Instagram, Facebook, Youtube, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle } from "lucide-react";
-import { supabase } from "./lib/supabase.js";
 
 /* ── 날짜 헬퍼 ── */
 const today = () => {
@@ -400,11 +399,8 @@ export default function App() {
       try{ const r=await window.storage.get(ART_KEY);  if(r?.value) setArticles(JSON.parse(r.value)); }catch{}
       try{ const d=await window.storage.get(DARK_KEY); if(d?.value) setDark(JSON.parse(d.value)); }catch{}
       try{
-        const {data:{session}}=await supabase.auth.getSession();
-        if(session){
-          const {data:p}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();
-          if(p) setUser({id:session.user.email.split("@")[0],name:p.display_name,role:p.role});
-        }
+        const saved=localStorage.getItem("cv_user");
+        if(saved) setUser(JSON.parse(saved));
       }catch{}
     })();
   },[]);
@@ -414,15 +410,16 @@ export default function App() {
 
   const handleLogin=async()=>{
     setLoginError("");
-    const {data,error}=await supabase.auth.signInWithPassword({
-      email:`${loginForm.id}@campus-voice.app`,
-      password:loginForm.pw,
-    });
-    if(error){ setLoginError("아이디 또는 비밀번호가 올바르지 않습니다."); return; }
-    const {data:profile}=await supabase.from("profiles").select("*").eq("id",data.user.id).single();
-    if(profile){ setUser({id:loginForm.id,name:profile.display_name,role:profile.role}); setShowLogin(false); setLoginForm({id:"",pw:""}); }
+    try{
+      const res=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:loginForm.id,password:loginForm.pw})});
+      if(!res.ok){ setLoginError("아이디 또는 비밀번호가 올바르지 않습니다."); return; }
+      const userObj=await res.json();
+      setUser(userObj);
+      localStorage.setItem("cv_user",JSON.stringify(userObj));
+      setShowLogin(false); setLoginForm({id:"",pw:""});
+    }catch{ setLoginError("로그인 중 오류가 발생했습니다."); }
   };
-  const handleLogout=async()=>{ await supabase.auth.signOut(); setUser(null); setPage("home"); };
+  const handleLogout=()=>{ localStorage.removeItem("cv_user"); setUser(null); setPage("home"); };
 
   const submitArticle=async()=>{
     if(!form.title||!form.body) return;
