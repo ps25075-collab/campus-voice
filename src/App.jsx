@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Search, Menu, X, TrendingUp, Instagram, Facebook, Youtube, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle } from "lucide-react";
-import { supabase } from './lib/supabase';
 
 /* ── 날짜 헬퍼 ── */
 const today = () => {
@@ -26,12 +25,46 @@ const USERS = [
   { id:"columnist1", pw:"column1234", name:"박칼럼",  role:"columnist" },
   { id:"columnist2", pw:"column5678", name:"최기고",  role:"columnist" },
 ];
-const canWrite      = r => ["admin","editor","columnist"].includes(r);
-const canReadBox    = r => ["admin","editor"].includes(r);
+const canWrite    = r => ["admin","editor","columnist"].includes(r);
+const canReadBox  = r => ["admin","editor"].includes(r);
 const canDelComment = r => ["admin","editor"].includes(r);
 const allowedTypes  = r => r==="columnist" ? ["칼럼"] : ["기사","칼럼"];
 
+const DUMMY_ARTICLES = [
+  { id:1, category:"경제", type:"기사", date:"2026.04.03", views:4821, hero:true, status:"published",
+    title:"총학생회, 2026학년도 등록금 동결 협의 결과 발표",
+    summary:"총학생회가 학교 본부와의 협의 끝에 올해 등록금이 동결되었음을 공식 발표했다.",
+    body:"총학생회가 학교 본부와의 협의 끝에 올해 등록금이 동결되었음을 공식 발표했다.\n\n총학생회 의장은 '2년 연속 등록금 동결은 전례 없는 성과'라며 앞으로도 학생 복지를 위해 최선을 다하겠다고 밝혔다.", image:"" },
+  { id:2, category:"문화", type:"기사", date:"2026.04.02", views:3102, status:"published",
+    title:"봄 축제 '벚꽃런' 참가 신청 오늘부터 시작",
+    summary:"매년 봄마다 진행되는 교내 벚꽃런 행사 참가 신청이 오늘부터 시작됐다.",
+    body:"봄 축제 벚꽃런 참가 신청이 오늘부터 시작됐다.", image:"" },
+  { id:3, category:"기술", type:"칼럼", date:"2026.04.01", views:2890, status:"published", author:"박칼럼",
+    title:"[칼럼] AI 시대, 대학 교육이 바뀌어야 할 이유",
+    summary:"인공지능이 산업 전반을 재편하는 지금, 대학 교육 역시 변화를 피할 수 없다.",
+    body:"인공지능이 산업 전반을 재편하는 지금, 대학 교육 역시 변화를 피할 수 없다.", image:"" },
+  { id:4, category:"경제", type:"기사", date:"2026.03.31", views:2541, status:"published",
+    title:"청년 창업 지원금 확대…대학생 스타트업 급증",
+    summary:"정부의 청년 창업 지원금이 올해 두 배로 늘어났다.",
+    body:"정부의 청년 창업 지원금이 올해 두 배로 늘어나면서 대학생 스타트업 창업 건수가 크게 늘고 있다.", image:"" },
+  { id:5, category:"기술", type:"기사", date:"2026.03.30", views:1983, status:"published",
+    title:"교내 스마트 도서관 시스템 도입…AI가 책 추천",
+    summary:"중앙도서관이 AI 기반 도서 추천 시스템을 도입했다.",
+    body:"중앙도서관이 AI 기반 도서 추천 시스템을 도입했다.", image:"" },
+  { id:6, category:"문화", type:"칼럼", date:"2026.03.29", views:1756, status:"published", author:"최기고",
+    title:"[칼럼] 졸업작품전을 앞두고 — 예술의 의미를 묻다",
+    summary:"미술대학 졸업반 학생 32명의 작품이 모이는 졸업작품전을 앞두고 예술의 의미를 되짚어본다.",
+    body:"미술대학 졸업반 학생 32명의 작품이 모이는 졸업작품전을 앞두고 예술의 의미를 되짚어본다.", image:"" },
+  { id:7, category:"경제", type:"기사", date:"2026.03.28", views:1432, status:"published",
+    title:"물가 상승 속 대학생 알바 시급 실태 보고서",
+    summary:"최근 물가 상승으로 생활비 부담이 커진 대학생들의 아르바이트 현황을 취재했다.",
+    body:"최근 물가 상승으로 생활비 부담이 커진 대학생들의 아르바이트 현황을 취재했다.", image:"" },
+];
+
+const ART_KEY  = "segal_articles_v9";
 const DARK_KEY = "campus_voice_dark";
+const BOX_KEY  = "segal_suggestions_v2";
+const CMT_KEY  = (id) => `segal_comments_${id}`;
 
 const statusLabel = { published:"게재됨", pending:"승인 대기", rejected:"반려됨" };
 const statusStyle = { published:"bg-green-100 text-green-700", pending:"bg-yellow-100 text-yellow-700", rejected:"bg-red-100 text-red-600" };
@@ -122,12 +155,18 @@ function LikeButton({ articleId, dark }) {
   const [liked, setLiked]   = useState(false);
   const [count, setCount]   = useState(0);
   const [bounce, setBounce] = useState(false);
+  const LIKE_KEY = `segal_likes_${articleId}`;
 
   useEffect(()=>{
     (async()=>{
-      const { data } = await supabase.from('articles').select('like_count').eq('id', articleId).single();
-      setCount(data?.like_count || 0);
-      setLiked(localStorage.getItem(`like_me_${articleId}`) === '1');
+      try{
+        const r = await window.storage.get(LIKE_KEY, true);
+        if(r?.value){ const d=JSON.parse(r.value); setCount(d.count||0); }
+      }catch{}
+      try{
+        const r = await window.storage.get(LIKE_KEY+"_me");
+        if(r?.value) setLiked(JSON.parse(r.value));
+      }catch{}
     })();
   },[articleId]);
 
@@ -136,8 +175,8 @@ function LikeButton({ articleId, dark }) {
     const newCount = newLiked ? count+1 : Math.max(0,count-1);
     setLiked(newLiked); setCount(newCount);
     if(newLiked){ setBounce(true); setTimeout(()=>setBounce(false),400); }
-    await supabase.from('articles').update({ like_count: newCount }).eq('id', articleId);
-    localStorage.setItem(`like_me_${articleId}`, newLiked ? '1' : '');
+    try{ await window.storage.set(LIKE_KEY, JSON.stringify({count:newCount}), true); }catch{}
+    try{ await window.storage.set(LIKE_KEY+"_me", JSON.stringify(newLiked)); }catch{}
   };
 
   return (
@@ -167,27 +206,27 @@ function CommentSection({ articleId, user, dark }) {
   useEffect(()=>{
     (async()=>{
       setLoading(true);
-      const { data } = await supabase.from('comments').select('*').eq('article_id', articleId).order('created_at');
-      setComments(data || []);
+      try{
+        const r = await window.storage.get(CMT_KEY(articleId), true);
+        if(r?.value) setComments(JSON.parse(r.value));
+        else setComments([]);
+      }catch{ setComments([]); }
       setLoading(false);
     })();
   },[articleId]);
 
   const submit = async () => {
     if(!text.trim()) return;
-    const { data: newC } = await supabase.from('comments').insert({
-      article_id: articleId,
-      name: name.trim()||"익명",
-      text: text.trim(),
-      date: today()
-    }).select().single();
-    if(newC) setComments(prev => [...prev, newC]);
-    setName(""); setText("");
+    const newC = { id:Date.now(), name:name.trim()||"익명", text:text.trim(), date:today() };
+    const updated = [...comments, newC];
+    try{ await window.storage.set(CMT_KEY(articleId), JSON.stringify(updated), true); }catch{}
+    setComments(updated); setName(""); setText("");
   };
 
   const del = async (id) => {
-    await supabase.from('comments').delete().eq('id', id);
-    setComments(prev => prev.filter(c=>c.id!==id));
+    const updated = comments.filter(c=>c.id!==id);
+    try{ await window.storage.set(CMT_KEY(articleId), JSON.stringify(updated), true); }catch{}
+    setComments(updated);
   };
 
   return (
@@ -242,21 +281,22 @@ function SuggestionBox({ user, dark }) {
   const inp  = dark?"bg-gray-800 border-gray-700 text-white placeholder-gray-500":"bg-white border-gray-300 placeholder-gray-400";
 
   const loadSuggestions = async () => {
-    const { data } = await supabase.from('suggestions').select('*').order('created_at', { ascending: false });
-    setSuggestions(data || []);
+    try{
+      const r = await window.storage.get(BOX_KEY, true);
+      if(r?.value) setSuggestions(JSON.parse(r.value));
+    }catch{}
   };
 
   useEffect(()=>{ if(viewOpen) loadSuggestions(); },[viewOpen]);
 
   const submit = async () => {
     if(!form.content.trim()) return;
-    await supabase.from('suggestions').insert({
-      name: form.name.trim()||"익명",
-      content: form.content.trim(),
-      date: today()
-    });
-    await loadSuggestions();
-    setForm({name:"",content:""});
+    const newItem = { id:Date.now(), name:form.name.trim()||"익명", content:form.content.trim(), date:today() };
+    let prev = [];
+    try{ const r=await window.storage.get(BOX_KEY,true); if(r?.value) prev=JSON.parse(r.value); }catch{}
+    const updated=[...prev,newItem];
+    try{ await window.storage.set(BOX_KEY,JSON.stringify(updated),true); }catch{}
+    setSuggestions(updated); setForm({name:"",content:""});
     setSent(true); setTimeout(()=>{ setSent(false); setOpen(false); },2000);
   };
 
@@ -321,7 +361,7 @@ function SuggestionBox({ user, dark }) {
             {suggestions.length===0
               ?<div className="text-center py-10 text-gray-400 text-sm">아직 건의된 내용이 없습니다.</div>
               :<div className="space-y-3 overflow-y-auto pr-1">
-                {suggestions.map(s=>(
+                {[...suggestions].reverse().map(s=>(
                   <div key={s.id} className={`rounded-xl border p-4 ${dark?"bg-gray-800 border-gray-700":"bg-gray-50 border-gray-200"}`}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-medium text-amber-600">✍️ {s.name}</span>
@@ -351,7 +391,7 @@ export default function App() {
   const [searchOpen,setSearchOpen]   = useState(false);
   const [email,setEmail]             = useState("");
   const [subscribed,setSubscribed]   = useState(false);
-  const [articles,setArticles]       = useState([]);
+  const [articles,setArticles]       = useState(DUMMY_ARTICLES);
   const [form,setForm]               = useState({title:"",category:"경제",type:"기사",body:"",image:""});
   const [editId,setEditId]           = useState(null);
   const [confirmDel,setConfirmDel]   = useState(null);
@@ -363,18 +403,13 @@ export default function App() {
 
   useEffect(()=>{
     (async()=>{
-      const { data } = await supabase.from('articles').select('*').order('created_at', { ascending: false });
-      if(data?.length) setArticles(data);
-      const d = localStorage.getItem(DARK_KEY);
-      if(d) setDark(JSON.parse(d));
+      try{ const r=await window.storage.get(ART_KEY);  if(r?.value) setArticles(JSON.parse(r.value)); }catch{}
+      try{ const d=await window.storage.get(DARK_KEY); if(d?.value) setDark(JSON.parse(d.value)); }catch{}
     })();
   },[]);
 
-  const toggleDark = () => setDark(d => {
-    const n = !d;
-    localStorage.setItem(DARK_KEY, JSON.stringify(n));
-    return n;
-  });
+  const save=async d=>{ try{ await window.storage.set(ART_KEY,JSON.stringify(d)); }catch{} };
+  const toggleDark=()=>setDark(d=>{ const n=!d; (async()=>{ try{ await window.storage.set(DARK_KEY,JSON.stringify(n)); }catch{} })(); return n; });
 
   const handleLogin=()=>{
     const found=USERS.find(u=>u.id===loginForm.id&&u.pw===loginForm.pw);
@@ -385,67 +420,41 @@ export default function App() {
 
   const submitArticle=async()=>{
     if(!form.title||!form.body) return;
-    const ns = user?.role==="admin" ? "published" : "pending";
-
-    if(editId !== null) {
-      const existing = articles.find(a => a.id === editId);
-      const { data: updated } = await supabase.from('articles').update({
-        title: form.title,
-        category: form.category,
-        type: form.type,
-        body: form.body,
-        image: form.image || '',
-        summary: form.body.slice(0,80)+'...',
-        status: user?.role==="admin" ? existing?.status : "pending",
-        author: form.type==="칼럼" ? user?.name : null
-      }).eq('id', editId).select().single();
-      if(updated) {
-        setArticles(prev => prev.map(a => a.id===editId ? updated : a));
-        setSelected(prev => prev?.id===editId ? updated : prev);
-      }
+    const eid=editId, ns=user?.role==="admin"?"published":"pending";
+    let updated;
+    if(eid!==null){
+      updated=articles.map(a=>a.id===eid
+        ?{...a,title:form.title,category:form.category,type:form.type,body:form.body,image:form.image,
+          summary:form.body.slice(0,80)+"...",status:user?.role==="admin"?a.status:"pending",
+          author:form.type==="칼럼"?user?.name:undefined}:a);
+      setSelected(prev=>prev?.id===eid?updated.find(a=>a.id===eid)||null:prev);
     } else {
-      const { data: newA } = await supabase.from('articles').insert({
-        category: form.category,
-        type: form.type,
-        title: form.title,
-        summary: form.body.slice(0,80)+'...',
-        body: form.body,
-        image: form.image || '',
-        status: ns,
-        author: form.type==="칼럼" ? user?.name : null,
-        views: 0,
-        like_count: 0,
-        hero: false,
-        date: today()
-      }).select().single();
-      if(newA) setArticles(prev => [newA, ...prev]);
+      const newA={id:Date.now(),category:form.category,type:form.type,date:today(),
+        views:0,title:form.title,summary:form.body.slice(0,80)+"...",
+        body:form.body,image:form.image||"",status:ns,
+        author:form.type==="칼럼"?user?.name:undefined};
+      updated=[newA,...articles];
     }
-
-    setEditId(null);
+    setEditId(null); setArticles(updated); await save(updated);
     setForm({title:"",category:"경제",type:allowedTypes(user?.role)[0]||"기사",body:"",image:""});
-    setPage(user?.role==="admin" ? "admin" : "home");
+    setPage(user?.role==="admin"?"admin":"home");
   };
 
   const startEdit=a=>{ setForm({title:a.title,category:a.category,type:a.type||"기사",body:a.body,image:a.image||""}); setEditId(a.id); setSelected(null); setPage("write"); };
-
   const doDelete=async()=>{
-    await supabase.from('articles').delete().eq('id', confirmDel);
-    setArticles(prev => prev.filter(a=>a.id!==confirmDel));
-    setConfirmDel(null); setSelected(null); setPage("home");
+    const updated=articles.filter(a=>a.id!==confirmDel);
+    setArticles(updated); await save(updated); setConfirmDel(null); setSelected(null); setPage("home");
   };
-
-  const updateStatus=async(id,status)=>{
-    await supabase.from('articles').update({status}).eq('id', id);
-    setArticles(prev => prev.map(a=>a.id===id?{...a,status}:a));
-  };
+  const updateStatus=async(id,status)=>{ const u=articles.map(a=>a.id===id?{...a,status}:a); setArticles(u); await save(u); };
 
   const published=articles.filter(a=>a.status==="published");
   const hero=published.find(a=>a.hero);
   const filtered=published.filter(a=>{
     const mc=activeCategory==="전체"||a.category===activeCategory;
     const mt=activeType==="전체"||a.type===activeType;
-    const ms=!search||a.title.includes(search)||a.summary?.includes(search);
-    return mc&&mt&&ms&&!a.hero;
+    const q=search.toLowerCase();
+    const ms=!search||a.title.toLowerCase().includes(q)||a.summary?.toLowerCase().includes(q)||a.body?.toLowerCase().includes(q);
+    return mc&&mt&&ms&&(!a.hero||!!search);
   });
   const topViewed=[...published].sort((a,b)=>b.views-a.views).slice(0,5);
   const pendingCount=articles.filter(a=>a.status==="pending").length;
@@ -507,7 +516,7 @@ export default function App() {
           </nav>
           <div className="flex items-center gap-2">
             {searchOpen&&<input autoFocus value={search} onChange={e=>setSearch(e.target.value)} placeholder="검색..." className="px-3 py-1 rounded text-sm text-gray-900 w-36 focus:outline-none"/>}
-            <button onClick={()=>setSearchOpen(s=>!s)} className="text-white hover:text-green-200"><Search size={20}/></button>
+            <button onClick={()=>{ if(searchOpen) setSearch(""); setSearchOpen(s=>!s); }} className="text-white hover:text-green-200"><Search size={20}/></button>
           </div>
         </div>
         {menuOpen&&(
@@ -697,7 +706,7 @@ export default function App() {
             <div className="flex items-center gap-3 text-xs text-gray-500 mb-4">
               <span>{selected.date}</span>
               {selected.author&&<span className="text-amber-600 font-medium flex items-center gap-1"><PenLine size={11}/> {selected.author}</span>}
-              <span className="flex items-center gap-1"><Eye size={11}/> {selected.views?.toLocaleString()}</span>
+              <span className="flex items-center gap-1"><Eye size={11}/> {selected.views.toLocaleString()}</span>
             </div>
             <ArticleImage image={selected.image} category={selected.category} className="w-full rounded-xl mb-5" style={{height:280}}/>
             {selected.type==="칼럼"&&<div className="border-l-4 border-amber-400 pl-4 mb-4 py-1"><p className="text-xs text-amber-600 font-medium">칼럼 — {selected.author||"익명"} 기고</p></div>}
