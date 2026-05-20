@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect } from "react";
 import { Search, Menu, X, TrendingUp, Instagram, Facebook, Youtube, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle } from "lucide-react";
+import { supabase } from "./lib/supabase.js";
 
 /* ── 날짜 헬퍼 ── */
 const today = () => {
@@ -18,13 +19,6 @@ const catGradient = {
 const SC  = "#1a6b3c";
 const SCD = "#145530";
 
-const USERS = [
-  { id:"admin",      pw:"admin1234",  name:"관리자",  role:"admin"     },
-  { id:"editor1",    pw:"press1234",  name:"김편집",  role:"editor"    },
-  { id:"editor2",    pw:"press5678",  name:"이기자",  role:"editor"    },
-  { id:"columnist1", pw:"column1234", name:"박칼럼",  role:"columnist" },
-  { id:"columnist2", pw:"column5678", name:"최기고",  role:"columnist" },
-];
 const canWrite    = r => ["admin","editor","columnist"].includes(r);
 const canReadBox  = r => ["admin","editor"].includes(r);
 const canDelComment = r => ["admin","editor"].includes(r);
@@ -405,18 +399,30 @@ export default function App() {
     (async()=>{
       try{ const r=await window.storage.get(ART_KEY);  if(r?.value) setArticles(JSON.parse(r.value)); }catch{}
       try{ const d=await window.storage.get(DARK_KEY); if(d?.value) setDark(JSON.parse(d.value)); }catch{}
+      try{
+        const {data:{session}}=await supabase.auth.getSession();
+        if(session){
+          const {data:p}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();
+          if(p) setUser({id:session.user.email.split("@")[0],name:p.display_name,role:p.role});
+        }
+      }catch{}
     })();
   },[]);
 
   const save=async d=>{ try{ await window.storage.set(ART_KEY,JSON.stringify(d)); }catch{} };
   const toggleDark=()=>setDark(d=>{ const n=!d; (async()=>{ try{ await window.storage.set(DARK_KEY,JSON.stringify(n)); }catch{} })(); return n; });
 
-  const handleLogin=()=>{
-    const found=USERS.find(u=>u.id===loginForm.id&&u.pw===loginForm.pw);
-    if(found){ setUser(found); setShowLogin(false); setLoginError(""); setLoginForm({id:"",pw:""}); }
-    else setLoginError("아이디 또는 비밀번호가 올바르지 않습니다.");
+  const handleLogin=async()=>{
+    setLoginError("");
+    const {data,error}=await supabase.auth.signInWithPassword({
+      email:`${loginForm.id}@campus-voice.app`,
+      password:loginForm.pw,
+    });
+    if(error){ setLoginError("아이디 또는 비밀번호가 올바르지 않습니다."); return; }
+    const {data:profile}=await supabase.from("profiles").select("*").eq("id",data.user.id).single();
+    if(profile){ setUser({id:loginForm.id,name:profile.display_name,role:profile.role}); setShowLogin(false); setLoginForm({id:"",pw:""}); }
   };
-  const handleLogout=()=>{ setUser(null); setPage("home"); };
+  const handleLogout=async()=>{ await supabase.auth.signOut(); setUser(null); setPage("home"); };
 
   const submitArticle=async()=>{
     if(!form.title||!form.body) return;
