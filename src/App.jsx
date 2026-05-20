@@ -86,7 +86,7 @@ function ArticleImage({ image, category, className="", style={} }) {
   );
 }
 
-/* ── 실시간 금융 ── */
+/* ── 실시간 금융 (Vercel /api/finance 경유) ── */
 function FinanceTicker({ dark }) {
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
@@ -95,21 +95,11 @@ function FinanceTicker({ dark }) {
   const fetchData = async () => {
     setLoading(true); setError(false);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({
-          model:"claude-sonnet-4-20250514", max_tokens:400,
-          tools:[{type:"web_search_20250305",name:"web_search"}],
-          system:`You are a financial data assistant. Search for the LATEST real-time values and respond ONLY with a valid JSON object, no markdown, no extra text.
-Format: {"kospi":"숫자","kospi_change":"+0.00%","nasdaq":"숫자","nasdaq_change":"+0.00%","usdkrw":"숫자","rate":"숫자%"}`,
-          messages:[{role:"user",content:"Search current KOSPI, NASDAQ, USD/KRW exchange rate, Korea base interest rate. Return ONLY JSON."}]
-        })
-      });
+      const res = await fetch('/api/finance');
+      if (!res.ok) throw new Error();
       const json = await res.json();
-      const tb = json.content?.find(b=>b.type==="text");
-      if(!tb) throw new Error();
-      setData(JSON.parse(tb.text.trim().replace(/```json|```/g,"").trim()));
+      if (json.error) throw new Error();
+      setData(json);
     } catch { setError(true); }
     setLoading(false);
   };
