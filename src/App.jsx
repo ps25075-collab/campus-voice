@@ -441,7 +441,7 @@ export default function App() {
     } else {
       const newA={id:Date.now(),category:form.category,type:form.type,date:today(),
         views:0,title:form.title,summary:form.body.slice(0,80)+"...",
-        body:form.body,image:form.image||"",,status:ns,
+        body:form.body,image:form.image||"",status:ns,
         author:form.type==="칼럼"?user?.name:undefined};
       updated=[newA,...articles];
     }
