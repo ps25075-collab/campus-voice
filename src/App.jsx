@@ -505,7 +505,7 @@ export default function App() {
             <button className="md:hidden text-white" onClick={()=>setMenuOpen(!menuOpen)}>
               {menuOpen?<X size={22}/>:<Menu size={22}/>}
             </button>
-            <button onClick={()=>{setPage("home");setSelected(null);}} className="text-white font-bold text-xl tracking-tight">📰 세계를 알리다</button>
+            <button onClick={()=>{setPage("home");setSelected(null);setActiveCat("전체");setActiveType("전체");setSearch("");setSearchOpen(false);setMenuOpen(false);}} className="text-white font-bold text-xl tracking-tight">📰 세계를 알리다</button>
           </div>
           <nav className="hidden md:flex items-center gap-1">
             {CATEGORIES.map(c=>(
