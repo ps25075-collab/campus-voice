@@ -19,7 +19,7 @@ const catGradient = {
 const SC  = "#1a6b3c";
 const SCD = "#145530";
 
-const canWrite    = r => ["admin","editor","columnist"].includes(r);
+const canWrite    = r => ["admin","editor","columnist","reporter"].includes(r);
 const canReadBox  = r => ["admin","editor"].includes(r);
 const canDelComment = r => ["admin","editor"].includes(r);
 const allowedTypes  = r => r==="columnist" ? ["칼럼"] : ["기사","칼럼"];
@@ -62,9 +62,9 @@ const CMT_KEY  = (id) => `segal_comments_${id}`;
 
 const statusLabel = { published:"게재됨", pending:"승인 대기", rejected:"반려됨" };
 const statusStyle = { published:"bg-green-100 text-green-700", pending:"bg-yellow-100 text-yellow-700", rejected:"bg-red-100 text-red-600" };
-const roleLabel   = { admin:"👑 관리자", editor:"📰 기자", columnist:"✒️ 칼럼니스트", pending:"⏳ 승인 대기", rejected:"❌ 미승인" };
-const memberRoleLabel = { pending:"승인 대기", columnist:"칼럼니스트 승인됨", rejected:"가입 거절" };
-const memberRoleStyle = { pending:"bg-yellow-100 text-yellow-700", columnist:"bg-green-100 text-green-700", rejected:"bg-red-100 text-red-600" };
+const roleLabel   = { admin:"👑 관리자", editor:"📰 기자", reporter:"📰 기자 회원", columnist:"✒️ 칼럼니스트", pending:"⏳ 승인 대기", rejected:"❌ 미승인" };
+const memberRoleLabel = { pending:"승인 대기", reporter:"기자 승인됨", columnist:"칼럼니스트 승인됨", rejected:"가입 거절" };
+const memberRoleStyle = { pending:"bg-yellow-100 text-yellow-700", reporter:"bg-blue-100 text-blue-700", columnist:"bg-green-100 text-green-700", rejected:"bg-red-100 text-red-600" };
 
 /* ── 이미지 컴포넌트 ── */
 function ArticleImage({ image, category, className="", style={} }) {
@@ -583,9 +583,9 @@ export default function App() {
     setMembers(data||[]);
   };
 
-  const approveMember=async(id)=>{
-    await supabase.from('profiles').update({role:'columnist'}).eq('id',id);
-    setMembers(prev=>prev.map(m=>m.id===id?{...m,role:'columnist'}:m));
+  const approveMember=async(id,role)=>{
+    await supabase.from('profiles').update({role}).eq('id',id);
+    setMembers(prev=>prev.map(m=>m.id===id?{...m,role}:m));
   };
 
   const rejectMember=async(id)=>{
@@ -853,12 +853,13 @@ export default function App() {
                           {m.email&&<p className="text-xs text-gray-400">{m.email}</p>}
                         </div>
                         {m.role==="pending"&&(
-                          <div className="flex gap-2">
-                            <button onClick={()=>approveMember(m.id)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white"><CheckCircle size={12}/> 칼럼니스트 승인</button>
+                          <div className="flex gap-2 flex-wrap">
+                            <button onClick={()=>approveMember(m.id,'reporter')} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white"><CheckCircle size={12}/> 기자 승인</button>
+                            <button onClick={()=>approveMember(m.id,'columnist')} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white"><CheckCircle size={12}/> 칼럼니스트 승인</button>
                             <button onClick={()=>rejectMember(m.id)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white"><XCircle size={12}/> 거절</button>
                           </div>
                         )}
-                        {m.role==="columnist"&&(
+                        {(m.role==="columnist"||m.role==="reporter")&&(
                           <button onClick={()=>rejectMember(m.id)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-red-400 text-red-400 hover:bg-red-50"><XCircle size={12}/> 승인 취소</button>
                         )}
                       </div>
