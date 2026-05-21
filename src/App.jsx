@@ -460,7 +460,7 @@ function SuggestionBox({ user, dark }) {
             {suggestions.length===0
               ?<div className="text-center py-10 text-gray-400 text-sm">아직 건의된 내용이 없습니다.</div>
               :<div className="space-y-3 overflow-y-auto pr-1">
-                {[...suggestions].reverse().map(s=>(
+                {suggestions.map(s=>(
                   <div key={s.id} className={`rounded-xl border p-4 ${dark?"bg-gray-800 border-gray-700":"bg-gray-50 border-gray-200"}`}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-medium text-amber-600">✍️ {s.name}</span>
