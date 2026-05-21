@@ -383,8 +383,8 @@ function SuggestionBox({ user, dark }) {
 
   const loadSuggestions = async () => {
     try{
-      const r = await window.storage.get(BOX_KEY, true);
-      if(r?.value) setSuggestions(JSON.parse(r.value));
+      const { data } = await supabase.from('suggestions').select('*').order('created_at', {ascending:false});
+      setSuggestions(data || []);
     }catch{}
   };
 
@@ -392,12 +392,10 @@ function SuggestionBox({ user, dark }) {
 
   const submit = async () => {
     if(!form.content.trim()) return;
-    const newItem = { id:Date.now(), name:form.name.trim()||"익명", content:form.content.trim(), date:today() };
-    let prev = [];
-    try{ const r=await window.storage.get(BOX_KEY,true); if(r?.value) prev=JSON.parse(r.value); }catch{}
-    const updated=[...prev,newItem];
-    try{ await window.storage.set(BOX_KEY,JSON.stringify(updated),true); }catch{}
-    setSuggestions(updated); setForm({name:"",content:""});
+    const newItem = { name: form.name.trim()||"익명", content: form.content.trim(), date: today() };
+    const { data } = await supabase.from('suggestions').insert(newItem).select().single();
+    if(data) setSuggestions(prev => [data, ...prev]);
+    setForm({name:"",content:""});
     setSent(true); setTimeout(()=>{ setSent(false); setOpen(false); },2000);
   };
 
