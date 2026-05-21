@@ -301,11 +301,6 @@ function InfoCarousel({ dark }) {
     setTimeout(()=>{ setSlide(idx); setFade(true); }, 200);
   };
 
-  useEffect(()=>{
-    const t = setInterval(()=> goTo((slide+1) % TOTAL), 7000);
-    return ()=> clearInterval(t);
-  },[slide]);
-
   const arrowBtn = `flex items-center justify-center w-8 h-8 rounded-full border transition-colors flex-shrink-0 ${dark?"border-gray-700 text-gray-400 hover:bg-gray-800 hover:text-gray-100":"border-gray-200 text-gray-400 hover:bg-gray-100 hover:text-gray-700"}`;
 
   return (
