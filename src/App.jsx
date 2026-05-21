@@ -796,37 +796,62 @@ export default function App() {
 
         {/* DETAIL */}
         {page==="home"&&selected&&(
-          <div className="max-w-2xl mx-auto">
-            <button onClick={()=>{ setSelected(null); if(user?.role==="admin"&&selected.status!=="published") setPage("admin"); }}
-              className="flex items-center gap-1 text-sm hover:underline mb-4" style={{color:SC}}>
-              <ArrowLeft size={15}/> {user?.role==="admin"&&selected.status!=="published"?"관리자 메뉴로":"목록으로"}
-            </button>
-            {selected.status!=="published"&&<div className={`text-xs px-3 py-2 rounded-lg mb-3 flex items-center gap-1 ${statusStyle[selected.status]}`}>{selected.status==="pending"?<Clock size={12}/>:<XCircle size={12}/>} 미리보기 — {statusLabel[selected.status]} 상태입니다.</div>}
-            <div className="flex items-center gap-2 mb-3">
-              <span className={`text-xs text-white px-2 py-0.5 rounded-full ${typeColor[selected.type]||"bg-gray-500"}`}>{selected.type||"기사"}</span>
-              <span className={`text-xs text-white px-2 py-0.5 rounded-full ${catColor[selected.category]||"bg-gray-500"}`}>{selected.category}</span>
-            </div>
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <h1 className="text-2xl font-bold leading-tight">{selected.title}</h1>
-              {user&&<div className="flex gap-2 flex-shrink-0 mt-1">
-                <button onClick={()=>startEdit(selected)} style={{backgroundColor:SC}} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg text-white hover:opacity-90"><Edit2 size={12}/> 수정</button>
-                {user.role==="admin"&&<button onClick={()=>setConfirmDel(selected.id)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600"><Trash2 size={12}/> 삭제</button>}
-              </div>}
-            </div>
-            <div className="flex items-center gap-3 text-xs text-gray-500 mb-4">
-              <span>{selected.date}</span>
-              {selected.author&&<span className="text-amber-600 font-medium flex items-center gap-1"><PenLine size={11}/> {selected.author}</span>}
-              <span className="flex items-center gap-1"><Eye size={11}/> {selected.views.toLocaleString()}</span>
-            </div>
-            <ArticleImage image={selected.image} category={selected.category} className="w-full rounded-xl mb-5" style={{height:280}}/>
-            {selected.type==="칼럼"&&<div className="border-l-4 border-amber-400 pl-4 mb-4 py-1"><p className="text-xs text-amber-600 font-medium">칼럼 — {selected.author||"익명"} 기고</p></div>}
-            <div className="text-sm leading-relaxed whitespace-pre-line">{selected.body}</div>
+          <div className="flex flex-col md:flex-row gap-6">
+            <div className="flex-1 min-w-0">
+              <button onClick={()=>{ setSelected(null); if(user?.role==="admin"&&selected.status!=="published") setPage("admin"); }}
+                className="flex items-center gap-1 text-sm hover:underline mb-4" style={{color:SC}}>
+                <ArrowLeft size={15}/> {user?.role==="admin"&&selected.status!=="published"?"관리자 메뉴로":"목록으로"}
+              </button>
+              {selected.status!=="published"&&<div className={`text-xs px-3 py-2 rounded-lg mb-3 flex items-center gap-1 ${statusStyle[selected.status]}`}>{selected.status==="pending"?<Clock size={12}/>:<XCircle size={12}/>} 미리보기 — {statusLabel[selected.status]} 상태입니다.</div>}
+              <div className="flex items-center gap-2 mb-3">
+                <span className={`text-xs text-white px-2 py-0.5 rounded-full ${typeColor[selected.type]||"bg-gray-500"}`}>{selected.type||"기사"}</span>
+                <span className={`text-xs text-white px-2 py-0.5 rounded-full ${catColor[selected.category]||"bg-gray-500"}`}>{selected.category}</span>
+              </div>
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <h1 className="text-2xl font-bold leading-tight">{selected.title}</h1>
+                {user&&<div className="flex gap-2 flex-shrink-0 mt-1">
+                  <button onClick={()=>startEdit(selected)} style={{backgroundColor:SC}} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg text-white hover:opacity-90"><Edit2 size={12}/> 수정</button>
+                  {user.role==="admin"&&<button onClick={()=>setConfirmDel(selected.id)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600"><Trash2 size={12}/> 삭제</button>}
+                </div>}
+              </div>
+              <div className="flex items-center gap-3 text-xs text-gray-500 mb-4">
+                <span>{selected.date}</span>
+                {selected.author&&<span className="text-amber-600 font-medium flex items-center gap-1"><PenLine size={11}/> {selected.author}</span>}
+                <span className="flex items-center gap-1"><Eye size={11}/> {selected.views.toLocaleString()}</span>
+              </div>
+              <ArticleImage image={selected.image} category={selected.category} className="w-full rounded-xl mb-5" style={{height:280}}/>
+              {selected.type==="칼럼"&&<div className="border-l-4 border-amber-400 pl-4 mb-4 py-1"><p className="text-xs text-amber-600 font-medium">칼럼 — {selected.author||"익명"} 기고</p></div>}
+              <div className="text-sm leading-relaxed whitespace-pre-line">{selected.body}</div>
 
-            <LikeButton articleId={selected.id} dark={dark}/>
+              <LikeButton articleId={selected.id} dark={dark}/>
 
-            <div className={`border-t mt-8 pt-2 ${dark?"border-gray-800":"border-gray-200"}`}>
-              <CommentSection articleId={selected.id} user={user} dark={dark}/>
+              <div className={`border-t mt-8 pt-2 ${dark?"border-gray-800":"border-gray-200"}`}>
+                <CommentSection articleId={selected.id} user={user} dark={dark}/>
+              </div>
             </div>
+            <aside className="md:w-64 space-y-4 flex-shrink-0">
+              <div className={`rounded-xl border p-4 ${card}`}>
+                <h3 className="font-bold text-sm mb-3 flex items-center gap-1"><TrendingUp size={15} className="text-red-500"/> 가장 많이 본 뉴스</h3>
+                <ol className="space-y-2">
+                  {topViewed.map((a,i)=>(
+                    <li key={a.id} onClick={()=>setSelected(a)} className="cursor-pointer flex gap-2 items-start group">
+                      <span className={`font-bold text-sm w-5 flex-shrink-0 ${i===0?"text-red-500":i===1?"text-orange-400":i===2?"text-yellow-500":"text-gray-400"}`}>{i+1}</span>
+                      <div><span className="text-xs leading-snug group-hover:underline line-clamp-2">{a.title}</span>
+                      {a.type==="칼럼"&&<span className="text-xs text-amber-500 block">✒️ 칼럼</span>}</div>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+              <div className={`rounded-xl border p-4 ${card}`}>
+                <h3 className="font-bold text-sm mb-3">세계를 알리다 SNS</h3>
+                <div className="space-y-2">
+                  {SNS.map(s=>(
+                    <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
+                      className={`flex items-center gap-2 text-xs hover:underline ${s.color}`}>{s.icon}{s.label} 팔로우</a>
+                  ))}
+                </div>
+              </div>
+            </aside>
           </div>
         )}
 
