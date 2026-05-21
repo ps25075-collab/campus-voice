@@ -691,13 +691,13 @@ export default function App() {
   };
 
   const submitArticle=async()=>{
-    if(!form.title||!form.body) return;
+    if(!form.title||!form.body||!user?.name) return;
     const eid=editId;
     const fields={
       title:form.title, category:form.category, type:form.type,
       body:form.body, image:form.image||"",
       summary:form.body.slice(0,80)+"...", status:"pending",
-      author:(form.type==="칼럼"||user?.isMember)?user?.name:null,
+      author: user?.name,
     };
     if(eid!==null){
       await supabase.from('articles').update(fields).eq('id',eid);
@@ -1079,11 +1079,14 @@ export default function App() {
                     </button>
                   ))}
                 </div>
-                {form.type==="칼럼"&&<p className="text-xs text-amber-600 mt-1.5">✒️ 칼럼에는 작성자 이름({user.name})이 표시됩니다.</p>}
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">제목 *</label>
-                <input value={form.title} onChange={e=>setForm({...form,title:e.target.value})} placeholder="제목을 입력하세요" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
+                 </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">작성자 <span className="text-red-500">*</span></label>
+                  <input value={user.name} readOnly className={`w-full border rounded-lg px-3 py-2 text-sm cursor-not-allowed opacity-70 ${inp}`}/>
+                  <p className="text-xs text-gray-500 mt-1">로그인된 계정 <strong>{user.id}</strong> 으로 자동 설정됩니다.</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">제목 *</label>
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">카테고리</label>
@@ -1146,7 +1149,8 @@ export default function App() {
                 <span className="flex items-center gap-1"><Eye size={11}/> {selected.views.toLocaleString()}</span>
               </div>
               <ArticleImage image={selected.image} category={selected.category} className="w-full rounded-xl mb-5" style={{height:280}}/>
-              {selected.type==="칼럼"&&<div className="border-l-4 border-amber-400 pl-4 mb-4 py-1"><p className="text-xs text-amber-600 font-medium">칼럼 — {selected.author||"익명"} 기고</p></div>}
+              {selected.author&&<div className="border-l-4 border-amber-400 pl-4 mb-4 py-1"><p className="text-xs text-amber-600 font-medium">{selected.type==="칼럼" ? `✒️ 칼럼
+  — ${selected.author} 기고` : `✍️ 기사 — ${selected.author} 작성`}</p></div>}
               <div className="text-sm leading-relaxed whitespace-pre-line">{selected.body}</div>
 
               <LikeButton articleId={selected.id} dark={dark}/>
