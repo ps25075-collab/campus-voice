@@ -530,12 +530,12 @@ export default function App() {
 
   const submitArticle=async()=>{
     if(!form.title||!form.body) return;
-    const eid=editId, ns=user?.role==="admin"?"published":"pending";
+    const eid=editId, ns="pending";
     let updated;
     if(eid!==null){
       updated=articles.map(a=>a.id===eid
         ?{...a,title:form.title,category:form.category,type:form.type,body:form.body,image:form.image,
-          summary:form.body.slice(0,80)+"...",status:user?.role==="admin"?a.status:"pending",
+          summary:form.body.slice(0,80)+"...",status:"pending",
           author:form.type==="칼럼"?user?.name:undefined}:a);
       setSelected(prev=>prev?.id===eid?updated.find(a=>a.id===eid)||null:prev);
     } else {
@@ -738,7 +738,7 @@ export default function App() {
               <ArrowLeft size={15}/> {user.role==="admin"?"관리자 메뉴로":"홈으로"}
             </button>
             <h2 className="text-2xl font-bold mb-1">{editId!==null?"✏️ 글 수정":"✏️ 새 글 작성"}</h2>
-            {user.role!=="admin"&&<p className="text-xs text-yellow-600 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 mb-4 flex items-center gap-1"><Clock size={12}/> 작성한 글은 관리자 승인 후 게재됩니다.</p>}
+            <p className="text-xs text-yellow-600 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 mb-4 flex items-center gap-1"><Clock size={12}/> 작성한 글은 관리자 승인 후 게재됩니다.</p>
             <div className={`rounded-xl border p-6 space-y-4 ${card}`}>
               <div>
                 <label className="text-sm font-medium mb-2 block">글 종류 *</label>
@@ -788,7 +788,7 @@ export default function App() {
               </div>
               <button onClick={submitArticle} style={{backgroundColor:form.type==="칼럼"?"#d97706":SC}}
                 className="w-full py-2.5 text-white rounded-lg font-medium text-sm hover:opacity-90 flex items-center justify-center gap-2">
-                <Save size={15}/>{user.role==="admin"?(editId!==null?"수정 완료":"게재하기"):(editId!==null?"수정 후 승인 요청":"승인 요청하기")}
+                <Save size={15}/>{editId!==null?"수정 후 승인 요청":"승인 요청하기"}
               </button>
             </div>
           </div>
