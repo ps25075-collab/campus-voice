@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect } from "react";
+import { supabase } from './lib/supabase';
 import { Search, Menu, X, TrendingUp, Instagram, Facebook, Youtube, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle, ChevronLeft, ChevronRight } from "lucide-react";
 
 /* ── 날짜 헬퍼 ── */
@@ -491,7 +492,7 @@ export default function App() {
   const [searchOpen,setSearchOpen]   = useState(false);
   const [email,setEmail]             = useState("");
   const [subscribed,setSubscribed]   = useState(false);
-  const [articles,setArticles]       = useState(DUMMY_ARTICLES);
+  const [articles,setArticles]       = useState([]);
   const [form,setForm]               = useState({title:"",category:"경제",type:"기사",body:"",image:""});
   const [editId,setEditId]           = useState(null);
   const [confirmDel,setConfirmDel]   = useState(null);
@@ -503,7 +504,10 @@ export default function App() {
 
   useEffect(()=>{
     (async()=>{
-      try{ const r=await window.storage.get(ART_KEY);  if(r?.value) setArticles(JSON.parse(r.value)); }catch{}
+      try{
+        const { data } = await supabase.from('articles').select('*').order('created_at',{ascending:false});
+        setArticles(data && data.length > 0 ? data : DUMMY_ARTICLES);
+      }catch{ setArticles(DUMMY_ARTICLES); }
       try{ const d=await window.storage.get(DARK_KEY); if(d?.value) setDark(JSON.parse(d.value)); }catch{}
       try{
         const saved=localStorage.getItem("cv_user");
@@ -512,7 +516,6 @@ export default function App() {
     })();
   },[]);
 
-  const save=async d=>{ try{ await window.storage.set(ART_KEY,JSON.stringify(d)); }catch{} };
   const toggleDark=()=>setDark(d=>{ const n=!d; (async()=>{ try{ await window.storage.set(DARK_KEY,JSON.stringify(n)); }catch{} })(); return n; });
 
   const handleLogin=async()=>{
@@ -530,32 +533,37 @@ export default function App() {
 
   const submitArticle=async()=>{
     if(!form.title||!form.body) return;
-    const eid=editId, ns="pending";
-    let updated;
+    const eid=editId;
+    const fields={
+      title:form.title, category:form.category, type:form.type,
+      body:form.body, image:form.image||"",
+      summary:form.body.slice(0,80)+"...", status:"pending",
+      author:form.type==="칼럼"?user?.name:null,
+    };
     if(eid!==null){
-      updated=articles.map(a=>a.id===eid
-        ?{...a,title:form.title,category:form.category,type:form.type,body:form.body,image:form.image,
-          summary:form.body.slice(0,80)+"...",status:"pending",
-          author:form.type==="칼럼"?user?.name:undefined}:a);
-      setSelected(prev=>prev?.id===eid?updated.find(a=>a.id===eid)||null:prev);
+      await supabase.from('articles').update(fields).eq('id',eid);
+      setArticles(prev=>prev.map(a=>a.id===eid?{...a,...fields}:a));
+      setSelected(prev=>prev?.id===eid?{...prev,...fields}:prev);
     } else {
-      const newA={id:Date.now(),category:form.category,type:form.type,date:today(),
-        views:0,title:form.title,summary:form.body.slice(0,80)+"...",
-        body:form.body,image:form.image||"",status:ns,
-        author:form.type==="칼럼"?user?.name:undefined};
-      updated=[newA,...articles];
+      const newA={...fields, date:today(), views:0, hero:false};
+      const { data } = await supabase.from('articles').insert(newA).select().single();
+      if(data) setArticles(prev=>[data,...prev]);
     }
-    setEditId(null); setArticles(updated); await save(updated);
+    setEditId(null);
     setForm({title:"",category:"경제",type:allowedTypes(user?.role)[0]||"기사",body:"",image:""});
     setPage(user?.role==="admin"?"admin":"home");
   };
 
   const startEdit=a=>{ setForm({title:a.title,category:a.category,type:a.type||"기사",body:a.body,image:a.image||""}); setEditId(a.id); setSelected(null); setPage("write"); };
   const doDelete=async()=>{
-    const updated=articles.filter(a=>a.id!==confirmDel);
-    setArticles(updated); await save(updated); setConfirmDel(null); setSelected(null); setPage("home");
+    await supabase.from('articles').delete().eq('id',confirmDel);
+    setArticles(prev=>prev.filter(a=>a.id!==confirmDel));
+    setConfirmDel(null); setSelected(null); setPage("home");
   };
-  const updateStatus=async(id,status)=>{ const u=articles.map(a=>a.id===id?{...a,status}:a); setArticles(u); await save(u); };
+  const updateStatus=async(id,status)=>{
+    await supabase.from('articles').update({status}).eq('id',id);
+    setArticles(prev=>prev.map(a=>a.id===id?{...a,status}:a));
+  };
 
   const published=articles.filter(a=>a.status==="published");
   const hero=published.find(a=>a.hero);
