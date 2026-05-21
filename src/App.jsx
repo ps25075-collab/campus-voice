@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect } from "react";
-import { Search, Menu, X, TrendingUp, Instagram, Facebook, Youtube, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle } from "lucide-react";
+import { Search, Menu, X, TrendingUp, Instagram, Facebook, Youtube, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle, ChevronLeft, ChevronRight } from "lucide-react";
 
 /* ── 날짜 헬퍼 ── */
 const today = () => {
@@ -222,11 +222,21 @@ function InfoCarousel({ dark }) {
     return ()=> clearInterval(t);
   },[slide]);
 
+  const arrowBtn = `flex items-center justify-center w-8 h-8 rounded-full border transition-colors flex-shrink-0 ${dark?"border-gray-700 text-gray-400 hover:bg-gray-800 hover:text-gray-100":"border-gray-200 text-gray-400 hover:bg-gray-100 hover:text-gray-700"}`;
+
   return (
     <div className={`border-b shadow-sm ${dark?"bg-gray-900 border-gray-800":"bg-white border-gray-200"}`}>
       <div className="max-w-6xl mx-auto px-6 py-5">
-        <div style={{opacity: fade?1:0, transition:"opacity 0.2s"}}>
-          {slide===0 ? <FinancePanel dark={dark}/> : <WeatherPanel dark={dark}/>}
+        <div className="flex items-center gap-3">
+          <button onClick={()=>goTo((slide-1+TOTAL)%TOTAL)} className={arrowBtn}>
+            <ChevronLeft size={16}/>
+          </button>
+          <div className="flex-1" style={{opacity: fade?1:0, transition:"opacity 0.2s"}}>
+            {slide===0 ? <FinancePanel dark={dark}/> : <WeatherPanel dark={dark}/>}
+          </div>
+          <button onClick={()=>goTo((slide+1)%TOTAL)} className={arrowBtn}>
+            <ChevronRight size={16}/>
+          </button>
         </div>
         <div className="flex justify-center gap-2 mt-4">
           {Array.from({length:TOTAL}).map((_,i)=>(
