@@ -578,7 +578,9 @@ export default function App() {
   };
 
   const loadMembers=async()=>{
-    const {data}=await supabase.from('profiles').select('*').order('created_at',{ascending:false});
+    const {data}=await supabase.from('profiles').select('*')
+      .not('role','in','("admin","editor")')
+      .order('created_at',{ascending:false});
     setMembers(data||[]);
   };
 
