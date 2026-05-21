@@ -79,8 +79,8 @@ function ArticleImage({ image, category, className="", style={} }) {
   );
 }
 
-/* ── 실시간 금융 (Vercel /api/finance 경유) ── */
-function FinanceTicker({ dark }) {
+/* ── 실시간 금융 패널 ── */
+function FinancePanel({ dark }) {
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(false);
@@ -107,37 +107,134 @@ function FinanceTicker({ dark }) {
   ] : [];
 
   return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <span className={`text-sm font-bold flex items-center gap-1.5 ${dark?"text-gray-400":"text-gray-500"}`}>
+          <RefreshCw size={14}/> 실시간 금융 지표
+        </span>
+        <button onClick={fetchData} className={`transition-colors ${dark?"text-gray-600 hover:text-gray-300":"text-gray-300 hover:text-gray-600"}`} title="새로고침">
+          <RefreshCw size={15}/>
+        </button>
+      </div>
+      {loading && (
+        <div className={`flex items-center gap-2 py-2 ${dark?"text-gray-500":"text-gray-400"}`}>
+          <RefreshCw size={15} className="animate-spin"/> <span className="text-sm">데이터 불러오는 중...</span>
+        </div>
+      )}
+      {error && <span className="text-sm text-red-400">데이터 로드 실패 — 새로고침을 눌러주세요</span>}
+      {!loading&&!error&&(
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {items.map(it=>(
+            <div key={it.label} className={`rounded-xl border px-4 py-3 ${dark?"bg-gray-800 border-gray-700":"bg-gray-50 border-gray-100"}`}>
+              <p className={`text-xs font-medium mb-1 ${dark?"text-gray-400":"text-gray-400"}`}>{it.label}</p>
+              <p className={`text-2xl font-extrabold leading-tight ${dark?"text-gray-100":"text-gray-800"}`}>{it.value}</p>
+              {it.change && (
+                <p className={`text-sm font-semibold mt-0.5 ${it.up?"text-red-500":"text-blue-500"}`}>
+                  {it.change}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── 날씨 패널 (제주 표선 기준, Open-Meteo 무료 API) ── */
+function WeatherPanel({ dark }) {
+  const [weather, setWeather] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(false);
+
+  const WMO_LABEL = {0:"맑음",1:"대체로 맑음",2:"구름 조금",3:"흐림",45:"안개",48:"안개",51:"이슬비",53:"이슬비",55:"이슬비",61:"비",63:"비",65:"강한 비",71:"눈",73:"눈",75:"강한 눈",80:"소나기",81:"소나기",82:"강한 소나기",95:"뇌우",96:"뇌우",99:"뇌우"};
+  const WMO_ICON  = {0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",53:"🌦️",55:"🌧️",61:"🌧️",63:"🌧️",65:"🌧️",71:"❄️",73:"❄️",75:"❄️",80:"🌦️",81:"🌦️",82:"🌧️",95:"⛈️",96:"⛈️",99:"⛈️"};
+
+  useEffect(()=>{
+    (async()=>{
+      setLoading(true); setError(false);
+      try {
+        const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=33.32&longitude=126.84&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Asia/Seoul");
+        if (!res.ok) throw new Error();
+        const json = await res.json();
+        setWeather(json.current);
+      } catch { setError(true); }
+      setLoading(false);
+    })();
+  },[]);
+
+  const code = weather?.weather_code ?? -1;
+  const card = dark?"bg-gray-800 border-gray-700":"bg-gray-50 border-gray-100";
+  const val  = dark?"text-gray-100":"text-gray-800";
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-4">
+        <span className={`text-sm font-bold flex items-center gap-1.5 ${dark?"text-gray-400":"text-gray-500"}`}>
+          🌤️ 현재 날씨
+        </span>
+        <span className={`text-xs ${dark?"text-gray-600":"text-gray-400"}`}>제주 표선 기준</span>
+      </div>
+      {loading && (
+        <div className={`flex items-center gap-2 py-2 ${dark?"text-gray-500":"text-gray-400"}`}>
+          <RefreshCw size={15} className="animate-spin"/> <span className="text-sm">날씨 불러오는 중...</span>
+        </div>
+      )}
+      {error && <span className="text-sm text-red-400">날씨 데이터 로드 실패</span>}
+      {!loading&&!error&&weather&&(
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className={`rounded-xl border px-4 py-3 ${card}`}>
+            <p className="text-xs font-medium mb-1 text-gray-400">날씨</p>
+            <p className="text-3xl leading-tight">{WMO_ICON[code]??"🌡️"}</p>
+            <p className={`text-sm font-semibold mt-1 ${dark?"text-gray-300":"text-gray-600"}`}>{WMO_LABEL[code]??"알 수 없음"}</p>
+          </div>
+          <div className={`rounded-xl border px-4 py-3 ${card}`}>
+            <p className="text-xs font-medium mb-1 text-gray-400">기온</p>
+            <p className={`text-2xl font-extrabold leading-tight ${val}`}>{weather.temperature_2m}°C</p>
+          </div>
+          <div className={`rounded-xl border px-4 py-3 ${card}`}>
+            <p className="text-xs font-medium mb-1 text-gray-400">습도</p>
+            <p className={`text-2xl font-extrabold leading-tight ${val}`}>{weather.relative_humidity_2m}%</p>
+          </div>
+          <div className={`rounded-xl border px-4 py-3 ${card}`}>
+            <p className="text-xs font-medium mb-1 text-gray-400">풍속</p>
+            <p className={`text-2xl font-extrabold leading-tight ${val}`}>{weather.wind_speed_10m}<span className="text-sm font-medium"> km/h</span></p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── 정보 캐러셀 (금융 지표 ↔ 날씨) ── */
+function InfoCarousel({ dark }) {
+  const [slide, setSlide] = useState(0);
+  const [fade,  setFade]  = useState(true);
+  const TOTAL = 2;
+
+  const goTo = (idx) => {
+    setFade(false);
+    setTimeout(()=>{ setSlide(idx); setFade(true); }, 200);
+  };
+
+  useEffect(()=>{
+    const t = setInterval(()=> goTo((slide+1) % TOTAL), 7000);
+    return ()=> clearInterval(t);
+  },[slide]);
+
+  return (
     <div className={`border-b shadow-sm ${dark?"bg-gray-900 border-gray-800":"bg-white border-gray-200"}`}>
       <div className="max-w-6xl mx-auto px-6 py-5">
-        <div className="flex items-center justify-between mb-4">
-          <span className={`text-sm font-bold flex items-center gap-1.5 ${dark?"text-gray-400":"text-gray-500"}`}>
-            <RefreshCw size={14}/> 실시간 금융 지표
-          </span>
-          <button onClick={fetchData} className={`transition-colors ${dark?"text-gray-600 hover:text-gray-300":"text-gray-300 hover:text-gray-600"}`} title="새로고침">
-            <RefreshCw size={15}/>
-          </button>
+        <div style={{opacity: fade?1:0, transition:"opacity 0.2s"}}>
+          {slide===0 ? <FinancePanel dark={dark}/> : <WeatherPanel dark={dark}/>}
         </div>
-        {loading && (
-          <div className={`flex items-center gap-2 py-2 ${dark?"text-gray-500":"text-gray-400"}`}>
-            <RefreshCw size={15} className="animate-spin"/> <span className="text-sm">데이터 불러오는 중...</span>
-          </div>
-        )}
-        {error && <span className="text-sm text-red-400">데이터 로드 실패 — 새로고침을 눌러주세요</span>}
-        {!loading&&!error&&(
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {items.map(it=>(
-              <div key={it.label} className={`rounded-xl border px-4 py-3 ${dark?"bg-gray-800 border-gray-700":"bg-gray-50 border-gray-100"}`}>
-                <p className={`text-xs font-medium mb-1 ${dark?"text-gray-400":"text-gray-400"}`}>{it.label}</p>
-                <p className={`text-2xl font-extrabold leading-tight ${dark?"text-gray-100":"text-gray-800"}`}>{it.value}</p>
-                {it.change && (
-                  <p className={`text-sm font-semibold mt-0.5 ${it.up?"text-red-500":"text-blue-500"}`}>
-                    {it.change}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="flex justify-center gap-2 mt-4">
+          {Array.from({length:TOTAL}).map((_,i)=>(
+            <button key={i} onClick={()=>goTo(i)}
+              className={`rounded-full transition-all duration-300 ${slide===i?"w-5 h-2":"w-2 h-2"}`}
+              style={{backgroundColor: slide===i?"#1a6b3c": dark?"#374151":"#d1d5db"}}/>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -567,7 +664,7 @@ export default function App() {
       )}
 
       {/* 실시간 금융 */}
-      <FinanceTicker dark={dark}/>
+      <InfoCarousel dark={dark}/>
 
       <main className="max-w-6xl mx-auto px-4 py-6">
 
