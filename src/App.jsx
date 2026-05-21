@@ -506,6 +506,7 @@ export default function App() {
   const [signupErr,setSignupErr]     = useState("");
   const [signupDone,setSignupDone]   = useState(false);
   const [members,setMembers]         = useState([]);
+  const [myArticles,setMyArticles]   = useState([]);
 
   useEffect(()=>{
     (async()=>{
@@ -593,6 +594,16 @@ export default function App() {
     setMembers(prev=>prev.map(m=>m.id===id?{...m,role:'rejected'}:m));
   };
 
+  const loadMyArticles=async(name)=>{
+    const {data}=await supabase.from('articles').select('*').eq('author',name).order('created_at',{ascending:false});
+    setMyArticles(data||[]);
+  };
+
+  const requestReApproval=async()=>{
+    await supabase.from('profiles').update({role:'pending'}).eq('id',user.id);
+    setUser(prev=>({...prev,role:'pending'}));
+  };
+
   const handleLogout=async()=>{
     if(user?.isMember) await supabase.auth.signOut();
     else localStorage.removeItem("cv_user");
@@ -606,7 +617,7 @@ export default function App() {
       title:form.title, category:form.category, type:form.type,
       body:form.body, image:form.image||"",
       summary:form.body.slice(0,80)+"...", status:"pending",
-      author:form.type==="칼럼"?user?.name:null,
+      author:(form.type==="칼럼"||user?.isMember)?user?.name:null,
     };
     if(eid!==null){
       await supabase.from('articles').update(fields).eq('id',eid);
@@ -669,6 +680,11 @@ export default function App() {
         {user?(
           <div className="flex items-center gap-2 flex-wrap">
             <span style={{color:SC}} className="font-medium">{roleLabel[user.role]} {user.name}</span>
+            {user?.isMember&&(
+              <button onClick={()=>{setPage("mypage");loadMyArticles(user.name);}} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-green-700 text-green-700 hover:bg-green-700 hover:text-white transition-colors text-sm font-medium">
+                마이페이지
+              </button>
+            )}
             {user.role==="admin"&&(
               <button onClick={()=>{setPage("admin");loadMembers();}} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-green-700 text-green-700 hover:bg-green-700 hover:text-white transition-colors text-sm font-medium">
                 <ShieldCheck size={14}/> 관리자 메뉴
@@ -899,6 +915,65 @@ export default function App() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* MYPAGE */}
+        {page==="mypage"&&user?.isMember&&(
+          <div className="max-w-2xl mx-auto">
+            <button onClick={()=>setPage("home")} className="flex items-center gap-1 text-sm hover:underline mb-4" style={{color:SC}}>
+              <ArrowLeft size={15}/> 홈으로
+            </button>
+            <h2 className="text-2xl font-bold mb-5">마이페이지</h2>
+
+            {/* 프로필 카드 */}
+            <div className={`rounded-xl border p-6 mb-6 ${card}`}>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl flex-shrink-0" style={{backgroundColor:SC}}>
+                  {user.name?.[0]||"?"}
+                </div>
+                <div>
+                  <p className="font-bold text-lg">{user.name}</p>
+                  {user.email&&<p className={`text-sm ${dark?"text-gray-400":"text-gray-500"}`}>{user.email}</p>}
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium mt-1 inline-block ${memberRoleStyle[user.role]||"bg-gray-100 text-gray-600"}`}>
+                    {memberRoleLabel[user.role]||user.role}
+                  </span>
+                </div>
+              </div>
+              {user.role==="rejected"&&(
+                <div className={`border-t pt-4 mt-2 ${dark?"border-gray-700":"border-gray-200"}`}>
+                  <p className="text-sm text-red-500 mb-3">가입 신청이 거절되었습니다. 재승인을 요청할 수 있습니다.</p>
+                  <button onClick={requestReApproval} style={{backgroundColor:SC}} className="flex items-center gap-1.5 px-4 py-2 text-white rounded-lg text-sm font-medium hover:opacity-90">
+                    <RefreshCw size={13}/> 재승인 요청
+                  </button>
+                </div>
+              )}
+              {user.role==="pending"&&(
+                <div className={`border-t pt-4 mt-2 ${dark?"border-gray-700":"border-gray-200"}`}>
+                  <p className="text-sm text-yellow-600 flex items-center gap-1.5"><Clock size={13}/> 관리자 승인을 기다리고 있습니다.</p>
+                </div>
+              )}
+            </div>
+
+            {/* 내가 쓴 글 */}
+            <h3 className="font-bold text-base mb-3 flex items-center gap-2"><FileText size={16} style={{color:SC}}/> 내가 쓴 글</h3>
+            {myArticles.length===0
+              ?<div className={`rounded-xl border p-8 text-center text-gray-400 text-sm ${card}`}>아직 작성한 글이 없습니다.</div>
+              :<div className="space-y-3">
+                {myArticles.map(a=>(
+                  <div key={a.id} onClick={()=>{setSelected(a);setPage("home");}}
+                    className={`cursor-pointer rounded-xl border p-4 hover:shadow-md transition-shadow ${card}`}>
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className={`text-xs text-white px-2 py-0.5 rounded-full ${typeColor[a.type]||"bg-gray-500"}`}>{a.type||"기사"}</span>
+                      <span className={`text-xs text-white px-2 py-0.5 rounded-full ${catColor[a.category]||"bg-gray-500"}`}>{a.category}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusStyle[a.status]}`}>{statusLabel[a.status]}</span>
+                      <span className={`text-xs ${dark?"text-gray-400":"text-gray-400"}`}>{a.date}</span>
+                    </div>
+                    <p className="font-semibold text-sm leading-snug">{a.title}</p>
+                  </div>
+                ))}
+              </div>
+            }
           </div>
         )}
 
