@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from './lib/supabase';
 import { Search, Menu, X, TrendingUp, Instagram, Facebook, Youtube, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -147,28 +147,64 @@ function FinancePanel({ dark }) {
 /* ── 날씨 패널 (제주 표선 기준, Open-Meteo 무료 API) ── */
 function WeatherPanel({ dark }) {
   const [weather, setWeather] = useState(null);
+  const [daily,   setDaily]   = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(false);
 
   const WMO_LABEL = {0:"맑음",1:"대체로 맑음",2:"구름 조금",3:"흐림",45:"안개",48:"안개",51:"이슬비",53:"이슬비",55:"이슬비",61:"비",63:"비",65:"강한 비",71:"눈",73:"눈",75:"강한 눈",80:"소나기",81:"소나기",82:"강한 소나기",95:"뇌우",96:"뇌우",99:"뇌우"};
   const WMO_ICON  = {0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",53:"🌦️",55:"🌧️",61:"🌧️",63:"🌧️",65:"🌧️",71:"❄️",73:"❄️",75:"❄️",80:"🌦️",81:"🌦️",82:"🌧️",95:"⛈️",96:"⛈️",99:"⛈️"};
 
+  const HUMIDITY_LEVELS = [
+    { max: 20,       emoji: "💀", label: "매우 건조", color: "text-red-500",    bar: "bg-red-400" },
+    { max: 40,       emoji: "🏜️", label: "건조",     color: "text-orange-400", bar: "bg-orange-400" },
+    { max: 60,       emoji: "😊", label: "쾌적",     color: "text-green-500",  bar: "bg-green-400" },
+    { max: 80,       emoji: "💧", label: "습함",     color: "text-blue-400",   bar: "bg-blue-400" },
+    { max: Infinity, emoji: "🌊", label: "매우 습함", color: "text-blue-600",   bar: "bg-blue-600" },
+  ];
+
+  const WIND_LEVELS = [
+    { max: 10,       emoji: "🍃", label: "고요",   color: "text-green-400",  bar: "bg-green-400" },
+    { max: 20,       emoji: "🌬️", label: "약풍",   color: "text-teal-400",   bar: "bg-teal-400" },
+    { max: 40,       emoji: "💨", label: "보통",   color: "text-yellow-400", bar: "bg-yellow-400" },
+    { max: 60,       emoji: "🌪️", label: "강풍",   color: "text-orange-500", bar: "bg-orange-500" },
+    { max: Infinity, emoji: "⛈️", label: "폭풍",   color: "text-red-600",    bar: "bg-red-600" },
+  ];
+
+  const getLevelIdx = (levels, v) => {
+    const i = levels.findIndex(l => v <= l.max);
+    return i === -1 ? levels.length - 1 : i;
+  };
+
+  const DAY_NAMES = ["일","월","화","수","목","금","토"];
+
   useEffect(()=>{
     (async()=>{
       setLoading(true); setError(false);
       try {
-        const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=33.32&longitude=126.84&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Asia/Seoul");
+        const res = await fetch(
+          "https://api.open-meteo.com/v1/forecast?latitude=33.32&longitude=126.84" +
+          "&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m" +
+          "&daily=weather_code,temperature_2m_max,temperature_2m_min" +
+          "&forecast_days=7&timezone=Asia/Seoul"
+        );
         if (!res.ok) throw new Error();
         const json = await res.json();
         setWeather(json.current);
+        setDaily(json.daily);
       } catch { setError(true); }
       setLoading(false);
     })();
   },[]);
 
-  const code = weather?.weather_code ?? -1;
-  const card = dark?"bg-gray-800 border-gray-700":"bg-gray-50 border-gray-100";
-  const val  = dark?"text-gray-100":"text-gray-800";
+  const code     = weather?.weather_code ?? -1;
+  const card     = dark ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-100";
+  const val      = dark ? "text-gray-100" : "text-gray-800";
+  const sub      = dark ? "text-gray-400" : "text-gray-500";
+  const emptyBar = dark ? "bg-gray-700" : "bg-gray-200";
+  const hIdx     = weather != null ? getLevelIdx(HUMIDITY_LEVELS, weather.relative_humidity_2m) : -1;
+  const wIdx     = weather != null ? getLevelIdx(WIND_LEVELS, weather.wind_speed_10m) : -1;
+  const hLevel   = hIdx >= 0 ? HUMIDITY_LEVELS[hIdx] : null;
+  const wLevel   = wIdx >= 0 ? WIND_LEVELS[wIdx] : null;
 
   return (
     <div>
@@ -185,30 +221,75 @@ function WeatherPanel({ dark }) {
       )}
       {error && <span className="text-sm text-red-400">날씨 데이터 로드 실패</span>}
       {!loading&&!error&&weather&&(
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className={`rounded-xl border px-4 py-3 ${card}`}>
-            <p className="text-xs font-medium mb-1 text-gray-400">날씨</p>
-            <p className="text-3xl leading-tight">{WMO_ICON[code]??"🌡️"}</p>
-            <p className={`text-sm font-semibold mt-1 ${dark?"text-gray-300":"text-gray-600"}`}>{WMO_LABEL[code]??"알 수 없음"}</p>
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+            <div className={`rounded-xl border px-4 py-3 ${card}`}>
+              <p className="text-xs font-medium mb-1 text-gray-400">날씨</p>
+              <p className="text-3xl leading-tight">{WMO_ICON[code]??"🌡️"}</p>
+              <p className={`text-sm font-semibold mt-1 ${dark?"text-gray-300":"text-gray-600"}`}>{WMO_LABEL[code]??"알 수 없음"}</p>
+            </div>
+            <div className={`rounded-xl border px-4 py-3 ${card}`}>
+              <p className="text-xs font-medium mb-1 text-gray-400">기온</p>
+              <p className={`text-2xl font-extrabold leading-tight ${val}`}>{weather.temperature_2m}°C</p>
+            </div>
+            <div className={`rounded-xl border px-4 py-3 ${card}`}>
+              <p className="text-xs font-medium mb-1 text-gray-400">습도</p>
+              <p className={`text-2xl font-extrabold leading-tight ${val}`}>{weather.relative_humidity_2m}%</p>
+              {hLevel && (
+                <>
+                  <div className={`flex items-center gap-1 mt-1 text-xs font-medium ${hLevel.color}`}>
+                    <span>{hLevel.emoji}</span><span>{hLevel.label}</span>
+                  </div>
+                  <div className="flex gap-0.5 mt-1.5">
+                    {HUMIDITY_LEVELS.map((l,i)=>(
+                      <div key={i} className={`h-1.5 flex-1 rounded-full ${i<=hIdx ? l.bar : emptyBar}`}/>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            <div className={`rounded-xl border px-4 py-3 ${card}`}>
+              <p className="text-xs font-medium mb-1 text-gray-400">풍속</p>
+              <p className={`text-2xl font-extrabold leading-tight ${val}`}>{weather.wind_speed_10m}<span className="text-sm font-medium"> km/h</span></p>
+              {wLevel && (
+                <>
+                  <div className={`flex items-center gap-1 mt-1 text-xs font-medium ${wLevel.color}`}>
+                    <span>{wLevel.emoji}</span><span>{wLevel.label}</span>
+                  </div>
+                  <div className="flex gap-0.5 mt-1.5">
+                    {WIND_LEVELS.map((l,i)=>(
+                      <div key={i} className={`h-1.5 flex-1 rounded-full ${i<=wIdx ? l.bar : emptyBar}`}/>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-          <div className={`rounded-xl border px-4 py-3 ${card}`}>
-            <p className="text-xs font-medium mb-1 text-gray-400">기온</p>
-            <p className={`text-2xl font-extrabold leading-tight ${val}`}>{weather.temperature_2m}°C</p>
-          </div>
-          <div className={`rounded-xl border px-4 py-3 ${card}`}>
-            <p className="text-xs font-medium mb-1 text-gray-400">습도</p>
-            <p className={`text-2xl font-extrabold leading-tight ${val}`}>{weather.relative_humidity_2m}%</p>
-          </div>
-          <div className={`rounded-xl border px-4 py-3 ${card}`}>
-            <p className="text-xs font-medium mb-1 text-gray-400">풍속</p>
-            <p className={`text-2xl font-extrabold leading-tight ${val}`}>{weather.wind_speed_10m}<span className="text-sm font-medium"> km/h</span></p>
-          </div>
-        </div>
+
+          {daily && (
+            <div>
+              <p className={`text-xs font-bold mb-2 ${sub}`}>📅 일주일 예보</p>
+              <div className="grid grid-cols-7 gap-1">
+                {daily.time.map((dateStr,i)=>{
+                  const d  = new Date(dateStr);
+                  const dc = daily.weather_code[i];
+                  return (
+                    <div key={i} className={`rounded-xl border px-1 py-2 text-center ${card} ${i===0?"ring-2 ring-green-500":""}`}>
+                      <p className={`text-xs font-bold mb-1 ${i===0?"text-green-500":sub}`}>{i===0?"오늘":DAY_NAMES[d.getDay()]}</p>
+                      <p className="text-lg leading-tight">{WMO_ICON[dc]??"🌡️"}</p>
+                      <p className={`text-xs font-bold mt-1 ${val}`}>{daily.temperature_2m_max[i]}°</p>
+                      <p className="text-xs text-blue-400">{daily.temperature_2m_min[i]}°</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
 }
-
 /* ── 정보 캐러셀 (금융 지표 ↔ 날씨) ── */
 function InfoCarousel({ dark }) {
   const [slide, setSlide] = useState(0);
