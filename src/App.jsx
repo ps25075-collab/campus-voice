@@ -258,28 +258,28 @@ function LikeButton({ articleId, dark }) {
   const [liked, setLiked]   = useState(false);
   const [count, setCount]   = useState(0);
   const [bounce, setBounce] = useState(false);
-  const LIKE_KEY = `segal_likes_${articleId}`;
+  const LS_KEY = `cv_liked_${articleId}`;
 
   useEffect(()=>{
     (async()=>{
       try{
-        const r = await window.storage.get(LIKE_KEY, true);
-        if(r?.value){ const d=JSON.parse(r.value); setCount(d.count||0); }
+        const { data } = await supabase.from('articles').select('like_count').eq('id', articleId).single();
+        if(data) setCount(data.like_count || 0);
       }catch{}
       try{
-        const r = await window.storage.get(LIKE_KEY+"_me");
-        if(r?.value) setLiked(JSON.parse(r.value));
+        const saved = localStorage.getItem(LS_KEY);
+        if(saved) setLiked(JSON.parse(saved));
       }catch{}
     })();
   },[articleId]);
 
   const toggle = async () => {
     const newLiked = !liked;
-    const newCount = newLiked ? count+1 : Math.max(0,count-1);
+    const newCount = newLiked ? count+1 : Math.max(0, count-1);
     setLiked(newLiked); setCount(newCount);
     if(newLiked){ setBounce(true); setTimeout(()=>setBounce(false),400); }
-    try{ await window.storage.set(LIKE_KEY, JSON.stringify({count:newCount}), true); }catch{}
-    try{ await window.storage.set(LIKE_KEY+"_me", JSON.stringify(newLiked)); }catch{}
+    try{ await supabase.from('articles').update({ like_count: newCount }).eq('id', articleId); }catch{}
+    localStorage.setItem(LS_KEY, JSON.stringify(newLiked));
   };
 
   return (
@@ -310,9 +310,8 @@ function CommentSection({ articleId, user, dark }) {
     (async()=>{
       setLoading(true);
       try{
-        const r = await window.storage.get(CMT_KEY(articleId), true);
-        if(r?.value) setComments(JSON.parse(r.value));
-        else setComments([]);
+        const { data } = await supabase.from('comments').select('*').eq('article_id', articleId).order('created_at', {ascending:true});
+        setComments(data || []);
       }catch{ setComments([]); }
       setLoading(false);
     })();
@@ -320,16 +319,15 @@ function CommentSection({ articleId, user, dark }) {
 
   const submit = async () => {
     if(!text.trim()) return;
-    const newC = { id:Date.now(), name:name.trim()||"익명", text:text.trim(), date:today() };
-    const updated = [...comments, newC];
-    try{ await window.storage.set(CMT_KEY(articleId), JSON.stringify(updated), true); }catch{}
-    setComments(updated); setName(""); setText("");
+    const newC = { article_id: articleId, name: name.trim()||"익명", text: text.trim(), date: today() };
+    const { data } = await supabase.from('comments').insert(newC).select().single();
+    if(data) setComments(prev => [...prev, data]);
+    setName(""); setText("");
   };
 
   const del = async (id) => {
-    const updated = comments.filter(c=>c.id!==id);
-    try{ await window.storage.set(CMT_KEY(articleId), JSON.stringify(updated), true); }catch{}
-    setComments(updated);
+    await supabase.from('comments').delete().eq('id', id);
+    setComments(prev => prev.filter(c => c.id !== id));
   };
 
   return (
