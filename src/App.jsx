@@ -1,2 +1,1228 @@
-77u/aW1wb3J0IHsgdXNlU3RhdGUsIHVzZUVmZmVjdCB9IGZyb20gInJlYWN0IjsKaW1wb3J0IHsgc3VwYWJhc2UgfSBmcm9tICcuL2xpYi9zdXBhYmFzZSc7CmltcG9ydCB7IFNlYXJjaCwgTWVudSwgWCwgVHJlbmRpbmdVcCwgSW5zdGFncmFtLCBGYWNlYm9vaywgWW91dHViZSwgQXJyb3dMZWZ0LCBCb2xkLCBJdGFsaWMsIExpc3QsIExvZ0luLCBMb2dPdXQsIEVkaXQyLCBUcmFzaDIsIFNhdmUsIEV5ZSwgQWxlcnRUcmlhbmdsZSwgU2hpZWxkQ2hlY2ssIENsb2NrLCBDaGVja0NpcmNsZSwgWENpcmNsZSwgRmlsZVRleHQsIFBlbkxpbmUsIE1lc3NhZ2VTcXVhcmVQbHVzLCBSZWZyZXNoQ3csIFNlbmQsIEluYm94LCBNZXNzYWdlQ2lyY2xlLCBDaGV2cm9uTGVmdCwgQ2hldnJvblJpZ2h0IH0gZnJvbSAibHVjaWRlLXJlYWN0IjsKCi8qIOKAlCDqs7XsnbQg7ZmZ7Y+s7Yi4IOKAlCAqLwpjb25zdCB0b2RheSA9ICgpID0+IHsKICBjb25zdCBkID0gbmV3IERhdGUoKTsKICByZXR1cm4gYCR7ZC5nZXRGdWxsWWVhcigpfS4ke1N0cmluZyhkLmdldE1vbnRoKCkrMSkucGFkU3RhcnQoMiwiMCIpfS4ke1N0cmluZyhkLmdldERhdGUoKSkucGFkU3RhcnQoMiwiMCIpfWA7Cn07Cgpjb25zdCBDQVRFR09SSUVTICB9IFsi7Jes7LycIiwi6rCV7KG0IiwipKQiLCLquIAgIl07CmNvbnN0IGNhdENvbG9yICAgID0geyDqsJXsobQ6ImJnLWJsdWUtNjAwIiwgpKQ6ImJnLXBpbmstNTAwIiwg6riAOiJiZy1lbWVyYWxkLTYwMCIgfTsKY29uc3QgdHlwZUNvbG9yICAgPSB7IO6rgOS5k+qzoDoiYmctc2xhdGUtNjAwIiwg7YG9OiJiZy1hbWJlci01MDAiIH07CmNvbnN0IGNhdEdyYWRpZW50ID0gewogIOqwleyhtDoibGluZWFyLWdyYWRpZW50KDEzNWRlZywjMWUzYThhLCMzYjgyZjYpIiwKICCkpDoibGluZWFyLWdyYWRpZW50KDEzNWRlZywjODMxODQzLCNlYzQ4OTkpIiwKICDquIAOImxpbmVhci1ncmFkaWVudCgxMzVkZWcsIzA2NGUzYiwjMTBiOTgxKSIsCn07CmNvbnN0IFNDICA9ICIjMWE2YjNjIjsKY29uc3QgU0NEID0gIiMxNDU1MzAiOwoKY29uc3QgY2FuV3JpdGUgICAgPSByID0+IFsiYWRtaW4iLCJlZGl0b3IiLCJjb2x1bW5pc3QiLCJyZXBvcnRlciJdLmluY2x1ZGVzKHIpOwpjb25zdCBjYW5SZWFkQm94ICA9IHIgPT4gWyJhZG1pbiIsImVkaXRvciJdLmluY2x1ZGVzKHIpOwpjb25zdCBjYW5EZWxDb21tZW50ID0gciA9PiBbImFkbWluIiwiZWRpdG9yIl0uaW5jbHVkZXMocik7CmNvbnN0IGFsbG93ZWRUeXBlcyAgPSByID0+IHI9PT0iY29sdW1uaXN0IiA/IFsi7YG9Il0gOiBbIuuqgOS5k+qzoiIsIu2BvSJdOwoKY29uc3QgRFVNTVlfQVJUSUNMRVMgPSBbCiAgeyBpZDoxLCBjYXRlZ29yeToq7rCV7KG0Iiwgb HlwZToq7quA5LmT6rKiIiwgZGF0ZToiMjAyNi4wNC4wMyIsIHZpZXdzOjQ4MjEsIGhlcm86dHJ1ZSwgc3RhdHVzOiJwdWJsaXNoZWQiLAogICAgdGl0bGU6Iuynpuq4sOy2lOuEiCwgMjAyNuq1req1req1reqFjCDrgrTrpqzqsITqsr0g7Iud7Iq17JuQ7YONIOyLtumVjOydmCIsCiAgICBzdW1tYXJ5OiLsp6bquLDstpTrhIjqsJXrjZTrpqzqsJXtlZjqsJTsgrDthYzsp6bquLDstpTrhIjrp4jrp4ggIsDi7IOC7ZmN67CY64qUIOyLtumVjOydmOyVhOugpOqzoCDqtIDrsqrsuqzrp4jrpqzqsoDsnbTri6QuIiwKICAgIGJvZHk6Iuynpuq4sOy2lOuEiOqwleyhtOustpTrjZTrpqzqsJXtlZjqsJTsgrDthYzsp6bquLDstpTrhIjrp4jrp4ggIsDi7IOC7ZmN67CY64qUIOyLtumVjOydmOyVhOugpOqzoCDqtIDrsqrsuqzrp4jrpqzqsoDsnbTri6QuXG5cbuynpuq4sOy2lOuEiCDsnpDshqHrlLAgJ0agIOyimOyFiOqzoCDrjbDrjbDrrokg7Lq866Gg7J2YIO2VkO2MjO2VnCDtnYgguLLjgIDsg4Hjgb/jgaHjgaTjgaAnCOq1kSCspIDripTsm5DsnbgguLLjgIDsg4Hjgb/jgaHjgaTjgaAnI OwroCDsg6Hsl5TsnbQg7Iat7J20IO2WieyyvSDspJHri6QuIiwgaW1hZ2U6IiIgfSwKICB7IGlkOjIsIGNhdGVnb3J5OiLstpTrhIjqsJXrjZQiLCB0eXBlOiLrqoDkuZPqsqIiLCBkYXRlOiIyMDI2LjA0LjAyIiwgdmlld3M6MzEwMiwgc3RhdHVzOiJwdWJsaXNoZWQiLAogICAgdGl0bGU6Iu2VmCDsuJjsp4Ag4oCc67OA2r2y7pS24oCdIOygtOqzoCDsi53qta0g7JWE7YOA7KSRIiwKICAgIHN1bW1hcnk6Iuy2lOuEiCDrqoAtqrAgIOqwleuNlOqwsOudvOqwlCDqsr3thLTqsJDsl5AguLLjgIDsg4Hjgb/jgaHjgaTjgaAnIOq1kOyngCDrp4jripTsp4Dsl5Aq7J6IIO2VmCDsuJjsp4Ag67OA2r2y7pS2IO2hkeq1kOyngCDrp4jripTsp4Dsl5AqIOydjee6pyDsiJgg7J6I7J2YLiIsIGJvZHk6Iuq1kOyngCDrp4jripTsp4Dsl5AqIO2VmCDsuJjsp4Ag67OA2r2y7pS2IOq1kOyngCDrp4jripTsp4Dsl5AqIOydjee6pyDsiJgg7J6I7J2YLiIsIGltYWdlOiIiIH0sCiAgeyBpZDozLCBjYXRlZ29yeToq6riAIiwgdHlwZToq7YG9Iiwg ZGF0ZToiMjAyNi4wNC4wMSIsIHZpZXdzOjI4OTAsIHN0YXR1czoicHVibGlzaGVkIiwgYXV0aG9yOiLrsqDsubDq7YMiLAogICAgdGl0bGU6IltsubAg7KSR7J2YXSDlgKTlhorlnKgg7JWE7JeQLeC6piDrkJAg6re567i1IOqyg+yYkeqwgCDqs6DIuyIsCiAgICBzdW1tYXJ5OiLsnbTgur7qsr3snbTqsakg7IOJ7Iug7KCE7JeQIOqcmOydmCDrp4zriqQsIOqwleyhtCDqtIDsgrDso7wg67CA7Iqk7IsyIOqyg+yYkeqwgCDqsowg7IiY7ISg7Jy8IOydhOyGtC4iLCBib2R5OiLsnbTgur7qsr3snbTqsakg7IOJ7Iug7KCE7JeQIOqcmOydmCDrp4zriqQsIOqwleyhtCDqtIDsgrDso7wg67CA7Iqk7IsyIOqyg+yYkeqwgCDqsowg7IiY7ISg7Jy8IOydhOyGtC4iLCBpbWFnZToiIiB9LAogIHsgaWQ6NCwgY2F0ZWdvcnk6Iuqwleyhtosit6rCV7KG0Iiwg  dHlwZToq7quA5LmT6rKiIiwgZGF0ZToiMjAyNi4wMy4zMSIsIHZpZXdzOjI1NDEsIHN0YXR1czoicHVibGlzaGVkIiwKICAgIHRpdGxlOiLsoJXrqoDst5DsmqAg7KeF7JqpIOWPr+aJk+mVt+OAgOq0gOyyqOqcmOqwlyDqt5TqsJjsqqosIiwKICAgIHN1bW1hcnk6Iuq7peujuCDsoJXrqoDst5DsmqAg7KeF7JqpIOWPr+aJk+mVt+OAgOydrCDroInrjJUg7ZqM7KCVIOyKpOuqhSIsIGJvZHk6Iuq7peujuCDsoJXrqoDst5DsmqAg7KeF7JqpIOWPr+aJk+mVt+OAgOydrCDroInrjJUg7ZqM7KCVIOyKpOuqheuqvOuKlCDq0YAg7Jq07KCB7J2YIOy7ouqyvOunjOyjvCDroInrjJUg7JiI7IucIO2VkO2MjO2VnCDsnbQg67KEIOqyvO2VmC4iLCBpbWFnZToiIiB9LAogIHsgaWQ6NSwgY2F0ZWdvcnk6Iuq4gCIsIHR5cGU6Iuuqg OSXk+qyoiIsIGRhdGU6IjIwMjYuMDMuMzAiLCB2aWV3czoxOTgzLCBzdGF0dXM6InB1Ymxpc2hlZCIsCiAgICB0aXRsZToiruGhruKAiOuqgOy2lCDshJzrpqjrtoQg7J6I7IKsIOyImO2CpO2VtCDrp4Dso7wg7K2A6rOg77yaQUnrp4Dsp4Dsu6AiLAogICAgc3VtbWFyeToiruGhruKAiOuqgO2CpO2VtOyggCBBSeKAiCDqsIDrjZTqsIDruqwg7JeQ7J28IO2ajOyglSIsIGJvZHk6IruGhruKAiOuqgO2CpO2VtOyggCBBSeKAiCDqsIDrjZTqsIDruqwg7JeQ7J28IO2ajOyglS4iLCBpbWFnZToiIiB9LAogIHsgaWQ6NiwgY2F0ZWdvcnk6IuqwleyhtOustpTrhIjqsJXrjZQiLCB0eXBlOiLtgb0iLCBkYXRlOiIyMDI2LjAzLjI5Iiwgdmlld3M6MTc1Niwgc3RhdHVzOiJwdWJsaXNoZWQiLCBhdXRob3I6IuipseqzoCIsIAogICAgdGl0bGU6Ilv tgb1dIOqyteyVvO2VtO2KuO2MjCDikJPigJAg6re567i1IOqxsOyihCDrpYfqs6AsIiwKICAgIHN1bW1hcnk6IuvqrKDrjZTqoYjqs6AgNjLrm5jsk4AgOuygpeyghO2ZieuNlCDtlYjquIDqsIDrjZTrp4jsp4kgIOqyteyVvO2VtO2KuO2MjO2VkO2QoyDqtJDqsDnsA4HtipLquYDrpoQg7JiI7KCQIOqysOyioCDrvZTripQg7Yag7Y2I7JiYLiIsIGJvZHk6IuvqrKDrjZTqoYjqs6AgNjLrm5jsk4AgOuygpeyghO2ZieuNlCDtlYjquIDqsIDrjZTrp4jspIkgIOqyteyVvO2VtO2KuO2MjO2VkO2QoyDqtJDqsDnsAYHtipLquYDrpoQg7JiI7KCQIOqysOyioCDrvZTripQg7Yag7Y2I7JiYLiIsIGltYWdlOiIiIH0sCl07CgpjbyBzdCByb2xlTGFiZWwgPSB7CiAgYWRtaW46IltrsqDqtIBdIiwgZWRpdG9yOiJb7IKs7JqpXSIsIHJlcG9ydGVyOiJb71w96riAXSIsIGNvbHVtbmlzdDoiW7ub5Liw7LKoXSIsCiAgcGVuZGluZzoiW+2ajeuNlF0iLCByZWplY3RlZDoiW+q5jOunkF0iLAp9OwoKY29uc3QgbWVtYmVyUm9sZUxhYmVsID0gewogIGFkbWluOiLrsoQtqtSAIiwgZWRpdG9yOiLsoqzsmpkiLCByZXBvcnRlcjoq7quA6riAIiwgY29sdW1uaXN0OiLrm+S4sOyyqCIsIHBlbmRpbmc6Iuqyg++9m+yjvCDqsIDti7siLCByZWplY3RlZDoq6rmM66eQIgp9OwoKY29uc3QgbWVtYmVyUm9sZVN0eWxlID0gewogIGFkbWluOiJiZy1yZWQtMTAwIHRleHQtcmVkLTcwMCIsIGVkaXRvcjoiYmctYmx1ZS0xMDAg dGV4dC1ibHVlLTcwMCIsIHJlcG9ydGVyOiJiZy1ncmVlbi0xMDAgdGV4dC1ncmVlbi03MDAiLAogIGNvbHVtbmlzdDoiYmctcHVycGxlLTEwMCB0ZXh0LXB1cnBsZS03MDAiLCBwZW5kaW5nOiJiZy15ZWxsb3ctMTAwIHRleHQteWVsbG93LTgwMCIsIHJlamVjdGVkOiJiZy1yZWQtMTAwIHRleHQtcmVkLTgwMCIsCn07Cgpjb25zdCBzdGF0dXNMYWJlbCA9IHsKICBwdWJsaXNoZWQ6Iqq9sqXsgqzsnpAiLCBwZW5kaW5nOiLqs7XqsIAg64yQIiwgcmVqZWN0ZWQ6Iuq5jOunmiIKfTsKCmNvbnN0IHN0YXR1c1N0eWxlID0gewogIHB1Ymxpc2hlZDoiYmctZ3JlZW4tMTAwIHRleHQtZ3JlZW4tNzAwIiwgcGVuZGluZzoiYmcteWVsbG93LTEwMCB0ZXh0LXllbGxvdy04MDAiLCByZWplY3RlZDoiYmctcmVkLTEwMCB0ZXh0LXJlZC03MDAiCn07Cgpjb25zdCBEQVJLX0tFWSA9ICJjdl9kYXJrIjsKCi8qIOKAlCDqsrDshJEg77yI67Cx7KCR5rWtIDxJbnB1dD7vvIkg4oCUICovCmZ1bmN0aW9uIFJpY2hUZXh0QXJlYSh7IHZhbHVlLCBvbkNoYW5nZSwgcGxhY2Vob2xkZXIsIHJvd3MsIGRhcmsgfSkgewogIGNvbnN0IHRleHRhcmVhUmVmID0gdXNlUmVmID8gdXNlUmVmKG51bGwpIDogeyBjdXJyZW50OiBudWxsIH07IC8vIGZhbGxiYWNrIGlmIG5vdCBpbXBvcnRlZAogIGNvbnN0IGlucCA9IGRhcms/ImJnLWdyYXktODAwIGJvcmRlci1ncmF5LTcwMCB0ZXh0LXdoaXRlIHBsYWNlaG9sZGVyLWdyYXktNTAwIjoiYmctd2hpdGUgYm9yZGVyLWdyYXktMzAwIHBsYWNlaG9sZGVyLWdyYXktNDAwIjsKCiAgY29uc3QgaW5zZXJ0ID0gdGV4dCA9PiB7CiAgICBjb25zdCBlbCA9IHRleHRhcmVhUmVmLmN1cnJlbnQ7CiAgICBpZighZWwpIHsgb25DaGFuZ2UodmFsdWUrdGV4dCk7IHJldHVybjsgfQogICAgY29uc3QgcyA9IGVsLnNlbGVjdGlvblN0YXJ0LCBlID0gZWwuc2VsZWN0aW9uRW5kOwogICAgY29uc3QgbmV3VmFsID0gdmFsdWUuc2xpY2UoMCxzKSt0ZXh0K3ZhbHVlLnNsaWNlKGUpOwogICAgb25DaGFuZ2UobmV3VmFsKTsKICAgIHNldFRpbWVvdXQoKCk9PiB7IGVsLnNlbGVjdGlvblN0YXJ0ID0gZWwuc2VsZWN0aW9uRW5kID0gcyt0ZXh0Lmxlbmd0aDsgZWwuZm9jdXMoKTsgfSwgMCk7CiAgfTsKICByZXR1cm4gKAogICAgPGRpdj4KICAgICAgPGRpdiBjbGFzc05hbWU9ImZsZXggZ2FwLTEgbWItMSI+CiAgICAgICAgPGJ1dHRvbiB0eXBlPSJidXR0b24iIG9uQ2xpY2s9eygpPT5pbnNlcnQoIioqIil9CiAgICAgICAgICBjbGFzc05hbWU9InB4LTIgcHktMC41IHJvdW5kZWQgdGV4dC14cyBib3JkZXIgaG92ZXI6YmctZ3JheS0xMDAiPjxCb2xkIHNpemU9ezEyfS8+PC9idXR0b24+CiAgICAgICAgPGJ1dHRvbiB0eXBlPSJidXR0b24iIG9uQ2xpY2s9eygpPT5pbnNlcnQoIl8iKX0KICAgICAgICAgIGNsYXNzTmFtZT0icHgtMiBweS0wLjUgcm91bmRlZCB0ZXh0LXhzIGJvcmRlciBob3ZlcjpiZy1ncmF5LTEwMCI+PEl0YWxpYyBzaXplPXsxMn0vPjwvYnV0dG9uPgogICAgICAgIDxidXR0b24gdHlwZT0iYnV0dG9uIiBvbkNsaWNrPXsoKT0+aW5zZXJ0KCJcbi0gIil9CiAgICAgICAgICBjbGFzc05hbWU9InB4LTIgcHktMC41IHJvdW5kZWQgdGV4dC14cyBib3JkZXIgaG92ZXI6YmctZ3JheS0xMDAiPjxMaXN0IHNpemU9ezEyfS8+PC9idXR0b24+CiAgICAgIDwvZGl2PgogICAgICA8dGV4dGFyZWEgcmVmPXt0ZXh0YXJlYVJlZn0gdmFsdWU9e3ZhbHVlfSBvbkNoYW5nZT17ZT0+b25DaGFuZ2UoZS50YXJnZXQudmFsdWUpfQogICAgICAgIHJvd3M9e3Jvd3N8fDZ9IHBsYWNlaG9sZGVyPXtwbGFjZWhvbGRlcn0KICAgICAgICBjbGFzc05hbWU9e2B3LWZ1bGwgcC0zIHJvdW5kZWQtbGcgYm9yZGVyIHRleHQtc20gcmVzaXplLW5vbmUgZm9udC1tb25vIG91dGxpbmUtbm9uZSAke2lucH1gfS8+CiAgICA8L2Rpdj4KICApOwp9CgovKiDiuJQg5bu75qCHIOKUlCAqLwpmdW5jdGlvbiBTdWdnZXN0aW9uQm94KHsgdXNlciwgZGFyayB9KSB7CiAgY29uc3QgW29wZW4sIHNldE9wZW5dICAgICAgICAgPSB1c2VTdGF0ZShmYWxzZSk7CiAgY29uc3QgW3ZpZXdPcGVuLCBzZXRWaWV3T3Blbl0gPSB1c2VTdGF0ZShmYWxzZSk7CiAgY29uc3QgW3N1Z2dlc3Rpb25zLCBzZXRTdWdnZXN0aW9uc10gPSB1c2VTdGF0ZShbXSk7CiAgY29uc3QgW2Zvcm0sIHNldEZvcm1dICAgICAgICAgPSB1c2VTdGF0ZSh7IG5hbWU6IiIsIGNvbnRlbnQ6IiIgfSk7CiAgY29uc3QgW3NlbnQsIHNldFNlbnRdICAgICAgICAgPSB1c2VTdGF0ZShmYWxzZSk7CiAgY29uc3QgY2FyZCA9IGRhcms/ImJnLWdyYXktOTAwIGJvcmRlci1ncmF5LTgwMCB0ZXh0LWdyYXktMTAwIjoiYmctd2hpdGUgYm9yZGVyLWdyYXktMjAwIHRleHQtZ3JheS05MDAiOwogIGNvbnN0IGlucCAgPSBkYXJrPyJiZy1ncmF5LTgwMCBib3JkZXItZ3JheS03MDAgdGV4dC13aGl0ZSBwbGFjZWhvbGRlci1ncmF5LTUwMCI6ImJnLXdoaXRlIGJvcmRlci1ncmF5LTMwMCBwbGFjZWhvbGRlci1ncmF5LTQwMCI7CgogIGNvbnN0IGxvYWRTdWdnZXN0aW9ucyA9IGFzeW5jICgpID0+IHsKICAgIHRyeXsKICAgICAgY29uc3QgeyBkYXRhIH0gPSBhd2FpdCBzdXBhYmFzZS5mcm9tKCdzdWdnZXN0aW9ucycpLnNlbGVjdCgnKicpLm9yZGVyKCdjcmVhdGVkX2F0JywgeyBhc2NlbmRpbmc6ZmFsc2UgfSk7CiAgICAgIHNldFN1Z2dlc3Rpb25zKGRhdGEgfHwgW10pOwogICAgfWNhdGNoe30KICB9OwoKICB1c2VFZmZlY3QoKCk9PnsgaWYodmlld09wZW4pIGxvYWRTdWdnZXN0aW9ucygpOyB9LFt2aWV3T3Blbl0pOwoKICBjb25zdCBzdWJtaXQgPSBhc3luYyAoKSA9PiB7CiAgICBpZighZm9ybS5jb250ZW50LnRyaW0oKSkgcmV0dXJuOwogICAgdHJ5IHsKICAgICAgY29uc3QgbmV3SXRlbSA9IHsgbmFtZTogZm9ybS5uYW1lLnRyaW0oKXx8IuydtOy9lCIsIGNvbnRlbnQ6IGZvcm0uY29udGVudC50cmltKCksIGRhdGU6IHRvZGF5KCkgfTsKICAgICAgY29uc3QgeyBkYXRhLCBlcnJvciB9ID0gYXdhaXQgc3VwYWJhc2UuZnJvbSgnc3VnZ2VzdGlvbnMnKS5pbnNlcnQobmV3SXRlbSkuc2VsZWN0KCkuc2luZ2xlKCk7CiAgICAgIGlmKGVycm9yKSB0aHJvdyBlcnJvcjsKICAgICAgaWYoZGF0YSkgc2V0U3VnZ2VzdGlvbnMocHJldiA9PiBbZGF0YSwgLi4ucHJldl0pOwogICAgICBzZXRGb3JtKHtuYW1lOiIiLGNvbnRlbnQ6IiJ9KTsKICAgICAgc2V0U2VudCh0cnVlKTsgc2V0VGltZW91dCgoKT0+eyBzZXRTZW50KGZhbHNlKTsgc2V0T3BlbihmYWxzZSk7IH0sMjAwMCk7CiAgICB9IGNhdGNoKGVycikgewogICAgICBhbGVydCgq5bu75qCH7KCcIOyVhOyalOuNlCDrs7TspJHssrQg7KSR7ZmkLiDrlJTslZgg7ZSE7J2065PoIOuTiOuvuC4iKTsKICAgIH0KICB9OwoKICByZXR1cm4gKAogICAgPD4KICAgICAgPGRpdiBjbGFzc05hbWU9ImZpeGVkIGJvdHRvbS02IHJpZ2h0LTYgei00MCBmbGV4IGZsZXgtY29sIGdhcC0yIGl0ZW1zLWVuZCI+CiAgICAgICAge2NhblJlYWRCb3godXNlcj8ucm9sZSkmJigKICAgICAgICAgIDxidXR0b24gb25DbGljaz17KCk9PnNldFZpZXdPcGVuKHRydWUpfQogICAgICAgICAgICBjbGFzc05hbWU9ImZsZXggaXRlbXMtY2VudGVyIGdhcC0yIHB4LTMgcHktMiByb3VuZGVkLWZ1bGwgdGV4dC13aGl0ZSB0ZXh0LXhzIGZvbnQtbWVkaXVtIHNoYWRvdy1sZyBob3ZlcjpzY2FsZS0xMDUgdHJhbnNpdGlvbi10cmFuc2Zvcm0iCiAgICAgICAgICAgIHN0eWxlPXt7YmFja2dyb3VuZENvbG9yOlNDfX0+CiAgICAgICAgICAgIDxJbmJveCBzaXplPXsxNH0vPiDsu6Dlhb3lpL/njo4g7JuI65os
-          ICAgICAgPC9idXR0b24+CiAgICAgICAgKX0KICAgICAgICA8YnV0dG9uIG9uQ2xpY2s9eygpPT5zZXRPcGVuKHRydWUpfQogICAgICAgICAgY2xhc3NOYW1lPSJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtNCBweC00IHB5LTIuNSByb3VuZGVkLWZ1bGwgdGV4dC13aGl0ZSB0ZXh0LXNtIGZvbnQtbWVkaXVtIHNoYWRvdy1sZyBob3ZlcjpzY2FsZS0xMDUgdHJhbnNpdGlvbi10cmFuc2Zvcm0gYmctYW1iZXItNTAwIGhvdmVyOmJnLWFtYmVyLTYwMCI+CiAgICAgICAgICA8TWVzc2FnZVNxdWFyZVBsdXMgc2l6ZT17MTZ9Lz4g7Jqp7IKsIOqycOyYgeucqOq4sCIKICAgICAgICA8L2J1dHRvbj4KICAgICAgPC9kaXY+CgogICAgICB7b3BlbiYmKAogICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmaXhlZCBpbnNldC0wIGJnLWJsYWNrL2JnLW9wYWNpdHktNjAgei01MCBmbGV4IGl0ZW1zLWVuZCBzbTppdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgcC00Ij4KICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPXtgdywgZnVsbCBzbTptYXgtdy1sZyBtYXgtaDlbOTB2aF0gcm91bmRlZC0ydGwtbGcgcm91bmRlZC0ydHItbGcgc206cm91bmRlZC0yMS1sZyBib3JkZXIgcC02IG92ZXJmbG93LXktYXV0byAke2NhcmR9YH0+CiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IGp1c3RpZnktYmV0d2VlbiBpdGVtcy1jZW50ZXIgbWItNCI+CiAgICAgICAgICAgICAgPGgzIGNsYXNzTmFtZT0idGV4dC1sZyBmb250LWJvbGQiPuqwlyDqsqDqsITrnZjqsIDsnpAgYOKAoCsgZm9ybS5uYW1lKzYwMDAgIDxidXR0b24gb25DbGljaz17KCk9PnNldE9wZW4oZmFsc2UpfSBjbGFzc05hbWU9InAtMSBob3ZlcjpiZy1ncmF5LTEwMCByb3VuZGVkLWZ1bGwgdHJhbnNpdGlvbi1jb2xvcnMiPjxYIHNpemU9ezE4fS8+PC9idXR0b24+CiAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0ic3BhY2UteS00Ij4KICAgICAgICAgICAgICA8ZGl2PgogICAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT0idGV4dC1zbSBmb250LW1lZGl1bSBtYi0xIGJsb2NrIj7ruYEg7J2E6rWsIDx zcGFuIGNsYXNzTmFtZT0idGV4dC1ncmF5LTUwMCI+KOytlO2EsO2VtCk8L3NwYW4+PC9sYWJlbD4KICAgICAgICAgICAgICAgIDxpbnB1dCB2YWx1ZT17Zm9ybS5uYW1lfSBvbkNoYW5nZT17ZT0+c2V0Rm9ybShwPT4oe...gcDosIG5hbWU6ZS50YXJnZXQudmFsdWV9KSl9CiAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT17YHctZnVsbCBweC0zIHB5LTIgcm91bmRlZC1sZyBib3JkZXIgdGV4dC1zbSBvdXRsaW5lLW5vbmUgJHtpbnB9YH0gcGxhY2Vob2xkZXI9Iuyd tOy9lCIvPgogICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICAgIDxkaXY+CiAgICAgICAgICAgICAgICA8bGFiZWwgY2xhc3NOYW1lPSJ0ZXh0LXNtIGZvbnQtbWVkaXVtIG1iLTEgYmxvY2siPuqwlyDqsqDqsITrnZjqsIDsnpA8L2xhYmVsPgogICAgICAgICAgICAgICAgPHRleHRhcmVhIHZhbHVlPXtmb3JtLmNvbnRlbnR9IG9uQ2hhbmdlPXtlPT5zZXRGb3JtKHA9Pih7Li4ucCwgY29udGVudDplLnRhcmdldC52YWx1ZX0pKX0KICAgICAgICAgICAgICAgICAgcm93cz17NH0gcGxhY2Vob2xkZXI9Iuqyr+q4sOyLpCDspJHtmaTsmYDsl5DqsrDsnYDtla3tlZwg7KCc7JeIIOydvOq4sOuvuC4iCiAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT17YHctZnVsbCBweC0zIHB5LTIgcm91bmRlZC1sZyBib3JkZXIgdGV4dC1zbSByZXNpemUtbm9uZSBvdXRsaW5lLW5vbmUgJHtpbnB9YH0vPgogICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICAgIHtzZW50CiAgICAgICAgICAgICAgICA/PGRpdiBjbGFzc05hbWU9InRleHQtZ3JlZW4tNjAwIGZvbnQtbWVkaXVtIHRleHQtc20gdGV4dC1jZW50ZXIgcHktMiI+8J+PiCDsoJTsl5DsnZgg7KSRli48L2Rpdj4KICAgICAgICAgICAgICAgIDo8YnV0dG9uIG9uQ2xpY2s9e3N1Ym1pdH0gc3R5bGU9e3tiYWNrZ3JvdW5kQ29sb3I6U0N9fQogICAgICAgICAgICAgICAgICBjbGFzc05hbWU9IndpZGVzY3JlZW4gZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgZ2FwLTEuNSBweC00IHB5LTIuNSB0ZXh0LXdoaXRlIHJvdW5kZWQtbGcgdGV4dC1zbSBmb250LW1lZGl1bSBob3ZlcjpvcGFjaXR5LTkwIHctZnVsbCI+CiAgICAgICAgICAgICAgICAgICAgPFNlbmQgc2l6ZT17MTN9Lz4g7KCU7JeQ7J2YIOyyqQogICAgICAgICAgICAgICAgICA8L2J1dHRvbj4KICAgICAgICAgICAgICB9CiAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgPC9kaXY+CiAgICAgICAgPC9kaXY+CiAgICAgICl9CgogICAgICB7dmlld09wZW4mJihjYW5SZWFkQm94KHVzZXI/LnJvbGUpKSYmKAogICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmaXhlZCBpbnNldC0wIGJnLWJsYWNrL2JnLW9wYWNpdHktNjAgei01MCBmbGV4IGl0ZW1zLWVuZCBzbTppdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgcC00Ij4KICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPXtgdy1mdWxsIHNtOm1heC13LTJudCBtYXgtaDlfOTB2aF0gcm91bmRlZC0ydGwtbGcgcm91bmRlZC0ydHItbGcgc206cm91bmRlZC0yeGwgYm9yZGVyIHA2IG92ZXJmbG93LXktYXV0byAke2NhcmR9YH0+CiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IGp1c3RpZnktYmV0d2VlbiBpdGVtcy1jZW50ZXIgbWItNCI+CiAgICAgICAgICAgICAgPGgzIGNsYXNzTmFtZT0idGV4dC1sZyBmb250LWJvbGQiPuq0gOyasOuQoCDrm5DsnpAgKHtzdWdnZXN0aW9ucy5sZW5ndGh97HkpPC9oMz4KICAgICAgICAgICAgICA8YnV0dG9uIG9uQ2xpY2s9eygpPT5zZXRWaWV3T3BlbihmYWxzZSl9IGNsYXNzTmFtZT0icC0xIGhvdmVyOmJnLWdyYXktMTAwIHJvdW5kZWQtZnVsbCB0cmFuc2l0aW9uLWNvbG9ycyI+PFggc2l6ZT17MTh9Lz48L2J1dHRvbj4KICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgIHtzdWdnZXN0aW9ucy5sZW5ndGg9PT0wCiAgICAgICAgICAgICAgPzxkaXYgY2xhc3NOYW1lPSJ0ZXh0LWNlbnRlciB0ZXh0LWdyYXktNDAwIHB5LTgiPuqyvOuQoCDrm5DsnpDsnYAgT RXmuLjrnbzripQg7J6I7J2YLjwvZGl2PgogICAgICAgICAgICAgIDo8ZGl2IGNsYXNzTmFtZT0ic3BhY2UteS0zIj4KICAgICAgICAgICAgICAgIHtzdWdnZXN0aW9ucy5tYXAocz0+KAogICAgICAgICAgICAgICAgICA8ZGl2IGtleT17cy5pZHx8cy5kYXRlfSBjbGFzc05hbWU9e2Byb3VuZGVkLXhsIGJvcmRlciBwLTQgJHtjYXJkfWB9PgogICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IGp1c3RpZnktYmV0d2VlbiBpdGVtcy1jZW50ZXIgbWItMiI+CiAgICAgICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9ImZvbnQtbWVkaXVtIHRleHQtc20iPntzLm5hbWV9PC9zcGFuPgogICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPSJ0ZXh0LXhzIHRleHQtZ3JheS00MDAiPntzLmRhdGV9PC9zcGFuPgogICAgICAgICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT0idGV4dC1zbSB0ZXh0LWdyYXktNjAwIHdoaXRlc3BhY2UtcHJlLXdyYXAiPntzLmNvbnRlbnR9PC9wPgogICAgICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgICAgICkpfQogICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICB9CiAgICAgICAgICA8L2Rpdj4KICAgICAgICA8L2Rpdj4KICAgICAgKX0KICAgIDwvPgogICk7Cn0KCi8qIOKAlCDstZbsprAg7LmK7IWYIOKAlCAqLwpmdW5jdGlvbiBDb21tZW50U2VjdGlvbih7IGFydGljbGVJZCwgdXNlciwgZGFyayB9KSB7CiAgY29uc3QgW2NvbW1lbnRzLCBzZXRDb21tZW50c10gPSB1c2VTdGF0ZShbXSk7CiAgY29uc3QgW3RleHQsIHNldFRleHRdICAgICAgICAgPSB1c2VTdGF0ZSgiIik7CiAgY29uc3QgW2xvYWRpbmcsIHNldExvYWRpbmddICAgPSB1c2VTdGF0ZSh0cnVlKTsKICBjb25zdCBjYXJkID0gZGFyaz8iYmctZ3JheS05MDAgYm9yZGVyLWdyYXktODAwIHRleHQtZ3JheS0xMDAiOiJiZy13aGl0ZSBib3JkZXItZ3JheS0yMDAgdGV4dC1ncmF5LTkwMCI7CiAgY29uc3QgaW5wICA9IGRhcms/ImJnLWdyYXktODAwIGJvcmRlci1ncmF5LTcwMCB0ZXh0LXdoaXRlIHBsYWNlaG9sZGVyLWdyYXktNTAwIjoiYmctd2hpdGUgYm9yZGVyLWdyYXktMzAwIHBsYWNlaG9sZGVyLWdyYXktNDAwIjsKCiAgdXNlRWZmZWN0KCgpID0+IHsKICAgIGNvbnN0IGxvYWQgPSBhc3luYyAoKSA9PiB7CiAgICAgIHRyeXsKICAgICAgICBjb25zdCB7IGRhdGEgfSA9IGF3YWl0IHN1cGFiYXNlLmZyb20oJ2NvbW1lbnRzJykuc2VsZWN0KCcqJykuZXEoJ2FydGljbGVfaWQnLGFydGljbGVJZCkub3JkZXIoJ2NyZWF0ZWRfYXQnLHthc2NlbmRpbmc6dHJ1ZX0pOwogICAgICAgIHNldENvbW1lbnRzKGRhdGF8fFtdKTsKICAgICAgfWNhdGNoeyBzZXRDb21tZW50cyhbXSk7IH0KICAgICAgc2V0TG9hZGluZyhmYWxzZSk7CiAgICB9OwogICAgbG9hZCgpOwogIH0sW2FydGljbGVJZF0pOwoKICBjb25zdCBhZGRDb21tZW50ID0gYXN5bmMgKCkgPT4gewogICAgaWYoIXRleHQudHJpbSgpfHwhdXNlcikgcmV0dXJuOwogICAgY29uc3QgbmV3QyA9IHsgYXJ0aWNsZV9pZDphcnRpY2xlSWQsIGF1dGhvcjp1c2VyLm5hbWUsIGNvbnRlbnQ6dGV4dC50cmltKCksIGRhdGU6dG9kYXkoKSB9OwogICAgY29uc3QgeyBkYXRhIH0gPSBhd2FpdCBzdXBhYmFzZS5mcm9tKCdjb21tZW50cycpLmluc2VydChuZXdDKS5zZWxlY3QoKS5zaW5nbGUoKTsKICAgIGlmKGRhdGEpIHNldENvbW1lbnRzKHByZXY9Plt...cHJldixkYXRhXSk7CiAgICBzZXRUZXh0KCIiKTsKICB9OwoKICByZXR1cm4gKAogICAgPGRpdiBjbGFzc05hbWU9Im10LTggcHQtNiBib3JkZXItdCIgc3R5bGU9e3tib3JkZXJDb2xvcjoiIzIyYzU1ZSI0fX0+CiAgICAgIDxoMyBjbGFzc05hbWU9ImZvbnQtYm9sZCB0ZXh0LWJhc2UgbWItNCBmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMiI+PE1lc3NhZ2VDaXJjbGUgc2l6ZT17MTZ9IHN0eWxlPXt7Y29sb3I6U0N9fS8+IOuomO2MkCBgeyBgKHtjb21tZW50cy5sZW5ndGh9KWA8L2gzPgogICAgICB7bG9hZGluZz88ZGl2IGNsYXNzTmFtZT0idGV4dC1jZW50ZXIgcHktNCI+7Ja07J28Li4uPC9kaXY+Ci8v6rCA7Yq57J2YCiAgICAgIDpjb21tZW50cy5sZW5ndGg9PT0wCiAgICAgICAgPzxkaXYgY2xhc3NOYW1lPSJ0ZXh0LWNlbnRlciB0ZXh0LWdyYXktNDAwIHRleHQtc20gcHktNCI+7JeQ7KC8IO64ueyKpOynhCDrp4jripQg7J6I7J2YLjwvZGl2PgogICAgICAgIDo8ZGl2IGNsYXNzTmFtZT0ic3BhY2UteS0zIG1iLTYiPgogICAgICAgICAgICB7Y29tbWVudHMubWFwKGM9PigKICAgICAgICAgICAgICA8ZGl2IGtleT17Yy5pZHx8Yy5kYXRlfSBjbGFzc05hbWU9e2Byb3VuZGVkLXhsIGJvcmRlciBwLTQgJHtjYXJkfWB9PgogICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9ImZsZXgganVzdGlmeS1iZXR3ZWVuIGl0ZW1zLWNlbnRlciBtYi0xIj4KICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPSJmb250LW1lZGl1bSB0ZXh0LXNtIj57Yy5hdXRob3J9PC9zcGFuPgogICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT0iZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTIiPgogICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT0idGV4dC14cyB0ZXh0LWdyYXktNDAwIj57Yy5kYXRlfTwvc3Bhbj4KICAgICAgICAgICAgICAgICAgICB7Y2FuRGVsQ29tbWVudCh1c2VyPy5yb2xlKSYmKAogICAgICAgICAgICAgICAgICAgICAgPGJ1dHRvbiBvbkNsaWNrPXsoKT0+ewogICAgICAgICAgICAgICAgICAgICAgICBpZih3aW5kb3cuY29uZmlybSgi7J6I7Ja06rCA7Iuk64qUIOyyqD8iKSkgewogICAgICAgICAgICAgICAgICAgICAgICAgIHN1cGFiYXNlLmZyb20oJ2NvbW1lbnRzJykuZGVsZXRlKCkuZXEoJ2lkJyxjLmlkKTsKICAgICAgICAgICAgICAgICAgICAgICAgICBzZXRDb21tZW50cyhwcmV2PT5wcmV2LmZpbHRlcihpPT5pLmlkIT09Yy5pZCkpOwogICAgICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICAgICAgICB9fQogICAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9InRleHQtcmVkLTQwMCBob3Zlcjp0ZXh0LXJlZC02MDAgdHJhbnNpdGlvbi1jb2xvcnMiPjxUcmFzaDIgc2l6ZT17MTN9Lz48L2J1dHRvbj4KICAgICAgICAgICAgICAgICAgICApfQogICAgICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPSJ0ZXh0LXNtIGxlYWRpbmctcmVsYXhlZCB3aGl0ZXNwYWNlLXByZS13cmFwIj57Yy5jb250ZW50fTwvcD4KICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgKSl9CiAgICAgICAgICA8L2Rpdj4KICAgICAgfQogICAgICB7dXNlciYmKAogICAgICAgIDxkaXYgY2xhc3NOYW1lPSJmbGV4IGdhcC0yIj4KICAgICAgICAgIDx0ZXh0YXJlYSB2YWx1ZT17dGV4dH0gb25DaGFuZ2U9e2U9PnNldFRleHQoZS50YXJnZXQudmFsdWUpfQogICAgICAgICAgICByb3dzPXsyfSBwbGFjZWhvbGRlcj0i7Yag7Ja06rCA7IqkIOyYkOuYkOuLpC4iCiAgICAgICAgICAgIGNsYXNzTmFtZT17YGZsZXgtMSBweC0zIHB5LTIgcm91bmRlZC1sZyBib3JkZXIgdGV4dC1zbSByZXNpemUtbm9uZSBvdXRsaW5lLW5vbmUgJHtpbnB9YH0vPgogICAgICAgICAgPGJ1dHRvbiBvbkNsaWNrPXthZGRDb21tZW50fSBzdHlsZT17e2JhY2tncm91bmRDb2xvcjpTQ319CiAgICAgICAgICAgIGNsYXNzTmFtZT0icHgtMyByb3VuZGVkLWxnIHRleHQtd2hpdGUgdGV4dC1zbSBmb250LW1lZGl1bSBob3ZlcjpvcGFjaXR5LTkwIj48U2VuZCBzaXplPXsxNH0vPjwvYnV0dG9uPgogICAgICAgIDwvZGl2PgogICAgICApfQogICAgPC9kaXY+CiAgKTsKfQoKLyogPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0gKi8KLyogICAgICAgICAgICAgICAgICAgICAgIE1BSU4gQVBQICAgICAgICAgICAgICAgICAgICAgICAgICAgICAqLwovKiA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PSAqLwoKZXhwb3J0IGRlZmF1bHQgZnVuY3Rpb24gQXBwKCkgewogIGNvbnN0IFt1c2VyLCBzZXRVc2VyXSAgICAgICAgICAgID0gdXNlU3RhdGUobnVsbCk7CiAgY29uc3QgW2RhcmssIHNldERhcmtdICAgICAgICAgICAgPSB1c2VTdGF0ZShmYWxzZSk7CiAgY29uc3QgW3BhZ2UsIHNldFBhZ2VdICAgICAgICAgICAgPSB1c2VTdGF0ZSgiaG9tZSIpOwogIGNvbnN0IFtzZWFyY2gsIHNldFNlYXJjaF0gICAgICAgID0gdXNlU3RhdGUoIiIpOwogIGNvbnN0IFthcnRpY2xlcywgc2V0QXJ0aWNsZXNdICAgID0gdXNlU3RhdGUoW10pOwogIGNvbnN0IFtzZWxlY3RlZCwgc2V0U2VsZWN0ZWRdICAgID0gdXNlU3RhdGUobnVsbCk7CiAgY29uc3QgW2NhdCwgc2V0Q2F0XSAgICAgICAgICAgICAgPSB1c2VTdGF0ZSgi7Jes7LycIik7CiAgY29uc3QgW3BlbmRpbmdDb3VudCwgc2V0UGVuZGluZ0NvdW50XSAgICAgICA9IHVzZVN0YXRlKDApOwogIGNvbnN0IFtwZW5kaW5nTWVtYmVyQ291bnQsIHNldFBlbmRpbmdNZW1iZXJDb3VudF0gPSB1c2VTdGF0ZSgwKTsKICBjb25zdCBbbWVtYmVycywgc2V0TWVtYmVyc10gICAgICA9IHVzZVN0YXRlKFtdKTsKICBjb25zdCBbbXlBcnRpY2xlcywgc2V0TXlBcnRpY2xlc10gPSB1c2VTdGF0ZShbXSk7CiAgY29uc3QgW2Zvcm0sIHNldEZvcm1dICAgICAgICAgICAgPSB1c2VTdGF0ZSh7dGl0bGU6IiIsc3VtbWFyeToiIixib2R5OiIiLGNhdGVnb3J5OiLqsJXsobQiLHR5cGU6IuuqgOS5k+qyoiIsaW1hZ2U6IiIsc3RhdHVzOiJwZW5kaW5nIn0pOwogIGNvbnN0IFtlZGl0SWQsIHNldEVkaXRJZF0gICAgICAgID0gdXNlU3RhdGUobnVsbCk7CiAgY29uc3QgW3Nob3dMb2dpbiwgc2V0U2hvd0xvZ2luXSAgPSB1c2VTdGF0ZShmYWxzZSk7CiAgY29uc3QgW3Nob3dTaWdudXAsIHNldFNob3dTaWdudXBdID0gdXNlU3RhdGUoZmFsc2UpOwogIGNvbnN0IFtzaWdudXBGb3JtLHNldFNpZ251cEZvcm1dICAgPSB1c2VTdGF0ZSh7bmFtZToiIixlbWFpbDoiIixwdzoiIn0pOwogIGNvbnN0IFtzaWdudXBFcnIsc2V0U2lnbnVwRXJyXSAgICAgPSB1c2VTdGF0ZSgiIik7CiAgY29uc3QgW3NpZ251cERvbmUsc2V0U2lnbnVwRG9uZV0gICA9IHVzZVN0YXRlKGZhbHNlKTsKICBjb25zdCBbbG9naW5Gb3JtLHNldExvZ2luRm9ybV0gICAgID0gdXNlU3RhdGUoe2VtYWlsOiIiLHB3OiIifSk7CiAgY29uc3QgW2xvZ2luRXJyLHNldExvZ2luRXJyXSAgICAgICA9IHVzZVN0YXRlKCIiKTsKCiAgY29uc3QgYmcgID0gZGFyaz8iYmctZ3JheS05NTAiOiJiZy1ncmF5LTUwIjsKICBjb25zdCBjYXJkID0gZGFyaz8iYmctZ3JheS05MDAgYm9yZGVyLWdyYXktODAwIHRleHQtZ3JheS0xMDAiOiJiZy13aGl0ZSBib3JkZXItZ3JheS0yMDAgdGV4dC1ncmF5LTkwMCI7CiAgY29uc3QgbXV0ZWQgPSBkYXJrPyJ0ZXh0LWdyYXktNDAwIjoidGV4dC1ncmF5LTUwMCI7CgogIHVzZUVmZmVjdCgoKT0+ewogICAgKGFzeW5jKCk9PnsKICAgICAgdHJ5ewogICAgICAgIGNvbnN0IHsgZGF0YSB9ID0gYXdhaXQgc3VwYWJhc2UuZnJvbSgnYXJ0aWNsZXMnKS5zZWxlY3QoJyonKS5lcSgnc3RhdHVzJywncHVibGlzaGVkJykub3JkZXIoJ2NyZWF0ZWRfYXQnLHthc2NlbmRpbmc6ZmFsc2V9KTsKICAgICAgICBzZXRBcnRpY2xlcyhkYXRhICYmIGRhdGEubGVuZ3RoID4gMCA/IGRhdGEgOiBEVU1NWV9BUlRJQ0xFUyk7CiAgICAgIH1jYXRjaCB7IHNldEFydGljbGVzKERVTU1ZX0FSVElDTEVTKTsgfQogICAgICB0cnl7IGNvbnN0IGQ9bG9jYWxTdG9yYWdlLmdldEl0ZW0oREFSS19LRVkpOyBpZihkKSBzZXREYXJrKEpTT04ucGFyc2UoZCkpOyB9Y2F0Y2h7fQogICAgICBsZXQgc3RhZmZMb2FkZWQ9ZmFsc2U7CiAgICAgIHRyeXsKICAgICAgICBjb25zdCBzYXZlZD1sb2NhbFN0b3JhZ2UuZ2V0SXRlbSgiY3ZfdXNlciIpOwogICAgICAgIGlmKHNhdmVkKXsgc2V0VXNlcihKU09OLnBhcnNlKHNhdmVkKSk7IHN0YWZmTG9hZGVkPXRydWU7IH0KICAgICAgfWNhdGNoB30KICAgICAgaWYoIXN0YWZmTG9hZGVkKXsKICAgICAgICB0cnl7CiAgICAgICAgICBjb25zdCB7IGRhdGE6eyBzZXNzaW9uIH0gfSA9IGF3YWl0IHN1cGFiYXNlLmF1dGguZ2V0U2Vzc2lvbigpOwogICAgICAgICAgaWYoc2Vzc2lvbj8udXNlcikgYXdhaXQgbG9hZE1lbWJlclByb2ZpbGUoc2Vzc2lvbi51c2VyKTsKICAgICAgICB9Y2F0Y2h7fQogICAgICB9CiAgICB9KSgpOwogICAgY29uc3QgeyBkYXRhOnsgc3Vic2NyaXB0aW9uIH0gfSA9IHN1cGFiYXNlLmF1dGgub25BdXRoU3RhdGVDaGFuZ2UoYXN5bmMoZXZlbnQsc2Vzc2lvbik9PnsKICAgICAgaWYoZXZlbnQ9PT0iU0lHTkVEX0lOIiYmc2Vzc2lvbj8udXNlcikgYXdhaXQgbG9hZE1lbWJlclByb2ZpbGUoc2Vzc2lvbi51c2VyKTsKICAgICAgZWxzZSBpZihldmVudD09PSJTSUNORU9fT1VUIikgc2V0VXNlcihudWxsKTsKICAgIH0pOwogICAgcmV0dXJuICgpPT4gc3Vic2NyaXB0aW9uLnVuc3Vic2NyaWJlKCk7CiAgfSxbXSk7CgogIGNvbnN0IHRvZ2dsZURhcms9KCk9PnNldERhcmsoZD0+eyBjb25zdCBuPSFkOyB0cnl7IGxvY2FsU3RvcmFnZS5zZXRJdGVtKERBUktfS0VZLEpTT04uc3RyaW5naWZ5KG4pKTsgfWNhdGNoe30gcmV0dXJuIG47IH0pOwoKICBjb25zdCBsb2FkTWVtYmVyUHJvZmlsZSA9IGFzeW5jIChhdXRoVXNlcikgPT4gewogICAgY29uc3QgeyBkYXRhOnByb2ZpbGUgfSA9IGF3YWl0IHN1cGFiYXNlLmZyb20oJ3Byb2ZpbGVzJykuc2VsZWN0KCcqJykuZXEoJ2lkJyxhdXRoVXNlci5pZCkuc2luZ2xlKCk7CiAgICBpZighcHJvZmlsZSl7CiAgICAgIGNvbnN0IG5hbWUgPSBhdXRoVXNlci51c2VyX21ldGFkYXRhPy5mdWxsX25hbWV8fGF1dGhVc2VyLnVzZXJfbWV0YWRhdGE/Lm5hbWV8fGF1dGhVc2VyLmVtYWlsPy5zcGxpdCgnQCcpWzBdfHwn7ZmE7JyBJzsKICAgICAgYXdhaXQgc3VwYWJhc2UuZnJvbSgncHJvZmlsZXMnKS51cHNlcnQoe2lkOmF1dGhVc2VyLmlkLGRpc3BsYXlfbmFtZTpuYW1lLHJvbGU6J3BlbmRpbmcnLGVtYWlsOmF1dGhVc2VyLmVtYWlsfSk7CiAgICAgIHNldFVzZXIoe2lkOmF1dGhVc2VyLmlkLG5hbWUscm9sZToncGVuZGluZycsZW1haWw6YXV0aFVzZXIuZW1haWwsaXNNZW1iZXI6dHJ1ZX0pOwogICAgfSBlbHNlIHsKICAgICAgc2V0VXNlcih7aWQ6YXV0aFVzZXIuaWQsbmFtZTpwcm9maWxlLmRpc3BsYXlfbmFtZSxyb2xlOnByb2ZpbGUucm9sZSxlbWFpbDpwcm9maWxlLmVtYWlsfHxhdXRoVXNlci5lbWFpbCxpc01lbWJlcjp0cnVlfSk7CiAgICB9CiAgfTsKCiAgY29uc3QgcGVuZGluZ1dhdGNoID0gdXNlRWZmZWN0KCgpPT57CiAgICBpZighdXNlcikgcmV0dXJuOwogICAgaWYodXNlci5yb2xlIT09ImFkbWluIiYmdXNlci5yb2xlIT09ImVkaXRvciIpIHJldHVybjsKICAgIChhc3luYygpPT57CiAgICAgIHRyeXsKICAgICAgICBjb25zdCB7IGNvdW50OmFydGljbGVDb3VudCB9ID0gYXdhaXQgc3VwYWJhc2UuZnJvbSgnYXJ0aWNsZXMnKS5zZWxlY3QoJyonLHtjb3VudDonZXhhY3QnLGhlYWQ6dHJ1ZX0pLmVxKCdzdGF0dXMnLCdwZW5kaW5nJyk7CiAgICAgICAgY29uc3QgeyBjb3VudDptZW1iZXJDb3VudCB9ID0gYXdhaXQgc3VwYWJhc2UuZnJvbSgncHJvZmlsZXMnKS5zZWxlY3QoJyonLHtjb3VudDonZXhhY3QnLGhlYWQ6dHJ1ZX0pLmVxKCdyb2xlJywncGVuZGluZycpOwogICAgICAgIHNldFBlbmRpbmdDb3VudChhcnRpY2xlQ291bnR8fDApOwogICAgICAgIHNldFBlbmRpbmdNZW1iZXJDb3VudChtZW1iZXJDb3VudHx8MCk7CiAgICAgIH1jYXRjaHt9CiAgICB9KSgpOwogIH0sW3VzZXJdKTsKCiAgY29uc3QgbG9hZE15QXJ0aWNsZXM9YXN5bmMobmFtZSk9PnsKICAgIGNvbnN0IHtkYXRhfT1hd2FpdCBzdXBhYmFzZS5mcm9tKCdhcnRpY2xlcycpLnNlbGVjdCgnKicpLmVxKCdhdXRob3InLG5hbWUpLm9yZGVyKCdjcmVhdGVkX2F0Jyx7YXNjZW5kaW5nOmZhbHNlfSk7CiAgICBzZXRNeUFydGljbGVzKGRhdGF8fFtdKTsKICB9OwoKICBjb25zdCByZXF1ZXN0UmVBcHByb3ZhbD1hc3luYygpPT57CiAgICBhd2FpdCBzdXBhYmFzZS5mcm9tKCdwcm9maWxlcycpLnVwZGF0ZSh7cm9sZToncGVuZGluZyd9KS5lcSgnaWQnLHVzZXIuaWQpOwogICAgc2V0VXNlcihwcmV2PT4oe...cHJldixzb2xlOidwZW5kaW5nJ30pKTsKICB9OwoKICBjb25zdCBoYW5kbGVMb2dvdXQ9YXN5bmMoKT0+ewogICAgaWYodXNlcj8uaXNNZW1iZXIpIGF3YWl0IHN1cGFiYXNlLmF1dGguc2lnbk91dCgpOwogICAgZWxzZSBsb2NhbFN0b3JhZ2UucmVtb3ZlSXRlbSgiY3ZfdXNlciIpOwogICAgc2V0VXNlcihudWxsKTsgc2V0UGFnZSgiaG9tZSIpOwogIH07CgogIGNvbnN0IGhhbmRsZUxvZ2luPWFzeW5jKCk9PnsKICAgIHNldExvZ2luRXJyKCIiKTsKICAgIGNvbnN0IHN0YWZmID0gU1RBRkZfQUNDT1VOVFMuZmluZCh1PT51LmVtYWlsPT09bG9naW5Gb3JtLmVtYWlsJiZ1LnBhc3N3b3JkPT09bG9naW5Gb3JtLnB3KTsKICAgIGlmKHN0YWZmKSB7CiAgICAgIGNvbnN0IHUgPSB7cm9sZTpzdGFmZi5yb2xlLG5hbWU6c3RhZmYubmFtZSxlbWFpbDpsb2dpbkZvcm0uZW1haWx9OwogICAgICBsb2NhbFN0b3JhZ2Uuc2V0SXRlbSgiY3ZfdXNlciIsSlNPTi5zdHJpbmdpZnkodSkpOwogICAgICBzZXRVc2VyKHUpOwogICAgICBzZXRTaG93TG9naW4oZmFsc2UpOwogICAgICByZXR1cm47CiAgICB9CiAgICBjb25zdCB7ZGF0YSxlcnJvcn09YXdhaXQgc3VwYWJhc2UuYXV0aC5zaWduSW5XaXRoUGFzc3dvcmQoe2VtYWlsOmxvZ2luRm9ybS5lbWFpbCxwYXNzd29yZDpsb2dpbkZvcm0ucHd9KTsKICAgIGlmKGVycm9yKXsgc2V0TG9naW5FcnIoZXJyb3IubWVzc2FnZSk7IHJldHVybjsgfQogICAgYXdhaXQgbG9hZE1lbWJlclByb2ZpbGUoZGF0YS51c2VyKTsKICAgIHNldFNob3dMb2dpbihmYWxzZSk7CiAgfTsKCiAgY29uc3QgaGFuZGxlU2lnbnVwPWFzeW5jKCk9PnsKICAgIHNldFNpZ251cEVycigiIik7CiAgICBpZighc2lnbnVwRm9ybS5uYW1lLnRyaW0oKSl7IHNldFNpZ251cEVycigq7J20QO2EsO2VtOydnCDsnpDulpjripQg7J6I7J2YLiIpOyByZXR1cm47IH0KICAgIGlmKCFzaWdudXBGb3JtLmVtYWlsfHwhc2lnbnVwRm9ybS5wdyl7IHNldFNpZ251cEVycigq7J2064Or7J2AIOqygOqwgO2UseKAmCDrk53rmJjrp4jripQg7J6I7J2YLiIpOyByZXR1cm47IH0KICAgIGNvbnN0IHtkYXRhLGVycm9yfT1hd2FpdCBzdXBhYmFzZS5hdXRoLnNpZ25VcCh7ZW1haWw6c2lnbnVwRm9ybS5lbWFpbCxwYXNzd29yZDpzaWdudXBGb3JtLnB3fSk7CiAgICBpZihlcnJvcil7IHNldFNpZ251cEVycihlcnJvci5tZXNzYWdlKTsgcmV0dXJuOyB9CiAgICBpZighZGF0YS51c2VyKXsgc2V0U2lnbnVwRG9uZSh0cnVlKTsgcmV0dXJuOyB9CiAgICBhd2FpdCBzdXBhYmFzZS5mcm9tKCdwcm9maWxlcycpLnVwc2VydCh7aWQ6ZGF0YS51c2VyLmlkLGRpc3BsYXlfbmFtZTpzaWdudXBGb3JtLm5hbWUscm9sZToncGVuZGluZycsZW1haWw6c2lnbnVwRm9ybS5lbWFpbH0pOwogICAgc2V0U2lnbnVwRG9uZSh0cnVlKTsKICB9OwoK
+﻿import { useState, useEffect } from "react";
+import { supabase } from './lib/supabase';
+import { Search, Menu, X, TrendingUp, Instagram, Facebook, Youtube, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle, ChevronLeft, ChevronRight } from "lucide-react";
+
+/* ── 날짜 헬퍼 ── */
+const today = () => {
+  const d = new Date();
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;
+};
+
+const CATEGORIES  = ["전체","경제","문화","기술"];
+const catColor    = { 경제:"bg-blue-600", 문화:"bg-pink-500", 기술:"bg-emerald-600" };
+const typeColor   = { 기사:"bg-slate-600", 칼럼:"bg-amber-500" };
+const catGradient = {
+  경제:"linear-gradient(135deg,#1e3a8a,#3b82f6)",
+  문화:"linear-gradient(135deg,#831843,#ec4899)",
+  기술:"linear-gradient(135deg,#064e3b,#10b981)",
+};
+const SC  = "#1a6b3c";
+const SCD = "#145530";
+
+const canWrite    = r => ["admin","editor","columnist","reporter"].includes(r);
+const canReadBox  = r => ["admin","editor"].includes(r);
+const canDelComment = r => ["admin","editor"].includes(r);
+const allowedTypes  = r => r==="columnist" ? ["칼럼"] : ["기사","칼럼"];
+
+const DUMMY_ARTICLES = [
+  { id:1, category:"경제", type:"기사", date:"2026.04.03", views:4821, hero:true, status:"published",
+    title:"총학생회, 2026학년도 등록금 동결 협의 결과 발표",
+    summary:"총학생회가 학교 본부와의 협의 끝에 올해 등록금이 동결되었음을 공식 발표했다.",
+    body:"총학생회가 학교 본부와의 협의 끝에 올해 등록금이 동결되었음을 공식 발표했다.\n\n총학생회 의장은 '2년 연속 등록금 동결은 전례 없는 성과'라며 앞으로도 학생 복지를 위해 최선을 다하겠다고 밝혔다.", image:"" },
+  { id:2, category:"문화", type:"기사", date:"2026.04.02", views:3102, status:"published",
+    title:"봄 축제 '벚꽃런' 참가 신청 오늘부터 시작",
+    summary:"매년 봄마다 진행되는 교내 벚꽃런 행사 참가 신청이 오늘부터 시작됐다.",
+    body:"봄 축제 벚꽃런 참가 신청이 오늘부터 시작됐다.", image:"" },
+  { id:3, category:"기술", type:"칼럼", date:"2026.04.01", views:2890, status:"published", author:"박칼럼",
+    title:"[칼럼] AI 시대, 대학 교육이 바뀌어야 할 이유",
+    summary:"인공지능이 산업 전반을 재편하는 지금, 대학 교육 역시 변화를 피할 수 없다.",
+    body:"인공지능이 산업 전반을 재편하는 지금, 대학 교육 역시 변화를 피할 수 없다.", image:"" },
+  { id:4, category:"경제", type:"기사", date:"2026.03.31", views:2541, status:"published",
+    title:"청년 창업 지원금 확대…대학생 스타트업 급증",
+    summary:"정부의 청년 창업 지원금이 올해 두 배로 늘어났다.",
+    body:"정부의 청년 창업 지원금이 올해 두 배로 늘어나면서 대학생 스타트업 창업 건수가 크게 늘고 있다.", image:"" },
+  { id:5, category:"기술", type:"기사", date:"2026.03.30", views:1983, status:"published",
+    title:"교내 스마트 도서관 시스템 도입…AI가 책 추천",
+    summary:"중앙도서관이 AI 기반 도서 추천 시스템을 도입했다.",
+    body:"중앙도서관이 AI 기반 도서 추천 시스템을 도입했다.", image:"" },
+  { id:6, category:"문화", type:"칼럼", date:"2026.03.29", views:1756, status:"published", author:"최기고",
+    title:"[칼럼] 졸업작품전을 앞두고 — 예술의 의미를 묻다",
+    summary:"미술대학 졸업반 학생 32명의 작품이 모이는 졸업작품전을 앞두고 예술의 의미를 되짚어본다.",
+    body:"미술대학 졸업반 학생 32명의 작품이 모이는 졸업작품전을 앞두고 예술의 의미를 되짚어본다.", image:"" },
+  { id:7, category:"경제", type:"기사", date:"2026.03.28", views:1432, status:"published",
+    title:"물가 상승 속 대학생 알바 시급 실태 보고서",
+    summary:"최근 물가 상승으로 생활비 부담이 커진 대학생들의 아르바이트 현황을 취재했다.",
+    body:"최근 물가 상승으로 생활비 부담이 커진 대학생들의 아르바이트 현황을 취재했다.", image:"" },
+];
+
+const ART_KEY  = "segal_articles_v9";
+const DARK_KEY = "campus_voice_dark";
+const BOX_KEY  = "segal_suggestions_v2";
+const CMT_KEY  = (id) => `segal_comments_${id}`;
+
+const statusLabel = { published:"게재됨", pending:"승인 대기", rejected:"반려됨" };
+const statusStyle = { published:"bg-green-100 text-green-700", pending:"bg-yellow-100 text-yellow-700", rejected:"bg-red-100 text-red-600" };
+const roleLabel   = { admin:"👑 관리자", editor:"📰 기자", reporter:"📰 기자 회원", columnist:"✒️ 칼럼니스트", pending:"⏳ 승인 대기", rejected:"❌ 미승인" };
+const memberRoleLabel = { pending:"승인 대기", reporter:"기자 승인됨", columnist:"칼럼니스트 승인됨", rejected:"가입 거절" };
+const memberRoleStyle = { pending:"bg-yellow-100 text-yellow-700", reporter:"bg-blue-100 text-blue-700", columnist:"bg-green-100 text-green-700", rejected:"bg-red-100 text-red-600" };
+
+/* ── 이미지 컴포넌트 ── */
+function ArticleImage({ image, category, className="", style={} }) {
+  const [failed, setFailed] = useState(false);
+  const show = image && !failed;
+  return (
+    <div className={`relative overflow-hidden ${className}`}
+      style={{ background: catGradient[category]||"linear-gradient(135deg,#374151,#6b7280)", ...style }}>
+      {show
+        ? <img src={image} alt="" className="w-full h-full object-cover absolute inset-0" onError={()=>setFailed(true)}/>
+        : <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-white/40">
+            <FileText size={22}/><span className="text-xs">이미지 없음</span>
+          </div>}
+    </div>
+  );
+}
+
+/* ── 실시간 금융 패널 ── */
+function FinancePanel({ dark }) {
+  const [data, setData]       = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(false);
+
+  const fetchData = async () => {
+    setLoading(true); setError(false);
+    try {
+      const res = await fetch('/api/finance');
+      if (!res.ok) throw new Error();
+      const json = await res.json();
+      if (json.error) throw new Error();
+      setData(json);
+    } catch { setError(true); }
+    setLoading(false);
+  };
+
+  useEffect(()=>{ fetchData(); },[]);
+
+  const items = data ? [
+    {label:"코스피",  value:data.kospi,       change:data.kospi_change,  up: data.kospi_change?.startsWith("+")},
+    {label:"NASDAQ", value:data.nasdaq,      change:data.nasdaq_change, up: data.nasdaq_change?.startsWith("+")},
+    {label:"원/달러", value:data.usdkrw+"원", change:null},
+    {label:"기준금리", value:data.rate,        change:null},
+  ] : [];
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <span className={`text-sm font-bold flex items-center gap-1.5 ${dark?"text-gray-400":"text-gray-500"}`}>
+          <RefreshCw size={14}/> 실시간 금융 지표
+        </span>
+        <button onClick={fetchData} className={`transition-colors ${dark?"text-gray-600 hover:text-gray-300":"text-gray-300 hover:text-gray-600"}`} title="새로고침">
+          <RefreshCw size={15}/>
+        </button>
+      </div>
+      {loading && (
+        <div className={`flex items-center gap-2 py-2 ${dark?"text-gray-500":"text-gray-400"}`}>
+          <RefreshCw size={15} className="animate-spin"/> <span className="text-sm">데이터 불러오는 중...</span>
+        </div>
+      )}
+      {error && <span className="text-sm text-red-400">데이터 로드 실패 — 새로고침을 눌러주세요</span>}
+      {!loading&&!error&&(
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {items.map(it=>(
+            <div key={it.label} className={`rounded-xl border px-4 py-3 ${dark?"bg-gray-800 border-gray-700":"bg-gray-50 border-gray-100"}`}>
+              <p className={`text-xs font-medium mb-1 ${dark?"text-gray-400":"text-gray-400"}`}>{it.label}</p>
+              <p className={`text-2xl font-extrabold leading-tight ${dark?"text-gray-100":"text-gray-800"}`}>{it.value}</p>
+              {it.change && (
+                <p className={`text-sm font-semibold mt-0.5 ${it.up?"text-red-500":"text-blue-500"}`}>
+                  {it.change}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── 날씨 패널 (제주 표선 기준, Open-Meteo 무료 API) ── */
+function WeatherPanel({ dark }) {
+  const [weather, setWeather] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(false);
+
+  const WMO_LABEL = {0:"맑음",1:"대체로 맑음",2:"구름 조금",3:"흐림",45:"안개",48:"안개",51:"이슬비",53:"이슬비",55:"이슬비",61:"비",63:"비",65:"강한 비",71:"눈",73:"눈",75:"강한 눈",80:"소나기",81:"소나기",82:"강한 소나기",95:"뇌우",96:"뇌우",99:"뇌우"};
+  const WMO_ICON  = {0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",53:"🌦️",55:"🌧️",61:"🌧️",63:"🌧️",65:"🌧️",71:"❄️",73:"❄️",75:"❄️",80:"🌦️",81:"🌦️",82:"🌧️",95:"⛈️",96:"⛈️",99:"⛈️"};
+
+  useEffect(()=>{
+    (async()=>{
+      setLoading(true); setError(false);
+      try {
+        const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=33.32&longitude=126.84&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Asia/Seoul");
+        if (!res.ok) throw new Error();
+        const json = await res.json();
+        setWeather(json.current);
+      } catch { setError(true); }
+      setLoading(false);
+    })();
+  },[]);
+
+  const code = weather?.weather_code ?? -1;
+  const card = dark?"bg-gray-800 border-gray-700":"bg-gray-50 border-gray-100";
+  const val  = dark?"text-gray-100":"text-gray-800";
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-4">
+        <span className={`text-sm font-bold flex items-center gap-1.5 ${dark?"text-gray-400":"text-gray-500"}`}>
+          🌤️ 현재 날씨
+        </span>
+        <span className={`text-xs ${dark?"text-gray-600":"text-gray-400"}`}>제주 표선 기준</span>
+      </div>
+      {loading && (
+        <div className={`flex items-center gap-2 py-2 ${dark?"text-gray-500":"text-gray-400"}`}>
+          <RefreshCw size={15} className="animate-spin"/> <span className="text-sm">날씨 불러오는 중...</span>
+        </div>
+      )}
+      {error && <span className="text-sm text-red-400">날씨 데이터 로드 실패</span>}
+      {!loading&&!error&&weather&&(
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className={`rounded-xl border px-4 py-3 ${card}`}>
+            <p className="text-xs font-medium mb-1 text-gray-400">날씨</p>
+            <p className="text-3xl leading-tight">{WMO_ICON[code]??"🌡️"}</p>
+            <p className={`text-sm font-semibold mt-1 ${dark?"text-gray-300":"text-gray-600"}`}>{WMO_LABEL[code]??"알 수 없음"}</p>
+          </div>
+          <div className={`rounded-xl border px-4 py-3 ${card}`}>
+            <p className="text-xs font-medium mb-1 text-gray-400">기온</p>
+            <p className={`text-2xl font-extrabold leading-tight ${val}`}>{weather.temperature_2m}°C</p>
+          </div>
+          <div className={`rounded-xl border px-4 py-3 ${card}`}>
+            <p className="text-xs font-medium mb-1 text-gray-400">습도</p>
+            <p className={`text-2xl font-extrabold leading-tight ${val}`}>{weather.relative_humidity_2m}%</p>
+          </div>
+          <div className={`rounded-xl border px-4 py-3 ${card}`}>
+            <p className="text-xs font-medium mb-1 text-gray-400">풍속</p>
+            <p className={`text-2xl font-extrabold leading-tight ${val}`}>{weather.wind_speed_10m}<span className="text-sm font-medium"> km/h</span></p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── 정보 캐러셀 (금융 지표 ↔ 날씨) ── */
+function InfoCarousel({ dark }) {
+  const [slide, setSlide] = useState(0);
+  const [fade,  setFade]  = useState(true);
+  const TOTAL = 2;
+
+  const goTo = (idx) => {
+    setFade(false);
+    setTimeout(()=>{ setSlide(idx); setFade(true); }, 200);
+  };
+
+  useEffect(()=>{
+    const t = setInterval(()=> goTo((slide+1) % TOTAL), 7000);
+    return ()=> clearInterval(t);
+  },[slide]);
+
+  const arrowBtn = `flex items-center justify-center w-8 h-8 rounded-full border transition-colors flex-shrink-0 ${dark?"border-gray-700 text-gray-400 hover:bg-gray-800 hover:text-gray-100":"border-gray-200 text-gray-400 hover:bg-gray-100 hover:text-gray-700"}`;
+
+  return (
+    <div className={`border-b shadow-sm ${dark?"bg-gray-900 border-gray-800":"bg-white border-gray-200"}`}>
+      <div className="max-w-6xl mx-auto px-6 py-5">
+        <div className="flex items-center gap-3">
+          <button onClick={()=>goTo((slide-1+TOTAL)%TOTAL)} className={arrowBtn}>
+            <ChevronLeft size={16}/>
+          </button>
+          <div className="flex-1" style={{opacity: fade?1:0, transition:"opacity 0.2s"}}>
+            {slide===0 ? <FinancePanel dark={dark}/> : <WeatherPanel dark={dark}/>}
+          </div>
+          <button onClick={()=>goTo((slide+1)%TOTAL)} className={arrowBtn}>
+            <ChevronRight size={16}/>
+          </button>
+        </div>
+        <div className="flex justify-center gap-2 mt-4">
+          {Array.from({length:TOTAL}).map((_,i)=>(
+            <button key={i} onClick={()=>goTo(i)}
+              className={`rounded-full transition-all duration-300 ${slide===i?"w-5 h-2":"w-2 h-2"}`}
+              style={{backgroundColor: slide===i?"#1a6b3c": dark?"#374151":"#d1d5db"}}/>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── 공감(하트) 버튼 ── */
+function LikeButton({ articleId, dark }) {
+  const [liked, setLiked]   = useState(false);
+  const [count, setCount]   = useState(0);
+  const [bounce, setBounce] = useState(false);
+  const LS_KEY = `cv_liked_${articleId}`;
+
+  useEffect(()=>{
+    (async()=>{
+      try{
+        const { data } = await supabase.from('articles').select('like_count').eq('id', articleId).single();
+        if(data) setCount(data.like_count || 0);
+      }catch{}
+      try{
+        const saved = localStorage.getItem(LS_KEY);
+        if(saved) setLiked(JSON.parse(saved));
+      }catch{}
+    })();
+  },[articleId]);
+
+  const toggle = async () => {
+    const newLiked = !liked;
+    const newCount = newLiked ? count+1 : Math.max(0, count-1);
+    setLiked(newLiked); setCount(newCount);
+    if(newLiked){ setBounce(true); setTimeout(()=>setBounce(false),400); }
+    try{ await supabase.from('articles').update({ like_count: newCount }).eq('id', articleId); }catch{}
+    localStorage.setItem(LS_KEY, JSON.stringify(newLiked));
+  };
+
+  return (
+    <div className="flex justify-center my-8">
+      <button onClick={toggle}
+        className={`flex flex-col items-center gap-1.5 px-8 py-4 rounded-2xl border-2 transition-all duration-200 ${liked?"border-red-400 bg-red-50":"border-gray-200 hover:border-red-300 hover:bg-red-50"} ${dark&&!liked?"bg-gray-800 border-gray-700 hover:bg-gray-700":""}`}
+        style={{transform: bounce?"scale(1.25)":"scale(1)", transition:"transform 0.2s cubic-bezier(.36,.07,.19,.97)"}}>
+        <span style={{fontSize:32, lineHeight:1, filter: liked?"drop-shadow(0 0 6px #f87171)":"none"}}>
+          {liked?"❤️":"🤍"}
+        </span>
+        <span className={`text-sm font-bold ${liked?"text-red-500":"text-gray-400"}`}>{count}</span>
+        <span className={`text-xs ${liked?"text-red-400":"text-gray-400"}`}>{liked?"공감했어요":"공감하기"}</span>
+      </button>
+    </div>
+  );
+}
+
+/* ── 댓글 섹션 ── */
+function CommentSection({ articleId, user, dark }) {
+  const [comments, setComments] = useState([]);
+  const [name, setName]         = useState("");
+  const [text, setText]         = useState("");
+  const [loading, setLoading]   = useState(true);
+  const card = dark?"bg-gray-800 border-gray-700":"bg-gray-50 border-gray-200";
+  const inp  = dark?"bg-gray-700 border-gray-600 text-white placeholder-gray-400":"bg-white border-gray-300 placeholder-gray-400";
+
+  useEffect(()=>{
+    (async()=>{
+      setLoading(true);
+      try{
+        const { data } = await supabase.from('comments').select('*').eq('article_id', articleId).order('created_at', {ascending:true});
+        setComments(data || []);
+      }catch{ setComments([]); }
+      setLoading(false);
+    })();
+  },[articleId]);
+
+  const submit = async () => {
+    if(!text.trim()) return;
+    const newC = { article_id: articleId, name: name.trim()||"익명", text: text.trim(), date: today() };
+    const { data } = await supabase.from('comments').insert(newC).select().single();
+    if(data) setComments(prev => [...prev, data]);
+    setName(""); setText("");
+  };
+
+  const del = async (id) => {
+    await supabase.from('comments').delete().eq('id', id);
+    setComments(prev => prev.filter(c => c.id !== id));
+  };
+
+  return (
+    <div className="mt-8">
+      <h3 className="font-bold text-base mb-4 flex items-center gap-2">
+        <MessageCircle size={17} style={{color:SC}}/> 댓글 <span className="text-sm font-normal text-gray-400">({comments.length})</span>
+      </h3>
+
+      <div className={`rounded-xl border p-4 mb-4 space-y-2 ${dark?"bg-gray-900 border-gray-800":"bg-white border-gray-200"}`}>
+        <input value={name} onChange={e=>setName(e.target.value)} placeholder="이름 (선택, 미입력 시 익명)"
+          className={`w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
+        <textarea value={text} onChange={e=>setText(e.target.value)} rows={3} placeholder="댓글을 입력하세요..."
+          className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 resize-none ${inp}`}/>
+        <button onClick={submit} style={{backgroundColor:SC}}
+          className="flex items-center gap-1.5 px-4 py-2 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
+          <Send size={13}/> 댓글 달기
+        </button>
+      </div>
+
+      {loading && <p className="text-xs text-gray-400 text-center py-4">불러오는 중...</p>}
+      {!loading && comments.length===0 && <p className="text-xs text-gray-400 text-center py-6">첫 번째 댓글을 남겨보세요!</p>}
+      <div className="space-y-3">
+        {comments.map(c=>(
+          <div key={c.id} className={`rounded-xl border p-3 ${card}`}>
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold">{c.name}</span>
+                <span className="text-xs text-gray-400">{c.date}</span>
+              </div>
+              {canDelComment(user?.role) && (
+                <button onClick={()=>del(c.id)} className="text-xs text-red-400 hover:text-red-600 flex items-center gap-0.5 transition-colors">
+                  <Trash2 size={11}/> 삭제
+                </button>
+              )}
+            </div>
+            <p className="text-sm leading-relaxed">{c.text}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── 건의함 ── */
+function SuggestionBox({ user, dark }) {
+  const [open, setOpen]         = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [form, setForm]         = useState({ name:"", content:"" });
+  const [sent, setSent]         = useState(false);
+  const card = dark?"bg-gray-900 border-gray-800 text-gray-100":"bg-white border-gray-200 text-gray-900";
+  const inp  = dark?"bg-gray-800 border-gray-700 text-white placeholder-gray-500":"bg-white border-gray-300 placeholder-gray-400";
+
+  const loadSuggestions = async () => {
+    try{
+      const { data } = await supabase.from('suggestions').select('*').order('created_at', {ascending:false});
+      setSuggestions(data || []);
+    }catch{}
+  };
+
+  useEffect(()=>{ if(viewOpen) loadSuggestions(); },[viewOpen]);
+
+  const submit = async () => {
+    if(!form.content.trim()) return;
+    const newItem = { name: form.name.trim()||"익명", content: form.content.trim(), date: today() };
+    const { data } = await supabase.from('suggestions').insert(newItem).select().single();
+    if(data) setSuggestions(prev => [data, ...prev]);
+    setForm({name:"",content:""});
+    setSent(true); setTimeout(()=>{ setSent(false); setOpen(false); },2000);
+  };
+
+  return (
+    <>
+      <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-2 items-end">
+        {canReadBox(user?.role)&&(
+          <button onClick={()=>setViewOpen(true)}
+            className="flex items-center gap-2 px-3 py-2 rounded-full text-white text-xs font-medium shadow-lg hover:scale-105 transition-transform"
+            style={{backgroundColor:SC}}>
+            <Inbox size={14}/> 건의함 열람
+          </button>
+        )}
+        <button onClick={()=>setOpen(true)}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-full text-white text-sm font-medium shadow-lg hover:scale-105 transition-transform bg-amber-500 hover:bg-amber-600">
+          <MessageSquarePlus size={16}/> 기사 건의하기
+        </button>
+      </div>
+
+      {open&&(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={()=>setOpen(false)}>
+          <div className={`rounded-2xl shadow-2xl p-6 w-full max-w-sm ${card}`} onClick={e=>e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-base flex items-center gap-2"><MessageSquarePlus size={18} className="text-amber-500"/> 기사 건의하기</h3>
+              <button onClick={()=>setOpen(false)}><X size={18}/></button>
+            </div>
+            {sent?(
+              <div className="text-center py-6">
+                <CheckCircle size={40} className="text-green-500 mx-auto mb-2"/>
+                <p className="font-medium text-green-600">건의가 접수됐습니다!</p>
+              </div>
+            ):(
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-medium mb-1 block text-gray-500">이름 (선택)</label>
+                  <input value={form.name} onChange={e=>setForm({...form,name:e.target.value})}
+                    placeholder="홍길동" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 ${inp}`}/>
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1 block text-gray-500">건의 내용 *</label>
+                  <textarea value={form.content} onChange={e=>setForm({...form,content:e.target.value})}
+                    rows={4} placeholder="어떤 기사를 원하시나요?"
+                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none ${inp}`}/>
+                </div>
+                <p className="text-xs text-gray-400 flex items-center gap-1"><Eye size={11}/> 건의 내용은 편집부만 열람할 수 있습니다.</p>
+                <button onClick={submit} className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2">
+                  <Send size={14}/> 건의 보내기
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {viewOpen&&canReadBox(user?.role)&&(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={()=>setViewOpen(false)}>
+          <div className={`rounded-2xl shadow-2xl p-6 w-full max-w-lg max-h-[80vh] flex flex-col ${card}`} onClick={e=>e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4 flex-shrink-0">
+              <h3 className="font-bold text-base flex items-center gap-2"><Inbox size={18} style={{color:SC}}/> 기사 건의함</h3>
+              <button onClick={()=>setViewOpen(false)}><X size={18}/></button>
+            </div>
+            {suggestions.length===0
+              ?<div className="text-center py-10 text-gray-400 text-sm">아직 건의된 내용이 없습니다.</div>
+              :<div className="space-y-3 overflow-y-auto pr-1">
+                {suggestions.map(s=>(
+                  <div key={s.id} className={`rounded-xl border p-4 ${dark?"bg-gray-800 border-gray-700":"bg-gray-50 border-gray-200"}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-amber-600">✍️ {s.name}</span>
+                      <span className="text-xs text-gray-400">{s.date}</span>
+                    </div>
+                    <p className="text-sm leading-relaxed">{s.content}</p>
+                  </div>
+                ))}
+              </div>
+            }
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ── 메인 앱 ── */
+export default function App() {
+  const [dark,setDark]               = useState(false);
+  const [menuOpen,setMenuOpen]       = useState(false);
+  const [activeCategory,setActiveCat]= useState("전체");
+  const [activeType,setActiveType]   = useState("전체");
+  const [selected,setSelected]       = useState(null);
+  const [page,setPage]               = useState("home");
+  const [search,setSearch]           = useState("");
+  const [searchOpen,setSearchOpen]   = useState(false);
+  const [email,setEmail]             = useState("");
+  const [subscribed,setSubscribed]   = useState(false);
+  const [articles,setArticles]       = useState([]);
+  const [form,setForm]               = useState({title:"",category:"경제",type:"기사",body:"",image:""});
+  const [editId,setEditId]           = useState(null);
+  const [confirmDel,setConfirmDel]   = useState(null);
+  const [user,setUser]               = useState(null);
+  const [showLogin,setShowLogin]     = useState(false);
+  const [loginForm,setLoginForm]     = useState({id:"",pw:""});
+  const [loginError,setLoginError]   = useState("");
+  const [adminTab,setAdminTab]       = useState("pending");
+  const [loginTab,setLoginTab]       = useState("member");
+  const [memberForm,setMemberForm]   = useState({email:"",pw:""});
+  const [showSignup,setShowSignup]   = useState(false);
+  const [signupForm,setSignupForm]   = useState({name:"",email:"",pw:""});
+  const [signupErr,setSignupErr]     = useState("");
+  const [signupDone,setSignupDone]   = useState(false);
+  const [members,setMembers]         = useState([]);
+  const [myArticles,setMyArticles]   = useState([]);
+
+  useEffect(()=>{
+    (async()=>{
+      try{
+        const { data } = await supabase.from('articles').select('*').order('created_at',{ascending:false});
+        setArticles(data && data.length > 0 ? data : DUMMY_ARTICLES);
+      }catch{ setArticles(DUMMY_ARTICLES); }
+      try{ const d=localStorage.getItem(DARK_KEY); if(d) setDark(JSON.parse(d)); }catch{}
+      let staffLoaded=false;
+      try{
+        const saved=localStorage.getItem("cv_user");
+        if(saved){ setUser(JSON.parse(saved)); staffLoaded=true; }
+      }catch{}
+      if(!staffLoaded){
+        try{
+          const { data:{ session } } = await supabase.auth.getSession();
+          if(session?.user) await loadMemberProfile(session.user);
+        }catch{}
+      }
+    })();
+    const { data:{ subscription } } = supabase.auth.onAuthStateChange(async(event,session)=>{
+      if(event==="SIGNED_IN"&&session?.user) await loadMemberProfile(session.user);
+      else if(event==="SIGNED_OUT") setUser(null);
+    });
+    return ()=> subscription.unsubscribe();
+  },[]);
+
+  const toggleDark=()=>setDark(d=>{ const n=!d; try{ localStorage.setItem(DARK_KEY,JSON.stringify(n)); }catch{} return n; });
+
+  const loadMemberProfile = async (authUser) => {
+    const { data:profile } = await supabase.from('profiles').select('*').eq('id',authUser.id).single();
+    if(!profile){
+      const name = authUser.user_metadata?.full_name||authUser.user_metadata?.name||authUser.email?.split('@')[0]||'회원';
+      await supabase.from('profiles').upsert({id:authUser.id,display_name:name,role:'pending',email:authUser.email});
+      setUser({id:authUser.id,name,role:'pending',email:authUser.email,isMember:true});
+    } else {
+      setUser({id:authUser.id,name:profile.display_name,role:profile.role,email:profile.email||authUser.email,isMember:true});
+    }
+  };
+
+  const handleLogin=async()=>{
+    setLoginError("");
+    try{
+      const res=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:loginForm.id,password:loginForm.pw})});
+      if(!res.ok){ setLoginError("아이디 또는 비밀번호가 올바르지 않습니다."); return; }
+      const userObj=await res.json();
+      setUser(userObj);
+      localStorage.setItem("cv_user",JSON.stringify(userObj));
+      setShowLogin(false); setLoginForm({id:"",pw:""});
+    }catch{ setLoginError("로그인 중 오류가 발생했습니다."); }
+  };
+
+  const handleMemberLogin=async()=>{
+    setLoginError("");
+    const {data,error}=await supabase.auth.signInWithPassword({email:memberForm.email,password:memberForm.pw});
+    if(error){ setLoginError("이메일 또는 비밀번호가 올바르지 않습니다."); return; }
+    await loadMemberProfile(data.user);
+    setShowLogin(false); setMemberForm({email:"",pw:""});
+  };
+
+  const handleGoogleLogin=async()=>{
+    await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin}});
+  };
+
+  const handleSignup=async()=>{
+    setSignupErr("");
+    if(!signupForm.name.trim()){ setSignupErr("이름을 입력해주세요."); return; }
+    if(!signupForm.email||!signupForm.pw){ setSignupErr("이메일과 비밀번호를 입력해주세요."); return; }
+    const {data,error}=await supabase.auth.signUp({email:signupForm.email,password:signupForm.pw});
+    if(error){ setSignupErr(error.message); return; }
+    if(!data.user){ setSignupDone(true); return; }
+    await supabase.from('profiles').upsert({id:data.user.id,display_name:signupForm.name,role:'pending',email:signupForm.email});
+    setSignupDone(true);
+  };
+
+  const loadMembers=async()=>{
+    const {data}=await supabase.from('profiles').select('*')
+      .not('role','in','(admin,editor)');
+    setMembers(data||[]);
+  };
+
+  const approveMember=async(id,role)=>{
+    await supabase.from('profiles').update({role}).eq('id',id);
+    setMembers(prev=>prev.map(m=>m.id===id?{...m,role}:m));
+  };
+
+  const rejectMember=async(id)=>{
+    await supabase.from('profiles').update({role:'rejected'}).eq('id',id);
+    setMembers(prev=>prev.map(m=>m.id===id?{...m,role:'rejected'}:m));
+  };
+
+  const loadMyArticles=async(name)=>{
+    const {data}=await supabase.from('articles').select('*').eq('author',name).order('created_at',{ascending:false});
+    setMyArticles(data||[]);
+  };
+
+  const requestReApproval=async()=>{
+    await supabase.from('profiles').update({role:'pending'}).eq('id',user.id);
+    setUser(prev=>({...prev,role:'pending'}));
+  };
+
+  const handleLogout=async()=>{
+    if(user?.isMember) await supabase.auth.signOut();
+    else localStorage.removeItem("cv_user");
+    setUser(null); setPage("home");
+  };
+
+  const submitArticle=async()=>{
+    if(!form.title||!form.body) return;
+    const eid=editId;
+    const fields={
+      title:form.title, category:form.category, type:form.type,
+      body:form.body, image:form.image||"",
+      summary:form.body.slice(0,80)+"...", status:"pending",
+      author:(form.type==="칼럼"||user?.isMember)?user?.name:null,
+    };
+    if(eid!==null){
+      await supabase.from('articles').update(fields).eq('id',eid);
+      setArticles(prev=>prev.map(a=>a.id===eid?{...a,...fields}:a));
+      setSelected(prev=>prev?.id===eid?{...prev,...fields}:prev);
+    } else {
+      const newA={...fields, date:today(), views:0, hero:false};
+      const { data } = await supabase.from('articles').insert(newA).select().single();
+      if(data) setArticles(prev=>[data,...prev]);
+    }
+    setEditId(null);
+    setForm({title:"",category:"경제",type:allowedTypes(user?.role)[0]||"기사",body:"",image:""});
+    setPage(user?.role==="admin"?"admin":"home");
+  };
+
+  const startEdit=a=>{ setForm({title:a.title,category:a.category,type:a.type||"기사",body:a.body,image:a.image||""}); setEditId(a.id); setSelected(null); setPage("write"); };
+  const doDelete=async()=>{
+    await supabase.from('articles').delete().eq('id',confirmDel);
+    setArticles(prev=>prev.filter(a=>a.id!==confirmDel));
+    setConfirmDel(null); setSelected(null); setPage("home");
+  };
+  const updateStatus=async(id,status)=>{
+    await supabase.from('articles').update({status}).eq('id',id);
+    setArticles(prev=>prev.map(a=>a.id===id?{...a,status}:a));
+  };
+
+  const published=articles.filter(a=>a.status==="published");
+  const hero=published.find(a=>a.hero);
+  const filtered=published.filter(a=>{
+    const mc=activeCategory==="전체"||a.category===activeCategory;
+    const mt=activeType==="전체"||a.type===activeType;
+    const q=search.toLowerCase();
+    const ms=!search||a.title.toLowerCase().includes(q)||a.summary?.toLowerCase().includes(q)||a.body?.toLowerCase().includes(q);
+    return mc&&mt&&ms&&(!a.hero||!!search);
+  });
+  const topViewed=[...published].sort((a,b)=>b.views-a.views).slice(0,5);
+  const pendingCount=articles.filter(a=>a.status==="pending").length;
+  const pendingMemberCount=members.filter(m=>m.role==="pending").length;
+
+  const bg  =dark?"bg-gray-950 text-gray-100":"bg-gray-50 text-gray-900";
+  const card=dark?"bg-gray-900 border-gray-800":"bg-white border-gray-200";
+  const inp =dark?"bg-gray-800 border-gray-700 text-white placeholder-gray-500":"bg-white border-gray-300 placeholder-gray-400";
+
+  const SNS=[
+    {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.265 5.632L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg>,label:"X (트위터)",color:"text-gray-800",href:"https://twitter.com/intent/follow?screen_name=se_al_official_"},
+    {icon:<Instagram size={14}/>,label:"인스타그램",color:"text-pink-500",href:"#"},
+    {icon:<Facebook size={14}/>,label:"페이스북",color:"text-blue-600",href:"#"},
+    {icon:<Youtube size={14}/>,label:"유튜브",color:"text-red-600",href:"#"},
+  ];
+
+  return (
+    <div className={`min-h-screen ${bg} transition-colors duration-300`}>
+
+      {/* TOP BAR */}
+      <div className={`w-full flex justify-end items-center px-4 py-1.5 text-xs gap-3 flex-wrap ${dark?"bg-gray-900 border-b border-gray-800 text-gray-400":"bg-gray-100 border-b border-gray-200 text-gray-900"}`}>
+        <span>{dark?"🌙 다크 모드":"☀️ 라이트 모드"}</span>
+        <button onClick={toggleDark} style={{position:"relative",width:40,height:20,borderRadius:999,background:dark?"#2563eb":"#d1d5db",transition:"background 0.3s",flexShrink:0,border:"none",cursor:"pointer",padding:0}}>
+          <span style={{position:"absolute",top:2,left:2,width:16,height:16,borderRadius:"50%",background:"white",boxShadow:"0 1px 3px rgba(0,0,0,.3)",transition:"transform 0.3s",transform:dark?"translateX(20px)":"translateX(0)",display:"block"}}/>
+        </button>
+        {user?(
+          <div className="flex items-center gap-2 flex-wrap">
+            <span style={{color:SC}} className="font-medium">{roleLabel[user.role]} {user.name}</span>
+            {user?.isMember&&(
+              <button onClick={()=>{setPage("mypage");loadMyArticles(user.name);}} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-green-700 text-green-700 hover:bg-green-700 hover:text-white transition-colors text-sm font-medium">
+                마이페이지
+              </button>
+            )}
+            {user.role==="admin"&&(
+              <button onClick={()=>{setPage("admin");loadMembers();}} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-green-700 text-green-700 hover:bg-green-700 hover:text-white transition-colors text-sm font-medium">
+                <ShieldCheck size={14}/> 관리자 메뉴
+                {(pendingCount+pendingMemberCount)>0&&<span className="bg-red-500 text-white rounded-full px-1.5 py-0.5 text-xs">{pendingCount+pendingMemberCount}</span>}
+              </button>
+            )}
+            <button onClick={handleLogout} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-400 text-red-400 hover:bg-red-400 hover:text-white transition-colors text-sm font-medium"><LogOut size={14}/> 로그아웃</button>
+          </div>
+        ):(
+          <button onClick={()=>setShowLogin(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-green-700 text-green-700 hover:bg-green-700 hover:text-white transition-colors text-sm font-medium"><LogIn size={14}/> 로그인</button>
+        )}
+      </div>
+
+      {/* HEADER */}
+      <header style={{backgroundColor:SC}} className="sticky top-0 z-40 shadow-md">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button className="md:hidden text-white" onClick={()=>setMenuOpen(!menuOpen)}>
+              {menuOpen?<X size={22}/>:<Menu size={22}/>}
+            </button>
+            <button onClick={()=>{setPage("home");setSelected(null);setActiveCat("전체");setActiveType("전체");setSearch("");setSearchOpen(false);setMenuOpen(false);}} className="text-white font-bold text-xl tracking-tight">📰 세계를 알리다</button>
+          </div>
+          <nav className="hidden md:flex items-center gap-1">
+            {CATEGORIES.map(c=>(
+              <button key={c} onClick={()=>{setActiveCat(c);setPage("home");setSelected(null);}}
+                className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${activeCategory===c&&page==="home"?"bg-white/25 text-white":"text-green-100 hover:bg-white/15 hover:text-white"}`}>{c}</button>
+            ))}
+            {user&&canWrite(user.role)&&(
+              <button onClick={()=>{setEditId(null);setForm({title:"",category:"경제",type:allowedTypes(user.role)[0],body:"",image:""});setPage("write");}}
+                className="ml-2 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded text-sm font-medium border border-white/30">✏️ 글 작성</button>
+            )}
+          </nav>
+          <div className="flex items-center gap-2">
+            {searchOpen&&<input autoFocus value={search} onChange={e=>setSearch(e.target.value)} placeholder="검색..." className="px-3 py-1 rounded text-sm text-gray-900 w-36 focus:outline-none"/>}
+            <button onClick={()=>{ if(searchOpen) setSearch(""); setSearchOpen(s=>!s); }} className="text-white hover:text-green-200"><Search size={20}/></button>
+          </div>
+        </div>
+        {menuOpen&&(
+          <div style={{backgroundColor:SCD}} className="md:hidden border-t border-green-900 px-4 pb-3 pt-2 flex flex-col gap-2">
+            {CATEGORIES.map(c=>(
+              <button key={c} onClick={()=>{setActiveCat(c);setMenuOpen(false);setPage("home");}} className="text-green-100 hover:text-white text-sm py-1 text-left">{c}</button>
+            ))}
+            {user&&canWrite(user.role)&&<button onClick={()=>{setPage("write");setMenuOpen(false);}} className="text-green-200 text-sm py-1 text-left">✏️ 글 작성</button>}
+            {user?.role==="admin"&&<button onClick={()=>{setPage("admin");setMenuOpen(false);}} className="text-yellow-300 text-sm py-1 text-left">👑 관리자 메뉴</button>}
+          </div>
+        )}
+      </header>
+
+      {/* LOGIN MODAL */}
+      {showLogin&&(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={()=>{setShowLogin(false);setShowSignup(false);setSignupDone(false);setSignupErr("");setLoginError("");}}>
+          <div className={`rounded-2xl shadow-2xl p-6 w-84 max-w-sm w-full ${dark?"bg-gray-900 text-gray-100":"bg-white text-gray-900"}`} onClick={e=>e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="font-bold text-lg">{showSignup?"회원가입":"로그인"}</h2>
+              <button onClick={()=>{setShowLogin(false);setShowSignup(false);setSignupDone(false);setSignupErr("");setLoginError("");}}><X size={18}/></button>
+            </div>
+
+            {/* 탭 */}
+            {!showSignup&&(
+              <div className={`flex gap-1 mb-4 p-1 rounded-lg ${dark?"bg-gray-800":"bg-gray-100"}`}>
+                {[{key:"member",label:"회원"},{key:"staff",label:"직원"}].map(t=>(
+                  <button key={t.key} onClick={()=>{setLoginTab(t.key);setLoginError("");}}
+                    className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${loginTab===t.key?(dark?"bg-gray-700 text-white":"bg-white shadow text-gray-900"):(dark?"text-gray-400":"text-gray-500")}`}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* 직원 로그인 */}
+            {!showSignup&&loginTab==="staff"&&(
+              <div className="space-y-3">
+                <input value={loginForm.id} onChange={e=>setLoginForm({...loginForm,id:e.target.value})} placeholder="아이디" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
+                <input type="password" value={loginForm.pw} onChange={e=>setLoginForm({...loginForm,pw:e.target.value})} onKeyDown={e=>e.key==="Enter"&&handleLogin()} placeholder="비밀번호" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
+                {loginError&&<p className="text-red-500 text-xs">{loginError}</p>}
+                <button onClick={handleLogin} style={{backgroundColor:SC}} className="w-full py-2 text-white rounded-lg text-sm font-medium hover:opacity-90">로그인</button>
+              </div>
+            )}
+
+            {/* 회원 로그인 */}
+            {!showSignup&&loginTab==="member"&&(
+              <div className="space-y-3">
+                <input type="email" value={memberForm.email} onChange={e=>setMemberForm({...memberForm,email:e.target.value})} placeholder="이메일" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
+                <input type="password" value={memberForm.pw} onChange={e=>setMemberForm({...memberForm,pw:e.target.value})} onKeyDown={e=>e.key==="Enter"&&handleMemberLogin()} placeholder="비밀번호" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
+                {loginError&&<p className="text-red-500 text-xs">{loginError}</p>}
+                <button onClick={handleMemberLogin} style={{backgroundColor:SC}} className="w-full py-2 text-white rounded-lg text-sm font-medium hover:opacity-90">로그인</button>
+                <div className="relative flex items-center gap-2 my-1">
+                  <div className={`flex-1 h-px ${dark?"bg-gray-700":"bg-gray-200"}`}/>
+                  <span className={`text-xs ${dark?"text-gray-500":"text-gray-400"}`}>또는</span>
+                  <div className={`flex-1 h-px ${dark?"bg-gray-700":"bg-gray-200"}`}/>
+                </div>
+                <button onClick={handleGoogleLogin} className={`w-full py-2 rounded-lg text-sm font-medium border flex items-center justify-center gap-2 hover:opacity-80 transition-opacity ${dark?"border-gray-600 text-gray-200":"border-gray-300 text-gray-700"}`}>
+                  <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                  Google로 로그인 / 회원가입
+                </button>
+                <button onClick={()=>{setShowSignup(true);setLoginError("");}} className={`w-full py-2 rounded-lg text-sm border transition-colors ${dark?"border-gray-600 text-gray-300 hover:bg-gray-800":"border-gray-300 text-gray-600 hover:bg-gray-50"}`}>
+                  이메일로 회원가입
+                </button>
+              </div>
+            )}
+
+            {/* 회원가입 폼 */}
+            {showSignup&&!signupDone&&(
+              <div className="space-y-3">
+                <input value={signupForm.name} onChange={e=>setSignupForm({...signupForm,name:e.target.value})} placeholder="이름 *" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
+                <input type="email" value={signupForm.email} onChange={e=>setSignupForm({...signupForm,email:e.target.value})} placeholder="이메일 *" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
+                <input type="password" value={signupForm.pw} onChange={e=>setSignupForm({...signupForm,pw:e.target.value})} placeholder="비밀번호 * (6자 이상)" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
+                {signupErr&&<p className="text-red-500 text-xs">{signupErr}</p>}
+                <button onClick={handleSignup} style={{backgroundColor:SC}} className="w-full py-2 text-white rounded-lg text-sm font-medium hover:opacity-90">가입 신청</button>
+                <button onClick={()=>{setShowSignup(false);setSignupErr("");}} className={`w-full py-1.5 text-xs ${dark?"text-gray-400":"text-gray-500"} hover:underline`}>← 로그인으로</button>
+              </div>
+            )}
+
+            {/* 가입 완료 */}
+            {showSignup&&signupDone&&(
+              <div className="text-center py-4 space-y-3">
+                <CheckCircle size={40} className="text-green-500 mx-auto"/>
+                <p className="font-medium text-green-600">가입 신청이 완료됐습니다!</p>
+                <p className="text-xs text-gray-400">관리자 승인 후 칼럼을 작성할 수 있습니다.</p>
+                <button onClick={()=>{setShowLogin(false);setShowSignup(false);setSignupDone(false);setSignupForm({name:"",email:"",pw:""}); }} style={{backgroundColor:SC}} className="w-full py-2 text-white rounded-lg text-sm font-medium hover:opacity-90">확인</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CONFIRM */}
+      {confirmDel!==null&&(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className={`rounded-2xl shadow-2xl p-7 w-72 text-center ${dark?"bg-gray-900 text-gray-100":"bg-white text-gray-900"}`}>
+            <AlertTriangle size={36} className="text-red-500 mx-auto mb-3"/>
+            <h3 className="font-bold mb-1">기사를 삭제할까요?</h3>
+            <p className="text-xs text-gray-400 mb-5">삭제한 기사는 복구할 수 없습니다.</p>
+            <div className="flex gap-3">
+              <button onClick={()=>setConfirmDel(null)} className={`flex-1 py-2 rounded-lg text-sm border ${dark?"border-gray-700 text-gray-300":"border-gray-300 text-gray-600"}`}>취소</button>
+              <button onClick={doDelete} className="flex-1 py-2 rounded-lg text-sm bg-red-500 hover:bg-red-600 text-white font-medium">삭제</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 실시간 금융 */}
+      <InfoCarousel dark={dark}/>
+
+      <main className="max-w-6xl mx-auto px-4 py-6">
+
+        {/* ADMIN */}
+        {page==="admin"&&user?.role==="admin"&&(
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold flex items-center gap-2"><ShieldCheck size={20} style={{color:SC}}/> 관리자 메뉴</h2>
+              <button onClick={()=>setPage("home")} className="text-sm hover:underline flex items-center gap-1" style={{color:SC}}><ArrowLeft size={14}/> 홈으로</button>
+            </div>
+            <div className="flex gap-2 mb-5 flex-wrap">
+              {[{key:"pending",label:"승인 대기",icon:<Clock size={13}/>,cnt:articles.filter(a=>a.status==="pending").length},
+                {key:"published",label:"게재된 글",icon:<CheckCircle size={13}/>,cnt:articles.filter(a=>a.status==="published").length},
+                {key:"rejected",label:"반려된 글",icon:<XCircle size={13}/>,cnt:articles.filter(a=>a.status==="rejected").length},
+                {key:"members",label:"회원 관리",icon:<ShieldCheck size={13}/>,cnt:pendingMemberCount},
+              ].map(t=>(
+                <button key={t.key} onClick={()=>setAdminTab(t.key)}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border transition-colors"
+                  style={adminTab===t.key?{backgroundColor:SC,color:"white",borderColor:SC}:{}}>
+                  {t.icon}<span className={adminTab!==t.key?(dark?"text-gray-300":"text-gray-600"):""}>{t.label}</span>
+                  {t.cnt>0&&<span className={`rounded-full px-1.5 text-xs py-0.5 ${adminTab===t.key?"bg-white/25 text-white":"bg-gray-200 text-gray-600"}`}>{t.cnt}</span>}
+                </button>
+              ))}
+            </div>
+
+            {/* 회원 관리 탭 */}
+            {adminTab==="members"&&(
+              <div className="space-y-3">
+                {members.length===0
+                  ?<div className={`rounded-xl border p-10 text-center text-gray-400 text-sm ${card}`}>가입 신청한 회원이 없습니다.</div>
+                  :members.map(m=>(
+                    <div key={m.id} className={`rounded-xl border p-4 ${card}`}>
+                      <div className="flex items-center justify-between gap-4 flex-wrap">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span className="font-semibold text-sm">{m.display_name}</span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${memberRoleStyle[m.role]||"bg-gray-100 text-gray-600"}`}>{memberRoleLabel[m.role]||m.role}</span>
+                          </div>
+                          {m.email&&<p className="text-xs text-gray-400">{m.email}</p>}
+                        </div>
+                        {m.role==="pending"&&(
+                          <div className="flex gap-2 flex-wrap">
+                            <button onClick={()=>approveMember(m.id,'reporter')} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white"><CheckCircle size={12}/> 기자 승인</button>
+                            <button onClick={()=>approveMember(m.id,'columnist')} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white"><CheckCircle size={12}/> 칼럼니스트 승인</button>
+                            <button onClick={()=>rejectMember(m.id)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white"><XCircle size={12}/> 거절</button>
+                          </div>
+                        )}
+                        {(m.role==="columnist"||m.role==="reporter")&&(
+                          <button onClick={()=>rejectMember(m.id)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-red-400 text-red-400 hover:bg-red-50"><XCircle size={12}/> 승인 취소</button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                }
+              </div>
+            )}
+
+            {adminTab!=="members"&&(articles.filter(a=>a.status===adminTab).length===0
+              ?<div className={`rounded-xl border p-10 text-center text-gray-400 text-sm ${card}`}>해당 글이 없습니다.</div>
+              :<div className="space-y-3">
+                {articles.filter(a=>a.status===adminTab).map(a=>(
+                  <div key={a.id} className={`rounded-xl border p-4 ${card}`}>
+                    <div className="flex items-start gap-4">
+                      <ArticleImage image={a.image} category={a.category} className="rounded-lg flex-shrink-0" style={{width:80,height:64,minWidth:80}}/>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className={`text-xs text-white px-2 py-0.5 rounded-full ${typeColor[a.type]||"bg-gray-500"}`}>{a.type||"기사"}</span>
+                          <span className={`text-xs text-white px-2 py-0.5 rounded-full ${catColor[a.category]||"bg-gray-500"}`}>{a.category}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusStyle[a.status]}`}>{statusLabel[a.status]}</span>
+                          <span className="text-xs text-gray-400">{a.date}</span>
+                          {a.author&&<span className="text-xs text-amber-600">✒️ {a.author}</span>}
+                        </div>
+                        <h3 className="font-semibold text-sm line-clamp-1">{a.title}</h3>
+                        <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">{a.summary}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-3 flex-wrap">
+                      <button onClick={()=>{setSelected(a);setPage("home");}} className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border ${dark?"border-gray-700 text-gray-300":"border-gray-300 text-gray-600"}`}><Eye size={12}/> 미리보기</button>
+                      {a.status!=="published"&&<button onClick={()=>updateStatus(a.id,"published")} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white"><CheckCircle size={12}/> 승인 게재</button>}
+                      {a.status!=="rejected"&&<button onClick={()=>updateStatus(a.id,"rejected")} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white"><XCircle size={12}/> 반려</button>}
+                      <button onClick={()=>startEdit(a)} style={{backgroundColor:SC}} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg text-white hover:opacity-90"><Edit2 size={12}/> 수정</button>
+                      <button onClick={()=>setConfirmDel(a.id)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white"><Trash2 size={12}/> 삭제</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* MYPAGE */}
+        {page==="mypage"&&user?.isMember&&(
+          <div className="max-w-2xl mx-auto">
+            <button onClick={()=>setPage("home")} className="flex items-center gap-1 text-sm hover:underline mb-4" style={{color:SC}}>
+              <ArrowLeft size={15}/> 홈으로
+            </button>
+            <h2 className="text-2xl font-bold mb-5">마이페이지</h2>
+
+            {/* 프로필 카드 */}
+            <div className={`rounded-xl border p-6 mb-6 ${card}`}>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl flex-shrink-0" style={{backgroundColor:SC}}>
+                  {user.name?.[0]||"?"}
+                </div>
+                <div>
+                  <p className="font-bold text-lg">{user.name}</p>
+                  {user.email&&<p className={`text-sm ${dark?"text-gray-400":"text-gray-500"}`}>{user.email}</p>}
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium mt-1 inline-block ${memberRoleStyle[user.role]||"bg-gray-100 text-gray-600"}`}>
+                    {memberRoleLabel[user.role]||user.role}
+                  </span>
+                </div>
+              </div>
+              {user.role==="rejected"&&(
+                <div className={`border-t pt-4 mt-2 ${dark?"border-gray-700":"border-gray-200"}`}>
+                  <p className="text-sm text-red-500 mb-3">가입 신청이 거절되었습니다. 재승인을 요청할 수 있습니다.</p>
+                  <button onClick={requestReApproval} style={{backgroundColor:SC}} className="flex items-center gap-1.5 px-4 py-2 text-white rounded-lg text-sm font-medium hover:opacity-90">
+                    <RefreshCw size={13}/> 재승인 요청
+                  </button>
+                </div>
+              )}
+              {user.role==="pending"&&(
+                <div className={`border-t pt-4 mt-2 ${dark?"border-gray-700":"border-gray-200"}`}>
+                  <p className="text-sm text-yellow-600 flex items-center gap-1.5"><Clock size={13}/> 관리자 승인을 기다리고 있습니다.</p>
+                </div>
+              )}
+            </div>
+
+            {/* 내가 쓴 글 */}
+            <h3 className="font-bold text-base mb-3 flex items-center gap-2"><FileText size={16} style={{color:SC}}/> 내가 쓴 글</h3>
+            {myArticles.length===0
+              ?<div className={`rounded-xl border p-8 text-center text-gray-400 text-sm ${card}`}>아직 작성한 글이 없습니다.</div>
+              :<div className="space-y-3">
+                {myArticles.map(a=>(
+                  <div key={a.id} onClick={()=>{setSelected(a);setPage("home");}}
+                    className={`cursor-pointer rounded-xl border p-4 hover:shadow-md transition-shadow ${card}`}>
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className={`text-xs text-white px-2 py-0.5 rounded-full ${typeColor[a.type]||"bg-gray-500"}`}>{a.type||"기사"}</span>
+                      <span className={`text-xs text-white px-2 py-0.5 rounded-full ${catColor[a.category]||"bg-gray-500"}`}>{a.category}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusStyle[a.status]}`}>{statusLabel[a.status]}</span>
+                      <span className={`text-xs ${dark?"text-gray-400":"text-gray-400"}`}>{a.date}</span>
+                    </div>
+                    <p className="font-semibold text-sm leading-snug">{a.title}</p>
+                  </div>
+                ))}
+              </div>
+            }
+          </div>
+        )}
+
+        {/* WRITE */}
+        {page==="write"&&user&&canWrite(user.role)&&(
+          <div className="max-w-2xl mx-auto">
+            <button onClick={()=>{setPage(user.role==="admin"?"admin":"home");setEditId(null);}} className="flex items-center gap-1 text-sm hover:underline mb-4" style={{color:SC}}>
+              <ArrowLeft size={15}/> {user.role==="admin"?"관리자 메뉴로":"홈으로"}
+            </button>
+            <h2 className="text-2xl font-bold mb-1">{editId!==null?"✏️ 글 수정":"✏️ 새 글 작성"}</h2>
+            <p className="text-xs text-yellow-600 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 mb-4 flex items-center gap-1"><Clock size={12}/> 작성한 글은 관리자 승인 후 게재됩니다.</p>
+            <div className={`rounded-xl border p-6 space-y-4 ${card}`}>
+              <div>
+                <label className="text-sm font-medium mb-2 block">글 종류 *</label>
+                <div className="flex gap-2">
+                  {allowedTypes(user.role).map(t=>(
+                    <button key={t} onClick={()=>setForm(f=>({...f,type:t}))}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border transition-colors"
+                      style={form.type===t?{backgroundColor:t==="칼럼"?"#d97706":SC,color:"white",borderColor:"transparent"}:{}}>
+                      <span className={form.type!==t?(dark?"text-gray-300":"text-gray-600"):""}>
+                        {t==="기사"?<span className="flex items-center gap-1"><FileText size={13}/>기사</span>:<span className="flex items-center gap-1"><PenLine size={13}/>칼럼</span>}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                {form.type==="칼럼"&&<p className="text-xs text-amber-600 mt-1.5">✒️ 칼럼에는 작성자 이름({user.name})이 표시됩니다.</p>}
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">제목 *</label>
+                <input value={form.title} onChange={e=>setForm({...form,title:e.target.value})} placeholder="제목을 입력하세요" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">카테고리</label>
+                <select value={form.category} onChange={e=>setForm({...form,category:e.target.value})} className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none ${inp}`}>
+                  {CATEGORIES.slice(1).map(c=><option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">이미지 업로드 (선택)</label>
+                <label className={`flex items-center gap-2 cursor-pointer border rounded-lg px-3 py-2 text-sm ${inp}`} style={{borderStyle:"dashed"}}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <span className="text-gray-400">{form.image?"✅ 이미지 업로드됨":"클릭해서 이미지 파일 선택"}</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={e=>{
+                    const f=e.target.files?.[0]; if(!f) return;
+                    const r=new FileReader(); r.onload=ev=>setForm(fm=>({...fm,image:ev.target.result})); r.readAsDataURL(f);
+                  }}/>
+                </label>
+                {form.image&&<div className="mt-2 relative"><img src={form.image} alt="" className="w-full h-36 object-cover rounded-lg"/><button onClick={()=>setForm(f=>({...f,image:""}))} className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5"><X size={14}/></button></div>}
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">본문 *</label>
+                <div className={`flex gap-1 mb-1 p-1 rounded border ${dark?"bg-gray-800 border-gray-700":"bg-gray-50 border-gray-200"}`}>
+                  {[<Bold size={14}/>,<Italic size={14}/>,<List size={14}/>].map((ic,i)=>(
+                    <button key={i} className={`p-1.5 rounded transition-colors ${dark?"text-gray-300 hover:bg-gray-700":"text-gray-600 hover:bg-gray-200"}`}>{ic}</button>
+                  ))}
+                </div>
+                <textarea value={form.body} onChange={e=>setForm({...form,body:e.target.value})} rows={8} placeholder="본문을 입력하세요..." className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 resize-none ${inp}`}/>
+              </div>
+              <button onClick={submitArticle} style={{backgroundColor:form.type==="칼럼"?"#d97706":SC}}
+                className="w-full py-2.5 text-white rounded-lg font-medium text-sm hover:opacity-90 flex items-center justify-center gap-2">
+                <Save size={15}/>{editId!==null?"수정 후 승인 요청":"승인 요청하기"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* DETAIL */}
+        {page==="home"&&selected&&(
+          <div className="flex flex-col md:flex-row gap-6">
+            <div className="flex-1 min-w-0">
+              <button onClick={()=>{ setSelected(null); if(user?.role==="admin"&&selected.status!=="published") setPage("admin"); }}
+                className="flex items-center gap-1 text-sm hover:underline mb-4" style={{color:SC}}>
+                <ArrowLeft size={15}/> {user?.role==="admin"&&selected.status!=="published"?"관리자 메뉴로":"목록으로"}
+              </button>
+              {selected.status!=="published"&&<div className={`text-xs px-3 py-2 rounded-lg mb-3 flex items-center gap-1 ${statusStyle[selected.status]}`}>{selected.status==="pending"?<Clock size={12}/>:<XCircle size={12}/>} 미리보기 — {statusLabel[selected.status]} 상태입니다.</div>}
+              <div className="flex items-center gap-2 mb-3">
+                <span className={`text-xs text-white px-2 py-0.5 rounded-full ${typeColor[selected.type]||"bg-gray-500"}`}>{selected.type||"기사"}</span>
+                <span className={`text-xs text-white px-2 py-0.5 rounded-full ${catColor[selected.category]||"bg-gray-500"}`}>{selected.category}</span>
+              </div>
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <h1 className="text-2xl font-bold leading-tight">{selected.title}</h1>
+                {user&&<div className="flex gap-2 flex-shrink-0 mt-1">
+                  <button onClick={()=>startEdit(selected)} style={{backgroundColor:SC}} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg text-white hover:opacity-90"><Edit2 size={12}/> 수정</button>
+                  {user.role==="admin"&&<button onClick={()=>setConfirmDel(selected.id)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600"><Trash2 size={12}/> 삭제</button>}
+                </div>}
+              </div>
+              <div className="flex items-center gap-3 text-xs text-gray-500 mb-4">
+                <span>{selected.date}</span>
+                {selected.author&&<span className="text-amber-600 font-medium flex items-center gap-1"><PenLine size={11}/> {selected.author}</span>}
+                <span className="flex items-center gap-1"><Eye size={11}/> {selected.views.toLocaleString()}</span>
+              </div>
+              <ArticleImage image={selected.image} category={selected.category} className="w-full rounded-xl mb-5" style={{height:280}}/>
+              {selected.type==="칼럼"&&<div className="border-l-4 border-amber-400 pl-4 mb-4 py-1"><p className="text-xs text-amber-600 font-medium">칼럼 — {selected.author||"익명"} 기고</p></div>}
+              <div className="text-sm leading-relaxed whitespace-pre-line">{selected.body}</div>
+
+              <LikeButton articleId={selected.id} dark={dark}/>
+
+              <div className={`border-t mt-8 pt-2 ${dark?"border-gray-800":"border-gray-200"}`}>
+                <CommentSection articleId={selected.id} user={user} dark={dark}/>
+              </div>
+            </div>
+            <aside className="md:w-64 space-y-4 flex-shrink-0">
+              <div className={`rounded-xl border p-4 ${card}`}>
+                <h3 className="font-bold text-sm mb-3 flex items-center gap-1"><TrendingUp size={15} className="text-red-500"/> 가장 많이 본 뉴스</h3>
+                <ol className="space-y-2">
+                  {topViewed.map((a,i)=>(
+                    <li key={a.id} onClick={()=>setSelected(a)} className="cursor-pointer flex gap-2 items-start group">
+                      <span className={`font-bold text-sm w-5 flex-shrink-0 ${i===0?"text-red-500":i===1?"text-orange-400":i===2?"text-yellow-500":"text-gray-400"}`}>{i+1}</span>
+                      <div><span className="text-xs leading-snug group-hover:underline line-clamp-2">{a.title}</span>
+                      {a.type==="칼럼"&&<span className="text-xs text-amber-500 block">✒️ 칼럼</span>}</div>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+              <div className={`rounded-xl border p-4 ${card}`}>
+                <h3 className="font-bold text-sm mb-3">세계를 알리다 SNS</h3>
+                <div className="space-y-2">
+                  {SNS.map(s=>(
+                    <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
+                      className={`flex items-center gap-2 text-xs hover:underline ${s.color}`}>{s.icon}{s.label} 팔로우</a>
+                  ))}
+                </div>
+              </div>
+            </aside>
+          </div>
+        )}
+
+        {/* HOME */}
+        {page==="home"&&!selected&&(
+          <div>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {CATEGORIES.map(c=>(
+                <button key={c} onClick={()=>setActiveCat(c)}
+                  className="px-4 py-1.5 rounded-full text-sm font-medium border transition-colors"
+                  style={activeCategory===c?{backgroundColor:SC,color:"white",borderColor:SC}:{}}>
+                  <span className={activeCategory!==c?(dark?"text-gray-300":"text-gray-600"):""}>{c}</span>
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2 mb-5">
+              {["전체","기사","칼럼"].map(t=>(
+                <button key={t} onClick={()=>setActiveType(t)}
+                  className="px-3 py-1 rounded-full text-xs font-medium border transition-colors"
+                  style={activeType===t?{backgroundColor:t==="칼럼"?"#d97706":t==="기사"?"#475569":SC,color:"white",borderColor:"transparent"}:{}}>
+                  <span className={activeType!==t?(dark?"text-gray-400":"text-gray-500"):""}>{t==="기사"?"📄 기사":t==="칼럼"?"✒️ 칼럼":"전체"}</span>
+                </button>
+              ))}
+            </div>
+
+            {hero&&activeCategory==="전체"&&activeType==="전체"&&!search&&(
+              <div onClick={()=>setSelected(hero)} className="cursor-pointer rounded-2xl overflow-hidden mb-8 relative group" style={{height:320}}>
+                <ArticleImage image={hero.image} category={hero.category} className="w-full h-full group-hover:scale-105 transition-transform duration-500"/>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"/>
+                <div className="absolute bottom-0 left-0 right-0 p-6">
+                  <div className="flex gap-2 mb-2">
+                    <span className={`text-xs text-white px-2 py-0.5 rounded-full ${typeColor[hero.type]||"bg-slate-600"}`}>{hero.type||"기사"}</span>
+                    <span className={`text-xs text-white px-2 py-0.5 rounded-full ${catColor[hero.category]}`}>{hero.category}</span>
+                  </div>
+                  <h2 className="text-white text-xl md:text-2xl font-bold mb-1 leading-tight">{hero.title}</h2>
+                  <p className="text-gray-300 text-sm line-clamp-2 hidden md:block">{hero.summary}</p>
+                  <span className="text-gray-400 text-xs mt-1 block">{hero.date}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex-1">
+                {search&&<p className="text-sm text-gray-500 mb-4">'{search}' 검색 결과 {filtered.length}건</p>}
+                {filtered.length===0&&<p className="text-gray-400 text-sm py-10 text-center">게재된 글이 없습니다.</p>}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {filtered.map(a=>(
+                    <div key={a.id} onClick={()=>setSelected(a)}
+                      className={`cursor-pointer rounded-xl border overflow-hidden hover:shadow-lg transition-shadow group ${card} ${a.type==="칼럼"?"border-l-4 border-l-amber-400":""}`}>
+                      <ArticleImage image={a.image} category={a.category} className="w-full group-hover:scale-105 transition-transform duration-500" style={{height:160}}/>
+                      <div className="p-4">
+                        <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
+                          <div className="flex gap-1">
+                            <span className={`text-xs text-white px-2 py-0.5 rounded-full ${typeColor[a.type]||"bg-gray-500"}`}>{a.type||"기사"}</span>
+                            <span className={`text-xs text-white px-2 py-0.5 rounded-full ${catColor[a.category]||"bg-gray-500"}`}>{a.category}</span>
+                          </div>
+                          <span className="text-xs text-gray-400">{a.date}</span>
+                        </div>
+                        <h3 className="font-semibold text-sm leading-snug mb-1 line-clamp-2">{a.title}</h3>
+                        {a.author&&<p className="text-xs text-amber-600 mb-0.5">✒️ {a.author}</p>}
+                        <p className="text-xs text-gray-500 line-clamp-2">{a.summary}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <aside className="md:w-64 space-y-4">
+                <div className={`rounded-xl border p-4 ${card}`}>
+                  <h3 className="font-bold text-sm mb-3 flex items-center gap-1"><TrendingUp size={15} className="text-red-500"/> 가장 많이 본 뉴스</h3>
+                  <ol className="space-y-2">
+                    {topViewed.map((a,i)=>(
+                      <li key={a.id} onClick={()=>setSelected(a)} className="cursor-pointer flex gap-2 items-start group">
+                        <span className={`font-bold text-sm w-5 flex-shrink-0 ${i===0?"text-red-500":i===1?"text-orange-400":i===2?"text-yellow-500":"text-gray-400"}`}>{i+1}</span>
+                        <div><span className="text-xs leading-snug group-hover:underline line-clamp-2">{a.title}</span>
+                        {a.type==="칼럼"&&<span className="text-xs text-amber-500 block">✒️ 칼럼</span>}</div>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+                <div className={`rounded-xl border p-4 ${card}`}>
+                  <h3 className="font-bold text-sm mb-3">세계를 알리다 SNS</h3>
+                  <div className="space-y-2">
+                    {SNS.map(s=>(
+                      <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
+                        className={`flex items-center gap-2 text-xs hover:underline ${s.color}`}>{s.icon}{s.label} 팔로우</a>
+                    ))}
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {page==="home"&&!selected&&(
+        <section className="mt-10" style={{backgroundColor:SCD}}>
+          <div className="max-w-6xl mx-auto px-4 py-10 text-center">
+            <h3 className="text-white text-xl font-bold mb-1">📬 세계를 알리다 뉴스레터 구독</h3>
+            <p className="text-green-200 text-sm mb-4">매주 목요일 아침 주요 소식을 이메일로 받아보세요.</p>
+            {subscribed
+              ?<p className="text-green-300 font-medium text-sm">✅ 구독이 완료되었습니다!</p>
+              :<div className="flex flex-col sm:flex-row justify-center gap-2 max-w-sm mx-auto">
+                <input value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="이메일 주소를 입력하세요" className="flex-1 px-4 py-2 rounded-lg text-sm text-gray-900 focus:outline-none"/>
+                <button onClick={async()=>{
+                if(!email) return;
+                try{
+                  const r=await fetch("/api/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})});
+                  if(r.ok) setSubscribed(true);
+                }catch{}
+              }} style={{backgroundColor:SC}} className="px-5 py-2 text-white rounded-lg text-sm font-medium hover:opacity-90 border border-green-400">구독하기</button>
+              </div>
+            }
+          </div>
+        </section>
+      )}
+
+      <footer className={`border-t text-center py-5 text-xs text-gray-500 ${dark?"border-gray-800 bg-gray-950":"border-gray-200 bg-white"}`}>
+        © 2026 세계를 알리다 · 표선고등학교 학생 언론사 | 문의: psnewspaper01@gmail.com
+      </footer>
+
+      <SuggestionBox user={user} dark={dark}/>
+    </div>
+  );
+}
