@@ -601,12 +601,12 @@ export default function App() {
           <div className="flex items-center gap-2 flex-wrap">
             <span style={{color:SC}} className="font-medium">{roleLabel[user.role]} {user.name}</span>
             {user.role==="admin"&&(
-              <button onClick={()=>setPage("admin")} className="flex items-center gap-1 hover:text-green-700">
-                <ShieldCheck size={12}/> 관리자 메뉴
+              <button onClick={()=>setPage("admin")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-green-700 text-green-700 hover:bg-green-700 hover:text-white transition-colors text-sm font-medium">
+                <ShieldCheck size={14}/> 관리자 메뉴
                 {pendingCount>0&&<span className="bg-red-500 text-white rounded-full px-1.5 py-0.5 text-xs">{pendingCount}</span>}
               </button>
             )}
-            <button onClick={handleLogout} className="flex items-center gap-1 hover:text-red-500"><LogOut size={12}/> 로그아웃</button>
+            <button onClick={handleLogout} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-400 text-red-400 hover:bg-red-400 hover:text-white transition-colors text-sm font-medium"><LogOut size={14}/> 로그아웃</button>
           </div>
         ):(
           <button onClick={()=>setShowLogin(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-green-700 text-green-700 hover:bg-green-700 hover:text-white transition-colors text-sm font-medium"><LogIn size={14}/> 로그인</button>
