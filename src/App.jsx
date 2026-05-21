@@ -609,7 +609,7 @@ export default function App() {
             <button onClick={handleLogout} className="flex items-center gap-1 hover:text-red-500"><LogOut size={12}/> 로그아웃</button>
           </div>
         ):(
-          <button onClick={()=>setShowLogin(true)} className="flex items-center gap-1 hover:text-green-700"><LogIn size={12}/> 로그인</button>
+          <button onClick={()=>setShowLogin(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-green-700 text-green-700 hover:bg-green-700 hover:text-white transition-colors text-sm font-medium"><LogIn size={14}/> 로그인</button>
         )}
       </div>
 
