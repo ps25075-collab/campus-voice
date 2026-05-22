@@ -102,17 +102,26 @@ function FinancePanel({ dark }) {
 
   useEffect(()=>{ fetchData(); },[]);
 
-  const items = data ? [
-    {label:"코스피",  value:data.kospi,       change:data.kospi_change,  up: data.kospi_change?.startsWith("+")},
-    {label:"NASDAQ", value:data.nasdaq,      change:data.nasdaq_change, up: data.nasdaq_change?.startsWith("+")},
-    {label:"원/달러", value:data.usdkrw+"원", change:null},
-    {label:"기준금리", value:data.rate,        change:null},
-  ] : [];
+  const card = dark ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-100";
+  const sub  = dark ? "text-gray-400" : "text-gray-500";
+
+  const renderCard = (label, value, change) => {
+    const up = change?.startsWith("+");
+    return (
+      <div key={label} className={`rounded-xl border px-4 py-3 ${card}`}>
+        <p className="text-xs font-medium mb-1 text-gray-400">{label}</p>
+        <p className={`text-2xl font-extrabold leading-tight ${dark?"text-gray-100":"text-gray-800"}`}>{value}</p>
+        {change && (
+          <p className={`text-sm font-semibold mt-0.5 ${up?"text-red-500":"text-blue-500"}`}>{change}</p>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <span className={`text-sm font-bold flex items-center gap-1.5 ${dark?"text-gray-400":"text-gray-500"}`}>
+        <span className={`text-sm font-bold flex items-center gap-1.5 ${sub}`}>
           <RefreshCw size={14}/> 실시간 금융 지표
         </span>
         <button onClick={fetchData} className={`transition-colors ${dark?"text-gray-600 hover:text-gray-300":"text-gray-300 hover:text-gray-600"}`} title="새로고침">
@@ -125,25 +134,30 @@ function FinancePanel({ dark }) {
         </div>
       )}
       {error && <span className="text-sm text-red-400">데이터 로드 실패 — 새로고침을 눌러주세요</span>}
-      {!loading&&!error&&(
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {items.map(it=>(
-            <div key={it.label} className={`rounded-xl border px-4 py-3 ${dark?"bg-gray-800 border-gray-700":"bg-gray-50 border-gray-100"}`}>
-              <p className={`text-xs font-medium mb-1 ${dark?"text-gray-400":"text-gray-400"}`}>{it.label}</p>
-              <p className={`text-2xl font-extrabold leading-tight ${dark?"text-gray-100":"text-gray-800"}`}>{it.value}</p>
-              {it.change && (
-                <p className={`text-sm font-semibold mt-0.5 ${it.up?"text-red-500":"text-blue-500"}`}>
-                  {it.change}
-                </p>
-              )}
+      {!loading&&!error&&data&&(
+        <div className="space-y-3">
+          <div>
+            <p className={`text-xs font-bold mb-2 ${sub}`}>📈 주가 지수</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {renderCard("코스피",   data.kospi,   data.kospi_change)}
+              {renderCard("NASDAQ",  data.nasdaq,  data.nasdaq_change)}
+              {renderCard("S&P 500", data.sp500,   data.sp500_change)}
+              {renderCard("다우존스", "$"+data.dow, data.dow_change)}
             </div>
-          ))}
+          </div>
+          <div>
+            <p className={`text-xs font-bold mb-2 ${sub}`}>💱 환율 · 금리 · 원자재</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {renderCard("원/달러",  data.usdkrw+"원", null)}
+              {renderCard("기준금리", data.rate,         null)}
+              {renderCard("WTI 원유", "$"+data.oil,      data.oil_change)}
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
 }
-
 /* ── 날씨 패널 (제주 표선 기준, Open-Meteo 무료 API) ── */
 function WeatherPanel({ dark }) {
   const [weather, setWeather] = useState(null);
