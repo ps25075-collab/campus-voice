@@ -615,6 +615,8 @@ export default function App() {
   const [signupForm,setSignupForm]   = useState({name:"",email:"",pw:""});
   const [signupErr,setSignupErr]     = useState("");
   const [signupDone,setSignupDone]   = useState(false);
+  const [submitting,setSubmitting] = useState(false);
+  const [submitErr,setSubmitErr]   = useState("");
   const [members,setMembers]         = useState([]);
   const [myArticles,setMyArticles]   = useState([]);
 
@@ -725,28 +727,38 @@ export default function App() {
   };
 
   const submitArticle=async()=>{
-    if(!form.title||!form.body||!user?.name) return;
+    if(!form.title.trim()||!form.body.trim()||!user?.name) return;
+    if(submitting) return;
+    setSubmitting(true);
+    setSubmitErr("");
     const eid=editId;
     const fields={
-      title:form.title, category:form.category, type:form.type,
+      title:form.title.trim(), category:form.category, type:form.type,
       body:form.body, image:form.image||"",
       summary:form.body.slice(0,80)+"...", status:"pending",
       author: user?.name,
     };
-    if(eid!==null){
-      await supabase.from('articles').update(fields).eq('id',eid);
-      setArticles(prev=>prev.map(a=>a.id===eid?{...a,...fields}:a));
-      setSelected(prev=>prev?.id===eid?{...prev,...fields}:prev);
-    } else {
-      const newA={...fields, date:today(), views:0, hero:false};
-      const { data } = await supabase.from('articles').insert(newA).select().single();
-      if(data) setArticles(prev=>[data,...prev]);
+    try {
+      if(eid!==null){
+        const { error } = await supabase.from('articles').update(fields).eq('id',eid);
+        if(error) throw error;
+        setArticles(prev=>prev.map(a=>a.id===eid?{...a,...fields}:a));
+        setSelected(prev=>prev?.id===eid?{...prev,...fields}:prev);
+      } else {
+        const newA={...fields, date:today(), views:0, hero:false};
+        const { data, error } = await supabase.from('articles').insert(newA).select().single();
+        if(error) throw error;
+        if(data) setArticles(prev=>[data,...prev]);
+      }
+      setEditId(null);
+      setForm({title:"",category:"경제",type:allowedTypes(user?.role)[0]||"기사",body:"",image:""});
+      setPage(user?.role==="admin"?"admin":"home");
+    } catch(e) {
+      setSubmitErr("전송에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setSubmitting(false);
     }
-    setEditId(null);
-    setForm({title:"",category:"경제",type:allowedTypes(user?.role)[0]||"기사",body:"",image:""});
-    setPage(user?.role==="admin"?"admin":"home");
   };
-
   const startEdit=a=>{ setForm({title:a.title,category:a.category,type:a.type||"기사",body:a.body,image:a.image||""}); setEditId(a.id); setSelected(null); setPage("write"); };
   const doDelete=async()=>{
     await supabase.from('articles').delete().eq('id',confirmDel);
@@ -1121,7 +1133,8 @@ export default function App() {
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-1 block">제목 *</label>
-              </div>
+                  <input value={form.title} onChange={e=>setForm({...form,title:e.target.value})} placeholder="제목을 입력하세요" maxLength={100} className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
+                </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">카테고리</label>
                 <select value={form.category} onChange={e=>setForm({...form,category:e.target.value})} className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none ${inp}`}>
@@ -1149,9 +1162,10 @@ export default function App() {
                 </div>
                 <textarea value={form.body} onChange={e=>setForm({...form,body:e.target.value})} rows={8} placeholder="본문을 입력하세요..." className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 resize-none ${inp}`}/>
               </div>
-              <button onClick={submitArticle} style={{backgroundColor:form.type==="칼럼"?"#d97706":SC}}
-                className="w-full py-2.5 text-white rounded-lg font-medium text-sm hover:opacity-90 flex items-center justify-center gap-2">
-                <Save size={15}/>{editId!==null?"수정 후 승인 요청":"승인 요청하기"}
+              {submitErr&&<p className="text-sm text-red-500 text-center">{submitErr}</p>}
+              <button onClick={submitArticle} disabled={submitting} style={{backgroundColor:form.type==="칼럼"?"#d97706":SC}}
+                className="w-full py-2.5 text-white rounded-lg font-medium text-sm hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+                {submitting?<><RefreshCw size={15} className="animate-spin"/>전송 중...</>:<><Save size={15}/>{editId!==null?"수정 후 승인 요청":"승인 요청하기"}</>}
               </button>
             </div>
           </div>
