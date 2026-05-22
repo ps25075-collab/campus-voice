@@ -1127,6 +1127,13 @@ export default function App() {
                         {(m.role==="columnist"||m.role==="reporter")&&(
                           <button onClick={()=>rejectMember(m.id)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-red-400 text-red-400 hover:bg-red-50"><XCircle size={12}/> 승인 취소</button>
                         )}
+                        {m.role==="rejected"&&(
+                          <div className="flex gap-2 flex-wrap items-center">
+                            <span className="text-xs text-red-400 font-medium flex items-center gap-1"><XCircle size={12}/> 거절됨</span>
+                            <button onClick={()=>approveMember(m.id,'reporter')} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white"><CheckCircle size={12}/> 기자로 재승인</button>
+                            <button onClick={()=>approveMember(m.id,'columnist')} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white"><CheckCircle size={12}/> 칼럼니스트로 재승인</button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))
