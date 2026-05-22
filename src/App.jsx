@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from './lib/supabase';
 import { Search, Menu, X, TrendingUp, Instagram, Facebook, Youtube, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -295,10 +295,32 @@ function InfoCarousel({ dark }) {
   const [slide, setSlide] = useState(0);
   const [fade,  setFade]  = useState(true);
   const TOTAL = 2;
+  const intervalRef = useRef(null);
 
   const goTo = (idx) => {
     setFade(false);
     setTimeout(()=>{ setSlide(idx); setFade(true); }, 200);
+  };
+
+  const startAutoPlay = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
+      setFade(false);
+      setTimeout(() => {
+        setSlide(prev => (prev + 1) % TOTAL);
+        setFade(true);
+      }, 200);
+    }, 6000);
+  };
+
+  useEffect(() => {
+    startAutoPlay();
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, []);
+
+  const handleGoTo = (idx) => {
+    goTo(idx);
+    startAutoPlay();
   };
 
   const arrowBtn = `flex items-center justify-center w-8 h-8 rounded-full border transition-colors flex-shrink-0 ${dark?"border-gray-700 text-gray-400 hover:bg-gray-800 hover:text-gray-100":"border-gray-200 text-gray-400 hover:bg-gray-100 hover:text-gray-700"}`;
@@ -307,19 +329,19 @@ function InfoCarousel({ dark }) {
     <div className={`border-b shadow-sm ${dark?"bg-gray-900 border-gray-800":"bg-white border-gray-200"}`}>
       <div className="max-w-6xl mx-auto px-6 py-5">
         <div className="flex items-center gap-3">
-          <button onClick={()=>goTo((slide-1+TOTAL)%TOTAL)} className={arrowBtn}>
+          <button onClick={()=>handleGoTo((slide-1+TOTAL)%TOTAL)} className={arrowBtn}>
             <ChevronLeft size={16}/>
           </button>
           <div className="flex-1 min-h-[390px] md:min-h-[280px]" style={{opacity: fade?1:0, transition:"opacity 0.2s"}}>
             {slide===0 ? <FinancePanel dark={dark}/> : <WeatherPanel dark={dark}/>}
           </div>
-          <button onClick={()=>goTo((slide+1)%TOTAL)} className={arrowBtn}>
+          <button onClick={()=>handleGoTo((slide+1)%TOTAL)} className={arrowBtn}>
             <ChevronRight size={16}/>
           </button>
         </div>
         <div className="flex justify-center gap-2 mt-4">
           {Array.from({length:TOTAL}).map((_,i)=>(
-            <button key={i} onClick={()=>goTo(i)}
+            <button key={i} onClick={()=>handleGoTo(i)}
               className={`rounded-full transition-all duration-300 ${slide===i?"w-5 h-2":"w-2 h-2"}`}
               style={{backgroundColor: slide===i?"#1a6b3c": dark?"#374151":"#d1d5db"}}/>
           ))}
@@ -328,8 +350,6 @@ function InfoCarousel({ dark }) {
     </div>
   );
 }
-
-/* ── 공감(하트) 버튼 ── */
 function LikeButton({ articleId, dark }) {
   const [liked, setLiked]   = useState(false);
   const [count, setCount]   = useState(0);
