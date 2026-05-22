@@ -410,71 +410,155 @@ function LikeButton({ articleId, dark }) {
 
 /* ── 댓글 섹션 ── */
 function CommentSection({ articleId, user, dark }) {
-  const [comments, setComments] = useState([]);
-  const [name, setName]         = useState("");
-  const [text, setText]         = useState("");
-  const [loading, setLoading]   = useState(true);
-  const card = dark?"bg-gray-800 border-gray-700":"bg-gray-50 border-gray-200";
-  const inp  = dark?"bg-gray-700 border-gray-600 text-white placeholder-gray-400":"bg-white border-gray-300 placeholder-gray-400";
+  const [comments,  setComments]  = useState([]);
+  const [name,      setName]      = useState("");
+  const [text,      setText]      = useState("");
+  const [loading,   setLoading]   = useState(true);
+  const [replyTo,   setReplyTo]   = useState(null);
+  const [replyText, setReplyText] = useState("");
+  const [replyName, setReplyName] = useState("");
+  const [likedIds,  setLikedIds]  = useState(()=>{
+    try{ return JSON.parse(localStorage.getItem("cv_cmt_likes_"+articleId)||"[]"); }catch{ return []; }
+  });
+
+  const card = dark ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200";
+  const inp  = dark ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" : "bg-white border-gray-300 placeholder-gray-400";
+  const sub  = dark ? "text-gray-400" : "text-gray-500";
 
   useEffect(()=>{
     (async()=>{
       setLoading(true);
       try{
-        const { data } = await supabase.from('comments').select('*').eq('article_id', articleId).order('created_at', {ascending:true});
-        setComments(data || []);
+        const { data } = await supabase.from("comments").select("*")
+          .eq("article_id", articleId).order("created_at",{ascending:true});
+        setComments(data||[]);
       }catch{ setComments([]); }
       setLoading(false);
     })();
   },[articleId]);
 
-  const submit = async () => {
+  const saveLikes = (ids) => {
+    setLikedIds(ids);
+    try{ localStorage.setItem("cv_cmt_likes_"+articleId, JSON.stringify(ids)); }catch{}
+  };
+
+  const toggleLike = async (cmt) => {
+    const already = likedIds.includes(cmt.id);
+    const newLikes = already ? (cmt.likes||0) - 1 : (cmt.likes||0) + 1;
+    const newIds   = already ? likedIds.filter(i=>i!==cmt.id) : [...likedIds, cmt.id];
+    setComments(prev => prev.map(c => c.id===cmt.id ? {...c, likes:newLikes} : c));
+    saveLikes(newIds);
+    try{ await supabase.from("comments").update({likes:newLikes}).eq("id",cmt.id); }catch{}
+  };
+
+  const submitComment = async () => {
     if(!text.trim()) return;
-    const newC = { article_id: articleId, name: name.trim()||"익명", text: text.trim(), date: today() };
-    const { data } = await supabase.from('comments').insert(newC).select().single();
-    if(data) setComments(prev => [...prev, data]);
+    const newC = { article_id:articleId, name:name.trim()||"익명", text:text.trim(), date:today(), parent_id:null, likes:0 };
+    const { data } = await supabase.from("comments").insert(newC).select().single();
+    if(data) setComments(prev=>[...prev, data]);
     setName(""); setText("");
   };
 
+  const submitReply = async () => {
+    if(!replyText.trim()||!replyTo) return;
+    const newC = { article_id:articleId, name:replyName.trim()||"익명", text:replyText.trim(), date:today(), parent_id:replyTo.id, likes:0 };
+    const { data } = await supabase.from("comments").insert(newC).select().single();
+    if(data) setComments(prev=>[...prev, data]);
+    setReplyTo(null); setReplyText(""); setReplyName("");
+  };
+
   const del = async (id) => {
-    await supabase.from('comments').delete().eq('id', id);
-    setComments(prev => prev.filter(c => c.id !== id));
+    await supabase.from("comments").delete().eq("id", id);
+    setComments(prev => prev.filter(c => c.id!==id && c.parent_id!==id));
+  };
+
+  const roots      = comments.filter(c=>!c.parent_id);
+  const getReplies = (pid) => comments.filter(c=>c.parent_id===pid);
+
+  const CommentCard = ({ c, isReply=false }) => {
+    const liked = likedIds.includes(c.id);
+    const replyCls = isReply
+      ? (dark ? "bg-gray-900 border-gray-700 ml-6" : "bg-white border-gray-200 ml-6")
+      : card;
+    return (
+      <div className={"rounded-xl border p-3 " + replyCls}>
+        <div className="flex items-center justify-between mb-1 flex-wrap gap-1">
+          <div className="flex items-center gap-2">
+            {isReply && <span className={"text-xs " + sub}>↳</span>}
+            <span className="text-xs font-semibold">{c.name}</span>
+            <span className={"text-xs " + sub}>{c.date}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={()=>toggleLike(c)}
+              className={"flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border transition-colors " + (liked?(dark?"border-green-500 text-green-400 bg-green-900/30":"border-green-500 text-green-600 bg-green-50"):(dark?"border-gray-600 text-gray-400 hover:border-green-500 hover:text-green-400":"border-gray-300 text-gray-400 hover:border-green-400 hover:text-green-500"))}>
+              👍 {c.likes||0}
+            </button>
+            {!isReply && (
+              <button onClick={()=>{ setReplyTo(c); setReplyText(""); setReplyName(""); }}
+                className={"flex items-center gap-0.5 text-xs transition-colors " + (dark?"text-gray-500 hover:text-blue-400":"text-gray-400 hover:text-blue-500")}>
+                <MessageSquarePlus size={12}/> 답글
+              </button>
+            )}
+            {canDelComment(user?.role) && (
+              <button onClick={()=>del(c.id)} className="flex items-center gap-0.5 text-xs text-red-400 hover:text-red-600 transition-colors">
+                <Trash2 size={11}/> 삭제
+              </button>
+            )}
+          </div>
+        </div>
+        <p className="text-sm leading-relaxed">{c.text}</p>
+      </div>
+    );
   };
 
   return (
     <div className="mt-8">
       <h3 className="font-bold text-base mb-4 flex items-center gap-2">
-        <MessageCircle size={17} style={{color:SC}}/> 댓글 <span className="text-sm font-normal text-gray-400">({comments.length})</span>
+        <MessageCircle size={17} style={{color:SC}}/> 댓글
+        <span className="text-sm font-normal text-gray-400">({comments.length})</span>
       </h3>
-
-      <div className={`rounded-xl border p-4 mb-4 space-y-2 ${dark?"bg-gray-900 border-gray-800":"bg-white border-gray-200"}`}>
+      <div className={"rounded-xl border p-4 mb-4 space-y-2 " + (dark?"bg-gray-900 border-gray-800":"bg-white border-gray-200")}>
         <input value={name} onChange={e=>setName(e.target.value)} placeholder="이름 (선택, 미입력 시 익명)"
-          className={`w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
+          className={"w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-green-600 " + inp}/>
         <textarea value={text} onChange={e=>setText(e.target.value)} rows={3} placeholder="댓글을 입력하세요..."
-          className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 resize-none ${inp}`}/>
-        <button onClick={submit} style={{backgroundColor:SC}}
+          className={"w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 resize-none " + inp}/>
+        <button onClick={submitComment} style={{backgroundColor:SC}}
           className="flex items-center gap-1.5 px-4 py-2 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
           <Send size={13}/> 댓글 달기
         </button>
       </div>
-
       {loading && <p className="text-xs text-gray-400 text-center py-4">불러오는 중...</p>}
       {!loading && comments.length===0 && <p className="text-xs text-gray-400 text-center py-6">첫 번째 댓글을 남겨보세요!</p>}
       <div className="space-y-3">
-        {comments.map(c=>(
-          <div key={c.id} className={`rounded-xl border p-3 ${card}`}>
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold">{c.name}</span>
-                <span className="text-xs text-gray-400">{c.date}</span>
+        {roots.map(c=>(
+          <div key={c.id}>
+            <CommentCard c={c}/>
+            {getReplies(c.id).length > 0 && (
+              <div className="mt-2 space-y-2">
+                {getReplies(c.id).map(r=><CommentCard key={r.id} c={r} isReply/>)}
               </div>
-              {canDelComment(user?.role) && (
-                <button onClick={()=>del(c.id)} className="text-xs text-red-400 hover:text-red-600 flex items-center gap-0.5 transition-colors">
-                  <Trash2 size={11}/> 삭제
-                </button>
-              )}
-            </div>
-            <p className="text-sm leading-relaxed">{c.text}</p>
+            )}
+            {replyTo?.id===c.id && (
+              <div className={"ml-6 mt-2 rounded-xl border p-3 space-y-2 " + (dark?"bg-gray-900 border-gray-700":"bg-white border-gray-200")}>
+                <p className={"text-xs font-medium " + (dark?"text-blue-400":"text-blue-500")}>
+                  ↳ <span className="font-semibold">{replyTo.name}</span> 님에게 답글
+                </p>
+                <input value={replyName} onChange={e=>setReplyName(e.target.value)} placeholder="이름 (선택, 미입력 시 익명)"
+                  className={"w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 " + inp}/>
+                <textarea value={replyText} onChange={e=>setReplyText(e.target.value)} rows={2} placeholder="답글을 입력하세요..."
+                  className={"w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none " + inp}/>
+                <div className="flex gap-2">
+                  <button onClick={submitReply}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-medium transition-colors">
+                    <Send size={12}/> 답글 달기
+                  </button>
+                  <button onClick={()=>setReplyTo(null)}
+                    className={"px-3 py-1.5 rounded-lg text-xs border transition-colors " + (dark?"border-gray-600 text-gray-400":"border-gray-300 text-gray-500")}>
+                    취소
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
