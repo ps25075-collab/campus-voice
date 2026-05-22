@@ -760,6 +760,14 @@ export default function App() {
     }
   };
   const startEdit=a=>{ setForm({title:a.title,category:a.category,type:a.type||"기사",body:a.body,image:a.image||""}); setEditId(a.id); setSelected(null); setPage("write"); };
+  const openArticle=async(article)=>{
+    if(!article) return;
+    const newViews=(article.views||0)+1;
+    const updated={...article,views:newViews};
+    setSelected(updated);
+    setArticles(prev=>prev.map(a=>a.id===article.id?{...a,views:newViews}:a));
+    try{ await supabase.from('articles').update({views:newViews}).eq('id',article.id); }catch{}
+  };
   const doDelete=async()=>{
     await supabase.from('articles').delete().eq('id',confirmDel);
     setArticles(prev=>prev.filter(a=>a.id!==confirmDel));
@@ -1212,7 +1220,7 @@ export default function App() {
                 <h3 className="font-bold text-sm mb-3 flex items-center gap-1"><TrendingUp size={15} className="text-red-500"/> 가장 많이 본 뉴스</h3>
                 <ol className="space-y-2">
                   {topViewed.map((a,i)=>(
-                    <li key={a.id} onClick={()=>setSelected(a)} className="cursor-pointer flex gap-2 items-start group">
+                    <li key={a.id} onClick={()=>openArticle(a)} className="cursor-pointer flex gap-2 items-start group">
                       <span className={`font-bold text-sm w-5 flex-shrink-0 ${i===0?"text-red-500":i===1?"text-orange-400":i===2?"text-yellow-500":"text-gray-400"}`}>{i+1}</span>
                       <div><span className="text-xs leading-snug group-hover:underline line-clamp-2">{a.title}</span>
                       {a.type==="칼럼"&&<span className="text-xs text-amber-500 block">✒️ 칼럼</span>}</div>
@@ -1256,7 +1264,7 @@ export default function App() {
             </div>
 
             {hero&&activeCategory==="전체"&&activeType==="전체"&&!search&&(
-              <div onClick={()=>setSelected(hero)} className="cursor-pointer rounded-2xl overflow-hidden mb-8 relative group" style={{height:320}}>
+              <div onClick={()=>openArticle(hero)} className="cursor-pointer rounded-2xl overflow-hidden mb-8 relative group" style={{height:320}}>
                 <ArticleImage image={hero.image} category={hero.category} className="w-full h-full group-hover:scale-105 transition-transform duration-500"/>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"/>
                 <div className="absolute bottom-0 left-0 right-0 p-6">
@@ -1277,7 +1285,7 @@ export default function App() {
                 {filtered.length===0&&<p className="text-gray-400 text-sm py-10 text-center">게재된 글이 없습니다.</p>}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {filtered.map(a=>(
-                    <div key={a.id} onClick={()=>setSelected(a)}
+                    <div key={a.id} onClick={()=>openArticle(a)}
                       className={`cursor-pointer rounded-xl border overflow-hidden hover:shadow-lg transition-shadow group ${card} ${a.type==="칼럼"?"border-l-4 border-l-amber-400":""}`}>
                       <ArticleImage image={a.image} category={a.category} className="w-full group-hover:scale-105 transition-transform duration-500" style={{height:160}}/>
                       <div className="p-4">
@@ -1301,7 +1309,7 @@ export default function App() {
                   <h3 className="font-bold text-sm mb-3 flex items-center gap-1"><TrendingUp size={15} className="text-red-500"/> 가장 많이 본 뉴스</h3>
                   <ol className="space-y-2">
                     {topViewed.map((a,i)=>(
-                      <li key={a.id} onClick={()=>setSelected(a)} className="cursor-pointer flex gap-2 items-start group">
+                      <li key={a.id} onClick={()=>openArticle(a)} className="cursor-pointer flex gap-2 items-start group">
                         <span className={`font-bold text-sm w-5 flex-shrink-0 ${i===0?"text-red-500":i===1?"text-orange-400":i===2?"text-yellow-500":"text-gray-400"}`}>{i+1}</span>
                         <div><span className="text-xs leading-snug group-hover:underline line-clamp-2">{a.title}</span>
                         {a.type==="칼럼"&&<span className="text-xs text-amber-500 block">✒️ 칼럼</span>}</div>
