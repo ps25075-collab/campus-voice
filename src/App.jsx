@@ -8,13 +8,14 @@ const today = () => {
   return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;
 };
 
-const CATEGORIES  = ["전체","경제","문화","기술"];
-const catColor    = { 경제:"bg-blue-600", 문화:"bg-pink-500", 기술:"bg-emerald-600" };
+const CATEGORIES  = ["전체","긴급","경제","문화","기술"];
+const catColor    = { 긴급:"bg-red-600", 경제:"bg-blue-600", 문화:"bg-pink-500", 기술:"bg-emerald-600" };
 const typeColor   = { 기사:"bg-slate-600", 칼럼:"bg-amber-500" };
 const catGradient = {
   경제:"linear-gradient(135deg,#1e3a8a,#3b82f6)",
   문화:"linear-gradient(135deg,#831843,#ec4899)",
   기술:"linear-gradient(135deg,#064e3b,#10b981)",
+  긴급:"linear-gradient(135deg,#7f1d1d,#ef4444)",
 };
 const SC  = "#1a6b3c";
 const SCD = "#145530";
@@ -780,6 +781,7 @@ export default function App() {
 
   const published=articles.filter(a=>a.status==="published");
   const hero=published.find(a=>a.hero);
+  const urgent=published.filter(a=>a.category==="긴급");
   const filtered=published.filter(a=>{
     const mc=activeCategory==="전체"||a.category===activeCategory;
     const mt=activeType==="전체"||a.type===activeType;
@@ -1263,6 +1265,24 @@ export default function App() {
               ))}
             </div>
 
+            {urgent.length>0&&activeCategory!=="경제"&&activeCategory!=="문화"&&activeCategory!=="기술"&&!search&&(
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="animate-pulse inline-block w-2 h-2 rounded-full bg-red-500"></span>
+                  <span className="text-xs font-bold text-red-500 uppercase tracking-widest">긴급 뉴스</span>
+                </div>
+                <div className="space-y-2">
+                  {urgent.slice(0,3).map(a=>(
+                    <div key={a.id} onClick={()=>openArticle(a)}
+                      className={`cursor-pointer flex items-center gap-3 border border-red-200 rounded-xl px-4 py-3 transition-colors ${dark?"bg-red-950 hover:bg-red-900":"bg-red-50 hover:bg-red-100"}`}>
+                      <span className="text-xs font-bold text-white bg-red-600 px-2 py-0.5 rounded-full flex-shrink-0">긴급</span>
+                      <span className="text-sm font-semibold text-red-900 line-clamp-1">{a.title}</span>
+                      <span className="text-xs text-red-400 flex-shrink-0 ml-auto">{a.date}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {hero&&activeCategory==="전체"&&activeType==="전체"&&!search&&(
               <div onClick={()=>openArticle(hero)} className="cursor-pointer rounded-2xl overflow-hidden mb-8 relative group" style={{height:320}}>
                 <ArticleImage image={hero.image} category={hero.category} className="w-full h-full group-hover:scale-105 transition-transform duration-500"/>
