@@ -676,6 +676,102 @@ function SuggestionBox({ user, dark }) {
 /* ── 메인 앱 ── */
 /* ── 공유 모달 ── */
 /* ── 검색 드롭다운 ── */
+/* ── 약관 전문 모달 ── */
+const TERMS_TEXT = {
+  service: {
+    title: "서비스 이용약관",
+    content: `제1조 (목적)
+이 약관은 표선고등학교 학생 언론사 '세계를 알리다'(이하 "서비스")가 제공하는 웹사이트 이용에 관한 조건 및 절차, 이용자와 서비스의 권리·의무 및 책임 사항을 규정함을 목적으로 합니다.
+
+제2조 (이용 대상)
+본 서비스는 표선고등학교 학생, 교직원 및 서비스에 관심 있는 일반 이용자를 대상으로 합니다. 회원 가입은 만 14세 이상이어야 하며, 14세 미만의 경우 법정 대리인의 동의가 필요합니다.
+
+제3조 (회원 의무)
+① 회원은 가입 시 정확한 정보를 입력해야 합니다.
+② 회원은 자신의 계정 정보를 타인에게 공유하거나 양도할 수 없습니다.
+③ 회원은 타인의 명예를 훼손하거나 불쾌감을 주는 내용을 게시하지 않아야 합니다.
+
+제4조 (금지 행위)
+다음 각 호의 행위는 금지됩니다.
+① 타인의 개인정보 무단 수집·이용
+② 허위 사실 유포 및 명예훼손
+③ 저작권 등 지식재산권 침해
+④ 서비스 운영 방해 행위
+⑤ 욕설·비방·혐오 표현 등 부적절한 콘텐츠 게시
+
+제5조 (게시물 관리)
+① 회원이 작성한 기사·칼럼은 관리자 검토 후 게재됩니다.
+② 서비스는 법령 위반 또는 약관 위반 게시물을 사전 통보 없이 삭제할 수 있습니다.
+③ 게시물의 저작권은 작성자에게 귀속되며, 작성자는 서비스 내 게재를 허락한 것으로 간주합니다.
+
+제6조 (서비스 변경 및 중단)
+서비스는 운영상 필요에 따라 서비스 내용을 변경하거나 중단할 수 있으며, 이에 대해 별도의 보상을 하지 않습니다.
+
+제7조 (약관 변경)
+서비스는 약관을 변경할 경우 최소 7일 전에 공지하며, 변경 후 계속 이용 시 변경된 약관에 동의한 것으로 간주합니다.
+
+시행일: 2026년 5월 1일`,
+  },
+  privacy: {
+    title: "개인정보 처리방침",
+    content: `표선고등학교 학생 언론사 '세계를 알리다'(이하 "서비스")는 이용자의 개인정보를 소중히 여기며, 「개인정보 보호법」을 준수합니다.
+
+제1조 (수집하는 개인정보 항목)
+서비스는 회원가입 및 서비스 제공을 위해 다음 정보를 수집합니다.
+· 필수: 이름, 이메일 주소
+· 자동 수집: 서비스 이용 기록, 접속 로그
+
+제2조 (개인정보 수집·이용 목적)
+① 회원 식별 및 본인 확인
+② 서비스 제공 (기사 작성, 댓글, 공감 기능 이용)
+③ 부정 이용 방지 및 서비스 개선
+④ 공지사항 전달
+
+제3조 (개인정보 보유 및 이용 기간)
+회원 탈퇴 시 또는 수집·이용 목적 달성 시 즉시 파기합니다. 단, 관련 법령에 따라 보존이 필요한 경우 해당 기간 동안 보관합니다.
+
+제4조 (개인정보 제3자 제공)
+서비스는 이용자의 개인정보를 원칙적으로 외부에 제공하지 않습니다. 다만 법령에 의거하거나 이용자의 동의가 있는 경우에는 예외로 합니다.
+
+제5조 (개인정보 처리 위탁)
+서비스는 원활한 운영을 위해 다음과 같이 개인정보 처리를 위탁합니다.
+· 수탁업체: Supabase Inc. (데이터베이스 및 인증 서비스)
+· 위탁 업무: 회원 인증, 데이터 저장
+
+제6조 (이용자의 권리)
+이용자는 언제든지 자신의 개인정보 조회·수정·삭제를 요청할 수 있으며, 관리자에게 문의하시기 바랍니다.
+
+제7조 (개인정보 보호책임자)
+· 소속: 표선고등학교 학생 언론사 '세계를 알리다'
+· 문의: 서비스 내 건의함을 통해 접수
+
+시행일: 2026년 5월 1일`,
+  },
+};
+
+function TermsViewModal({ type, onClose, dark }) {
+  const t = TERMS_TEXT[type];
+  if (!t) return null;
+  const bg = dark ? "bg-gray-900 border-gray-700 text-gray-100" : "bg-white border-gray-200 text-gray-900";
+  const sub = dark ? "text-gray-400" : "text-gray-500";
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70" onClick={onClose}>
+      <div className={"rounded-2xl border shadow-2xl w-full max-w-lg flex flex-col " + bg} style={{maxHeight:"80vh"}} onClick={e=>e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b" style={{borderColor:dark?"#374151":"#e5e7eb"}}>
+          <h3 className="font-bold text-base">{t.title}</h3>
+          <button onClick={onClose} className={"p-1 rounded-full " + (dark?"hover:bg-gray-800":"hover:bg-gray-100")}><X size={18}/></button>
+        </div>
+        <div className="overflow-y-auto px-5 py-4 flex-1">
+          <pre className={"text-xs leading-relaxed whitespace-pre-wrap font-sans " + sub}>{t.content}</pre>
+        </div>
+        <div className="px-5 py-3 border-t" style={{borderColor:dark?"#374151":"#e5e7eb"}}>
+          <button onClick={onClose} style={{backgroundColor:"#1a6b3c"}} className="w-full py-2 text-white rounded-lg text-sm font-medium hover:opacity-90">확인</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SearchDropdown({ results, query, onSelect, onViewAll, dark }) {
   if (!query.trim() || results.length === 0) return null;
 
@@ -862,6 +958,10 @@ export default function App() {
   const [signupForm,setSignupForm]   = useState({name:"",email:"",pw:""});
   const [signupErr,setSignupErr]     = useState("");
   const [signupDone,setSignupDone]   = useState(false);
+  const [termsView,setTermsView]         = useState("");         // "service"|"privacy"|""
+  const [showTermsAgree,setShowTermsAgree] = useState(false);   // Google 신규 가입 약관 동의
+  const [pendingAuthUser,setPendingAuthUser] = useState(null);  // Google 인증 대기 유저
+  const [termsCheck,setTermsCheck]       = useState({service:false,privacy:false});
   const [submitting,setSubmitting] = useState(false);
   const [submitErr,setSubmitErr]   = useState("");
   const [showShare,setShowShare]   = useState(false);
@@ -907,11 +1007,18 @@ export default function App() {
 
   const toggleDark=()=>setDark(d=>{ const n=!d; try{ localStorage.setItem(DARK_KEY,JSON.stringify(n)); }catch{} return n; });
 
-  const loadMemberProfile = async (authUser) => {
+  const loadMemberProfile = async (authUser, termsAccepted=false) => {
     const { data:profile } = await supabase.from('profiles').select('*').eq('id',authUser.id).single();
     if(!profile){
+      if(!termsAccepted){
+        setPendingAuthUser(authUser);
+        setShowTermsAgree(true);
+        setShowLogin(false);
+        return;
+      }
       const name = authUser.user_metadata?.full_name||authUser.user_metadata?.name||authUser.email?.split('@')[0]||'회원';
-      await supabase.from('profiles').upsert({id:authUser.id,display_name:name,role:'pending',email:authUser.email});
+      const now  = new Date().toISOString();
+      await supabase.from('profiles').upsert({id:authUser.id,display_name:name,role:'pending',email:authUser.email,terms_agreed:true,privacy_agreed:true,terms_agreed_at:now});
       setUser({id:authUser.id,name,role:'pending',email:authUser.email,isMember:true});
     } else {
       setUser({id:authUser.id,name:profile.display_name,role:profile.role,email:profile.email||authUser.email,isMember:true});
@@ -946,12 +1053,17 @@ export default function App() {
     setSignupErr("");
     if(!signupForm.name.trim()){ setSignupErr("이름을 입력해주세요."); return; }
     if(!signupForm.email||!signupForm.pw){ setSignupErr("이메일과 비밀번호를 입력해주세요."); return; }
+    if(!termsCheck.service){ setSignupErr("서비스 이용약관에 동의해주세요."); return; }
+    if(!termsCheck.privacy){ setSignupErr("개인정보 처리방침에 동의해주세요."); return; }
     const {data,error}=await supabase.auth.signUp({email:signupForm.email,password:signupForm.pw});
     if(error){ setSignupErr(error.message); return; }
-    if(!data.user){ setSignupDone(true); return; }
-    await supabase.from('profiles').upsert({id:data.user.id,display_name:signupForm.name,role:'pending',email:signupForm.email});
+    const now = new Date().toISOString();
+    if(data.user){
+      await supabase.from('profiles').upsert({id:data.user.id,display_name:signupForm.name,role:'pending',email:signupForm.email,terms_agreed:true,privacy_agreed:true,terms_agreed_at:now});
+    }
     setSignupDone(true);
   };
+
 
   const loadMembers=async()=>{
     const {data}=await supabase.from('profiles').select('*')
@@ -1224,6 +1336,27 @@ export default function App() {
                 <input value={signupForm.name} onChange={e=>setSignupForm({...signupForm,name:e.target.value})} placeholder="이름 *" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
                 <input type="email" value={signupForm.email} onChange={e=>setSignupForm({...signupForm,email:e.target.value})} placeholder="이메일 *" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
                 <input type="password" value={signupForm.pw} onChange={e=>setSignupForm({...signupForm,pw:e.target.value})} placeholder="비밀번호 * (6자 이상)" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
+                <input type="password" value={signupForm.pw} onChange={e=>setSignupForm({...signupForm,pw:e.target.value})} placeholder="비밀번호 * (6자 이상)" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
+                {/* 약관 동의 */}
+                <div className={`rounded-xl border p-3 space-y-2 ${dark?"bg-gray-800 border-gray-700":"bg-gray-50 border-gray-200"}`}>
+                  <p className={`text-xs font-semibold ${dark?"text-gray-300":"text-gray-600"}`}>약관 동의 (필수)</p>
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input type="checkbox" checked={termsCheck.service} onChange={e=>setTermsCheck(p=>({...p,service:e.target.checked}))} className="mt-0.5 accent-green-600 flex-shrink-0"/>
+                    <span className={`text-xs leading-relaxed ${dark?"text-gray-300":"text-gray-600"}`}>
+                      <button type="button" onClick={()=>setTermsView("service")} className="font-semibold underline text-green-600 hover:text-green-700">서비스 이용약관</button>에 동의합니다 (필수)
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input type="checkbox" checked={termsCheck.privacy} onChange={e=>setTermsCheck(p=>({...p,privacy:e.target.checked}))} className="mt-0.5 accent-green-600 flex-shrink-0"/>
+                    <span className={`text-xs leading-relaxed ${dark?"text-gray-300":"text-gray-600"}`}>
+                      <button type="button" onClick={()=>setTermsView("privacy")} className="font-semibold underline text-green-600 hover:text-green-700">개인정보 처리방침</button>에 동의합니다 (필수)
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input type="checkbox" checked={termsCheck.service&&termsCheck.privacy} onChange={e=>setTermsCheck({service:e.target.checked,privacy:e.target.checked})} className="mt-0.5 accent-green-600 flex-shrink-0"/>
+                    <span className={`text-xs font-medium ${dark?"text-gray-300":"text-gray-600"}`}>모두 동의합니다</span>
+                  </label>
+                </div>
                 {signupErr&&<p className="text-red-500 text-xs">{signupErr}</p>}
                 <button onClick={handleSignup} style={{backgroundColor:SC}} className="w-full py-2 text-white rounded-lg text-sm font-medium hover:opacity-90">가입 신청</button>
                 <button onClick={()=>{setShowSignup(false);setSignupErr("");}} className={`w-full py-1.5 text-xs ${dark?"text-gray-400":"text-gray-500"} hover:underline`}>← 로그인으로</button>
@@ -1259,6 +1392,54 @@ export default function App() {
       )}
 
       {showShare&&selected&&<ShareModal article={selected} onClose={()=>setShowShare(false)} dark={dark}/>}
+      {showShare&&selected&&<ShareModal article={selected} onClose={()=>setShowShare(false)} dark={dark}/>}
+
+      {/* 약관 전문 보기 모달 */}
+      {termsView&&<TermsViewModal type={termsView} onClose={()=>setTermsView("")} dark={dark}/>}
+
+      {/* Google 신규 가입 약관 동의 모달 */}
+      {showTermsAgree&&pendingAuthUser&&(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+          <div className={`rounded-2xl shadow-2xl p-6 w-full max-w-sm ${dark?"bg-gray-900 text-gray-100":"bg-white text-gray-900"}`} onClick={e=>e.stopPropagation()}>
+            <h2 className="font-bold text-lg mb-1">서비스 이용 동의</h2>
+            <p className={`text-xs mb-4 ${dark?"text-gray-400":"text-gray-500"}`}>Google 계정으로 처음 가입하십니다.<br/>아래 약관에 동의하시면 가입이 완료됩니다.</p>
+            <div className={`rounded-xl border p-3 space-y-2 mb-4 ${dark?"bg-gray-800 border-gray-700":"bg-gray-50 border-gray-200"}`}>
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input type="checkbox" checked={termsCheck.service} onChange={e=>setTermsCheck(p=>({...p,service:e.target.checked}))} className="mt-0.5 accent-green-600 flex-shrink-0"/>
+                <span className={`text-xs leading-relaxed ${dark?"text-gray-300":"text-gray-600"}`}>
+                  <button type="button" onClick={()=>setTermsView("service")} className="font-semibold underline text-green-600 hover:text-green-700">서비스 이용약관</button> 동의 (필수)
+                </span>
+              </label>
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input type="checkbox" checked={termsCheck.privacy} onChange={e=>setTermsCheck(p=>({...p,privacy:e.target.checked}))} className="mt-0.5 accent-green-600 flex-shrink-0"/>
+                <span className={`text-xs leading-relaxed ${dark?"text-gray-300":"text-gray-600"}`}>
+                  <button type="button" onClick={()=>setTermsView("privacy")} className="font-semibold underline text-green-600 hover:text-green-700">개인정보 처리방침</button> 동의 (필수)
+                </span>
+              </label>
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input type="checkbox" checked={termsCheck.service&&termsCheck.privacy} onChange={e=>setTermsCheck({service:e.target.checked,privacy:e.target.checked})} className="mt-0.5 accent-green-600 flex-shrink-0"/>
+                <span className={`text-xs font-medium ${dark?"text-gray-300":"text-gray-600"}`}>모두 동의합니다</span>
+              </label>
+            </div>
+            <button
+              disabled={!termsCheck.service||!termsCheck.privacy}
+              onClick={async()=>{
+                await loadMemberProfile(pendingAuthUser, true);
+                setShowTermsAgree(false);
+                setPendingAuthUser(null);
+                setTermsCheck({service:false,privacy:false});
+              }}
+              style={{backgroundColor:(termsCheck.service&&termsCheck.privacy)?"#1a6b3c":"#9ca3af"}}
+              className="w-full py-2 text-white rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed">
+              동의하고 가입 완료
+            </button>
+            <button onClick={async()=>{ await supabase.auth.signOut(); setShowTermsAgree(false); setPendingAuthUser(null); setTermsCheck({service:false,privacy:false}); }}
+              className={`w-full py-1.5 text-xs mt-2 ${dark?"text-gray-500":"text-gray-400"} hover:underline`}>
+              취소 (로그아웃)
+            </button>
+          </div>
+        </div>
+      )}
       {/* 실시간 금융 */}
       <InfoCarousel dark={dark}/>
 
