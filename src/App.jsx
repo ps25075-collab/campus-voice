@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from './lib/supabase';
-import { Search, Menu, X, TrendingUp, Instagram, Facebook, Youtube, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Menu, X, TrendingUp, Instagram, Facebook, Youtube, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle, ChevronLeft, ChevronRight, Share2, Copy, Link, Mail } from "lucide-react";
 
 /* ── 날짜 헬퍼 ── */
 const today = () => {
@@ -590,6 +590,105 @@ function SuggestionBox({ user, dark }) {
 }
 
 /* ── 메인 앱 ── */
+/* ── 공유 모달 ── */
+function ShareModal({ article, onClose, dark }) {
+  const [copied, setCopied] = useState(false);
+  const url = `${window.location.origin}/#article-${article.id}`;
+
+  const copyLink = async () => {
+    try { await navigator.clipboard.writeText(url); } catch { }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const shareKakao = () => {
+    if (navigator.share) {
+      navigator.share({ title: article.title, text: article.summary || article.body?.slice(0,80) || '', url });
+    } else {
+      const kakaoUrl = `https://sharer.kakao.com/talk/friends/picker/easylink?app_id=KAKAO_APP_ID&amp;link_ver=4.0&text=${encodeURIComponent(article.title)}&amp;url=${encodeURIComponent(url)}`;
+      copyLink();
+      alert('링크가 복사됐습니다. 카카오톡에서 붙여넣기 해주세요.');
+    }
+  };
+
+  const shareGmail = () => {
+    const su = encodeURIComponent(`[세계를 알리다] ${article.title}`);
+    const body = encodeURIComponent(`${article.title}\n\n${article.summary||article.body?.slice(0,100)||''}\n\n기사 읽기: ${url}`);
+    window.open(`https://mail.google.com/mail/?view=cm&su=${su}&body=${body}`, '_blank');
+  };
+
+  const shareEmail = () => {
+    const su = encodeURIComponent(`[세계를 알리다] ${article.title}`);
+    const body = encodeURIComponent(`${article.title}\n\n${article.summary||article.body?.slice(0,100)||''}\n\n기사 읽기: ${url}`);
+    window.location.href = `mailto:?subject=${su}&body=${body}`;
+  };
+
+  const shareTwitter = () => {
+    const text = encodeURIComponent(`[세계를 알리다] ${article.title}`);
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(url)}`, '_blank');
+  };
+
+  const shareFacebook = () => {
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+  };
+
+  const overlay = dark ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200";
+  const btnHover = dark ? "hover:bg-gray-800" : "hover:bg-gray-50";
+  const labelCls = dark ? "text-gray-300" : "text-gray-600";
+  const urlBarCls = dark ? "bg-gray-800 text-gray-400" : "bg-gray-100 text-gray-500";
+
+  const Btn = ({ onClick, bg, icon, label }) => (
+    <button onClick={onClick} className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-colors ${btnHover}`}>
+      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${bg}`}>{icon}</div>
+      <span className={`text-xs font-medium ${labelCls}`}>{label}</span>
+    </button>
+  );
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{backgroundColor:'rgba(0,0,0,0.55)'}} onClick={onClose}>
+      <div className={`rounded-2xl border p-6 w-full max-w-sm shadow-2xl ${overlay}`}
+        onClick={e=>e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className={`font-bold text-base ${dark?"text-gray-100":"text-gray-800"}`}>기사 공유하기</h3>
+          <button onClick={onClose} className={`p-1 rounded-full ${btnHover}`}><X size={18}/></button>
+        </div>
+        <p className={`text-xs mb-4 line-clamp-2 ${dark?"text-gray-400":"text-gray-500"}`}>{article.title}</p>
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          <Btn onClick={copyLink}
+            bg={copied ? "bg-green-500" : "bg-gray-200"}
+            icon={copied ? <CheckCircle size={22} className="text-white"/> : <Link size={22} className="text-gray-600"/>}
+            label={copied ? "복사됨!" : "링크 복사"}/>
+          <Btn onClick={shareKakao}
+            bg="bg-yellow-400"
+            icon={<span className="text-xl font-black text-yellow-900">K</span>}
+            label="카카오톡"/>
+          <Btn onClick={shareGmail}
+            bg="bg-red-500"
+            icon={<Mail size={22} className="text-white"/>}
+            label="Gmail"/>
+          <Btn onClick={shareEmail}
+            bg="bg-blue-500"
+            icon={<Send size={22} className="text-white"/>}
+            label="이메일"/>
+          <Btn onClick={shareTwitter}
+            bg="bg-black"
+            icon={<span className="text-white font-black text-lg">𝕏</span>}
+            label="X(트위터)"/>
+          <Btn onClick={shareFacebook}
+            bg="bg-blue-600"
+            icon={<Facebook size={22} className="text-white"/>}
+            label="페이스북"/>
+        </div>
+        <div className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${urlBarCls}`}>
+          <span className="flex-1 truncate">{url}</span>
+          <button onClick={copyLink} className="flex-shrink-0 hover:opacity-70"><Copy size={13}/></button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [dark,setDark]               = useState(false);
   const [menuOpen,setMenuOpen]       = useState(false);
@@ -618,6 +717,7 @@ export default function App() {
   const [signupDone,setSignupDone]   = useState(false);
   const [submitting,setSubmitting] = useState(false);
   const [submitErr,setSubmitErr]   = useState("");
+  const [showShare,setShowShare]   = useState(false);
   const [members,setMembers]         = useState([]);
   const [myArticles,setMyArticles]   = useState([]);
 
@@ -646,6 +746,17 @@ export default function App() {
     });
     return ()=> subscription.unsubscribe();
   },[]);
+
+
+  useEffect(()=>{
+    if(!articles.length) return;
+    const hash=window.location.hash;
+    if(hash.startsWith('#article-')){
+      const id=parseInt(hash.replace('#article-',''));
+      const article=articles.find(a=>a.id===id&&a.status==='published');
+      if(article){ setSelected(article); }
+    }
+  },[articles]);
 
   const toggleDark=()=>setDark(d=>{ const n=!d; try{ localStorage.setItem(DARK_KEY,JSON.stringify(n)); }catch{} return n; });
 
@@ -767,6 +878,7 @@ export default function App() {
     const updated={...article,views:newViews};
     setSelected(updated);
     setArticles(prev=>prev.map(a=>a.id===article.id?{...a,views:newViews}:a));
+    window.location.hash=`article-${article.id}`;
     try{ await supabase.from('articles').update({views:newViews}).eq('id',article.id); }catch{}
   };
   const doDelete=async()=>{
@@ -962,6 +1074,7 @@ export default function App() {
         </div>
       )}
 
+      {showShare&&selected&&<ShareModal article={selected} onClose={()=>setShowShare(false)} dark={dark}/>}
       {/* 실시간 금융 */}
       <InfoCarousel dark={dark}/>
 
@@ -1185,7 +1298,7 @@ export default function App() {
         {page==="home"&&selected&&(
           <div className="flex flex-col md:flex-row gap-6">
             <div className="flex-1 min-w-0">
-              <button onClick={()=>{ setSelected(null); if(user?.role==="admin"&&selected.status!=="published") setPage("admin"); }}
+              <button onClick={()=>{ setSelected(null); window.location.hash=""; if(user?.role==="admin"&&selected.status!=="published") setPage("admin"); }}
                 className="flex items-center gap-1 text-sm hover:underline mb-4" style={{color:SC}}>
                 <ArrowLeft size={15}/> {user?.role==="admin"&&selected.status!=="published"?"관리자 메뉴로":"목록으로"}
               </button>
@@ -1201,10 +1314,11 @@ export default function App() {
                   {user.role==="admin"&&<button onClick={()=>setConfirmDel(selected.id)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600"><Trash2 size={12}/> 삭제</button>}
                 </div>}
               </div>
-              <div className="flex items-center gap-3 text-xs text-gray-500 mb-4">
+              <div className="flex items-center justify-between gap-3 text-xs text-gray-500 mb-4">
                 <span>{selected.date}</span>
                 {selected.author&&<span className="text-amber-600 font-medium flex items-center gap-1"><PenLine size={11}/> {selected.author}</span>}
                 <span className="flex items-center gap-1"><Eye size={11}/> {selected.views.toLocaleString()}</span>
+                <button onClick={()=>setShowShare(true)} className="flex items-center gap-1 ml-auto px-2.5 py-1 rounded-lg border transition-colors hover:opacity-80" style={{borderColor:"#1a6b3c",color:"#1a6b3c"}}><Share2 size={12}/> 공유</button>
               </div>
               <ArticleImage image={selected.image} category={selected.category} className="w-full rounded-xl mb-5" style={{height:280}}/>
               {selected.author&&<div className="border-l-4 border-amber-400 pl-4 mb-4 py-1"><p className="text-xs text-amber-600 font-medium">{selected.type==="칼럼" ? `✒️ 칼럼
