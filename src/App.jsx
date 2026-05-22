@@ -960,6 +960,7 @@ export default function App() {
   const [signupDone,setSignupDone]   = useState(false);
   const [termsView,setTermsView]         = useState("");         // "service"|"privacy"|""
   const [showTermsAgree,setShowTermsAgree] = useState(false);   // Google 신규 가입 약관 동의
+  const [showWithdraw,setShowWithdraw]     = useState(false);   // 탈퇴 확인 모달
   const [pendingAuthUser,setPendingAuthUser] = useState(null);  // Google 인증 대기 유저
   const [termsCheck,setTermsCheck]       = useState({service:false,privacy:false});
   const [submitting,setSubmitting] = useState(false);
@@ -1084,6 +1085,17 @@ export default function App() {
   const loadMyArticles=async(name)=>{
     const {data}=await supabase.from('articles').select('*').eq('author',name).order('created_at',{ascending:false});
     setMyArticles(data||[]);
+  };
+
+  const handleWithdraw=async()=>{
+    try{
+      await supabase.rpc('delete_own_account');
+    }catch{
+      // 함수 실패 시 프로필만 삭제
+      await supabase.from('profiles').delete().eq('id',user.id);
+    }
+    await supabase.auth.signOut();
+    setUser(null); setPage("home"); setShowWithdraw(false);
   };
 
   const requestReApproval=async()=>{
@@ -1396,6 +1408,31 @@ export default function App() {
 
       {/* 약관 전문 보기 모달 */}
       {termsView&&<TermsViewModal type={termsView} onClose={()=>setTermsView("")} dark={dark}/>}
+      {termsView&&<TermsViewModal type={termsView} onClose={()=>setTermsView("")} dark={dark}/>}
+
+      {/* 탈퇴 확인 모달 */}
+      {showWithdraw&&(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className={`rounded-2xl shadow-2xl p-7 w-full max-w-sm text-center ${dark?"bg-gray-900 text-gray-100":"bg-white text-gray-900"}`} onClick={e=>e.stopPropagation()}>
+            <AlertTriangle size={38} className="text-red-500 mx-auto mb-3"/>
+            <h3 className="font-bold text-lg mb-1">정말 탈퇴하시겠어요?</h3>
+            <p className={`text-xs mb-1 ${dark?"text-gray-400":"text-gray-500"}`}>
+              계정(<span className="font-medium">{user?.email}</span>)이 즉시 삭제되며
+            </p>
+            <p className={`text-xs mb-5 ${dark?"text-gray-400":"text-gray-500"}`}>이 작업은 <span className="text-red-500 font-semibold">되돌릴 수 없습니다.</span></p>
+            <div className="flex gap-3">
+              <button onClick={()=>setShowWithdraw(false)}
+                className={`flex-1 py-2.5 rounded-xl text-sm border font-medium transition-colors ${dark?"border-gray-700 text-gray-300 hover:bg-gray-800":"border-gray-300 text-gray-600 hover:bg-gray-50"}`}>
+                취소
+              </button>
+              <button onClick={handleWithdraw}
+                className="flex-1 py-2.5 rounded-xl text-sm bg-red-500 hover:bg-red-600 text-white font-medium transition-colors">
+                탈퇴하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Google 신규 가입 약관 동의 모달 */}
       {showTermsAgree&&pendingAuthUser&&(
@@ -1595,6 +1632,19 @@ export default function App() {
                 ))}
               </div>
             }
+
+            {/* 회원 탈퇴 */}
+            <div className={`rounded-xl border mt-8 p-5 ${dark?"border-red-900 bg-red-950/30":"border-red-100 bg-red-50"}`}>
+              <h3 className={`font-bold text-sm mb-1 ${dark?"text-red-400":"text-red-600"}`}>회원 탈퇴</h3>
+              <p className={`text-xs mb-3 ${dark?"text-gray-400":"text-gray-500"}`}>
+                탈퇴 시 계정 및 프로필 정보가 즉시 삭제되며 복구할 수 없습니다.<br/>
+                작성한 기사·칼럼은 삭제되지 않으며, 댓글 작성자명은 '탈퇴한 사용자'로 변경됩니다.
+              </p>
+              <button onClick={()=>setShowWithdraw(true)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border border-red-400 text-red-500 hover:bg-red-500 hover:text-white transition-colors">
+                <LogOut size={13}/> 회원 탈퇴
+              </button>
+            </div>
           </div>
         )}
 
