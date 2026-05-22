@@ -324,7 +324,7 @@ function InfoCarousel({ dark }) {
         setSlide(prev => (prev + 1) % TOTAL);
         setFade(true);
       }, 200);
-    }, 6000);
+    }, 10000);
   };
 
   useEffect(() => {
