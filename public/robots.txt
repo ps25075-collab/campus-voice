@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://campus-voice-green-gamma.vercel.app/sitemap.xml
