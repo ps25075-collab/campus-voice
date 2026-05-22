@@ -310,7 +310,7 @@ function InfoCarousel({ dark }) {
           <button onClick={()=>goTo((slide-1+TOTAL)%TOTAL)} className={arrowBtn}>
             <ChevronLeft size={16}/>
           </button>
-          <div className="flex-1" style={{opacity: fade?1:0, transition:"opacity 0.2s"}}>
+          <div className="flex-1 min-h-[390px] md:min-h-[280px]" style={{opacity: fade?1:0, transition:"opacity 0.2s"}}>
             {slide===0 ? <FinancePanel dark={dark}/> : <WeatherPanel dark={dark}/>}
           </div>
           <button onClick={()=>goTo((slide+1)%TOTAL)} className={arrowBtn}>
