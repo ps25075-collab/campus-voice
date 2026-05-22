@@ -675,6 +675,66 @@ function SuggestionBox({ user, dark }) {
 
 /* ── 메인 앱 ── */
 /* ── 공유 모달 ── */
+/* ── 검색 드롭다운 ── */
+function SearchDropdown({ results, query, onSelect, onViewAll, dark }) {
+  if (!query.trim() || results.length === 0) return null;
+
+  const hl = (text, q) => {
+    if (!text || !q) return text;
+    const i = text.toLowerCase().indexOf(q.toLowerCase());
+    if (i === -1) return text;
+    return (
+      <span>
+        {text.slice(0, i)}
+        <mark className="bg-yellow-200 text-yellow-900 rounded-sm px-0.5 not-italic">{text.slice(i, i + q.length)}</mark>
+        {text.slice(i + q.length)}
+      </span>
+    );
+  };
+
+  const exerpt = (text, q) => {
+    if (!text) return "";
+    const i = text.toLowerCase().indexOf(q.toLowerCase());
+    if (i === -1) return text.slice(0, 60) + (text.length > 60 ? "…" : "");
+    const s = Math.max(0, i - 20);
+    const e = Math.min(text.length, i + q.length + 40);
+    return (s > 0 ? "…" : "") + text.slice(s, e) + (e < text.length ? "…" : "");
+  };
+
+  const bg  = dark ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200";
+  const itm = dark ? "hover:bg-gray-800" : "hover:bg-gray-50";
+  const sub = dark ? "text-gray-400" : "text-gray-500";
+
+  const catColor = { 긴급:"bg-red-600", 경제:"bg-blue-600", 문화:"bg-pink-500", 기술:"bg-emerald-600" };
+
+  return (
+    <div className={"absolute top-full left-0 right-0 z-50 border-b shadow-xl " + bg}>
+      <div className="max-w-6xl mx-auto px-4 py-2">
+        <p className={"text-xs mb-2 " + sub}><span className="font-semibold text-green-600">{results.length}건</span> 검색됨</p>
+        <div className="divide-y" style={{borderColor: dark?"#374151":"#f3f4f6"}}>
+          {results.slice(0, 5).map(a => (
+            <button key={a.id} onClick={()=>onSelect(a)}
+              className={"w-full text-left px-2 py-2.5 flex items-start gap-3 rounded-lg transition-colors " + itm}>
+              <span className={"text-xs text-white px-1.5 py-0.5 rounded-full flex-shrink-0 mt-0.5 " + (catColor[a.category]||"bg-gray-500")}>{a.category}</span>
+              <div className="flex-1 min-w-0">
+                <p className={"text-sm font-medium leading-snug line-clamp-1 " + (dark?"text-gray-100":"text-gray-800")}>{hl(a.title, query)}</p>
+                <p className={"text-xs mt-0.5 line-clamp-1 " + sub}>{hl(exerpt(a.body||a.summary||"", query), query)}</p>
+              </div>
+              <span className={"text-xs flex-shrink-0 " + sub}>{a.date}</span>
+            </button>
+          ))}
+        </div>
+        {results.length > 5 && (
+          <button onClick={onViewAll}
+            className={"w-full text-center text-xs py-2 mt-1 font-medium " + (dark?"text-green-400 hover:text-green-300":"text-green-600 hover:text-green-700")}>
+            전체 결과 {results.length}건 보기 →
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ShareModal({ article, onClose, dark }) {
   const [copied, setCopied] = useState(false);
   const url = `${window.location.origin}/#article-${article.id}`;
@@ -782,6 +842,9 @@ export default function App() {
   const [page,setPage]               = useState("home");
   const [search,setSearch]           = useState("");
   const [searchOpen,setSearchOpen]   = useState(false);
+  const [recentSearches,setRecentSearches] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("cv_recent_q")||"[]"); }catch{ return []; } });
+  const [showDrop,setShowDrop]             = useState(false);
+  const searchRef                          = useRef(null);
   const [email,setEmail]             = useState("");
   const [subscribed,setSubscribed]   = useState(false);
   const [articles,setArticles]       = useState([]);
@@ -982,9 +1045,10 @@ export default function App() {
     const mc=activeCategory==="전체"||a.category===activeCategory;
     const mt=activeType==="전체"||a.type===activeType;
     const q=search.toLowerCase();
-    const ms=!search||a.title.toLowerCase().includes(q)||a.summary?.toLowerCase().includes(q)||a.body?.toLowerCase().includes(q);
+    const ms=!search||[a.title,a.summary,a.body,a.author,a.category].some(f=>f?.toLowerCase().includes(q));
     return mc&&mt&&ms&&(!a.hero||!!search);
   });
+  const searchResults=search.trim()?published.filter(a=>{ const q=search.toLowerCase(); return a.title.toLowerCase().includes(q)||a.body?.toLowerCase().includes(q)||a.summary?.toLowerCase().includes(q)||a.author?.toLowerCase().includes(q)||a.category?.toLowerCase().includes(q); }):[];
   const topViewed=[...published].sort((a,b)=>b.views-a.views).slice(0,5);
   const pendingCount=articles.filter(a=>a.status==="pending").length;
   const pendingMemberCount=members.filter(m=>m.role==="pending").length;
@@ -1049,11 +1113,47 @@ export default function App() {
                 className="ml-2 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded text-sm font-medium border border-white/30">✏️ 글 작성</button>
             )}
           </nav>
-          <div className="flex items-center gap-2">
-            {searchOpen&&<input autoFocus value={search} onChange={e=>setSearch(e.target.value)} placeholder="검색..." className="px-3 py-1 rounded text-sm text-gray-900 w-36 focus:outline-none"/>}
-            <button onClick={()=>{ if(searchOpen) setSearch(""); setSearchOpen(s=>!s); }} className="text-white hover:text-green-200"><Search size={20}/></button>
+          <div className="flex items-center gap-2 relative">
+            {searchOpen && (
+              <div className="flex items-center gap-1 bg-white rounded-lg overflow-hidden shadow-sm">
+                <input ref={searchRef} autoFocus value={search}
+                  onChange={e=>{ setSearch(e.target.value); setShowDrop(true); }}
+                  onKeyDown={e=>{ if(e.key==="Escape"){ setSearch(""); setSearchOpen(false); setShowDrop(false); } if(e.key==="Enter"&&search.trim()){ setShowDrop(false); const q=search.trim(); setRecentSearches(prev=>{ const n=[q,...prev.filter(x=>x!==q)].slice(0,5); try{localStorage.setItem("cv_recent_q",JSON.stringify(n));}catch{}; return n; }); } }}
+                  onFocus={()=>setShowDrop(true)}
+                  placeholder="제목, 내용, 작성자 검색..."
+                  className="px-3 py-1.5 text-sm text-gray-900 w-52 md:w-72 focus:outline-none bg-transparent"/>
+                {search && <button onClick={()=>{ setSearch(""); setShowDrop(false); searchRef.current?.focus(); }} className="pr-2 text-gray-400 hover:text-gray-600"><X size={14}/></button>}
+              </div>
+            )}
+            <button onClick={()=>{ if(searchOpen){ setSearch(""); setShowDrop(false); } setSearchOpen(s=>!s); }} className="text-white hover:text-green-200 flex-shrink-0"><Search size={20}/></button>
           </div>
         </div>
+        {/* 검색 드롭다운 */}
+        {searchOpen&&showDrop&&search.trim()&&(
+          <SearchDropdown
+            results={searchResults} query={search} dark={dark}
+            onSelect={a=>{ openArticle(a); setShowDrop(false); setSearchOpen(false); setSearch(""); }}
+            onViewAll={()=>{ setShowDrop(false); }}/>
+        )}
+        {/* 최근 검색어 */}
+        {searchOpen&&showDrop&&!search.trim()&&recentSearches.length>0&&(
+          <div className={"absolute top-full left-0 right-0 z-50 border-b shadow-lg " + (dark?"bg-gray-900 border-gray-700":"bg-white border-gray-200")}>
+            <div className="max-w-6xl mx-auto px-4 py-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className={"text-xs font-medium " + (dark?"text-gray-400":"text-gray-500")}>최근 검색어</span>
+                <button onClick={()=>{ setRecentSearches([]); try{localStorage.removeItem("cv_recent_q");}catch{} }} className={"text-xs " + (dark?"text-gray-500 hover:text-gray-300":"text-gray-400 hover:text-gray-600")}>전체 삭제</button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {recentSearches.map((q,i)=>(
+                  <button key={i} onClick={()=>{ setSearch(q); setShowDrop(true); }}
+                    className={"flex items-center gap-1 px-3 py-1 rounded-full text-xs border transition-colors " + (dark?"border-gray-700 text-gray-300 hover:border-green-500 hover:text-green-400":"border-gray-300 text-gray-600 hover:border-green-500 hover:text-green-600")}>
+                    <Search size={10}/> {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
         {menuOpen&&(
           <div style={{backgroundColor:SCD}} className="md:hidden border-t border-green-900 px-4 pb-3 pt-2 flex flex-col gap-2">
             {CATEGORIES.map(c=>(
@@ -1506,8 +1606,8 @@ export default function App() {
 
             <div className="flex flex-col md:flex-row gap-6">
               <div className="flex-1">
-                {search&&<p className="text-sm text-gray-500 mb-4">'{search}' 검색 결과 {filtered.length}건</p>}
-                {filtered.length===0&&<p className="text-gray-400 text-sm py-10 text-center">게재된 글이 없습니다.</p>}
+                {search&&<div className="mb-4"><p className={"text-sm font-medium " + (dark?"text-gray-300":"text-gray-700")}><span className="text-green-600 font-bold">{filtered.length}건</span> — <span className="text-green-600 font-semibold">{search}</span> 검색 결과</p><p className={"text-xs mt-0.5 " + (dark?"text-gray-500":"text-gray-400")}>제목 · 본문 · 작성자 · 카테고리에서 검색됨</p></div>}
+                {filtered.length===0&&<div className="py-12 text-center"><p className="text-gray-400 text-sm mb-1">{search ? "검색 결과가 없습니다." : "게재된 글이 없습니다."}</p>{search&&<p className={"text-xs " + (dark?"text-gray-600":"text-gray-400")}>다른 검색어를 입력해보세요</p>}</div>}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {filtered.map(a=>(
                     <div key={a.id} onClick={()=>openArticle(a)}
