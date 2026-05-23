@@ -262,6 +262,14 @@ function WeatherPanel({ dark }) {
   const WMO_LABEL = {0:"맑음",1:"대체로 맑음",2:"구름 조금",3:"흐림",45:"안개",48:"안개",51:"이슬비",53:"이슬비",55:"이슬비",61:"비",63:"비",65:"강한 비",71:"눈",73:"눈",75:"강한 눈",80:"소나기",81:"소나기",82:"강한 소나기",95:"뇌우",96:"뇌우",99:"뇌우"};
   const WMO_ICON  = {0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",53:"🌦️",55:"🌧️",61:"🌧️",63:"🌧️",65:"🌧️",71:"❄️",73:"❄️",75:"❄️",80:"🌦️",81:"🌦️",82:"🌧️",95:"⛈️",96:"⛈️",99:"⛈️"};
 
+  const TEMP_LEVELS = [
+    { max: 0,        emoji: "🥶", label: "매우 추움", color: "text-blue-600",   bar: "bg-blue-600" },
+    { max: 10,       emoji: "🧥", label: "추움",     color: "text-sky-400",    bar: "bg-sky-400" },
+    { max: 22,       emoji: "😊", label: "쾌적",     color: "text-green-500",  bar: "bg-green-400" },
+    { max: 30,       emoji: "☀️", label: "더움",     color: "text-orange-500", bar: "bg-orange-500" },
+    { max: Infinity, emoji: "🥵", label: "폭염",     color: "text-red-600",    bar: "bg-red-600" },
+  ];
+
   const HUMIDITY_LEVELS = [
     { max: 20,       emoji: "💀", label: "매우 건조", color: "text-red-500",    bar: "bg-red-400" },
     { max: 40,       emoji: "🏜️", label: "건조",     color: "text-orange-400", bar: "bg-orange-400" },
@@ -309,8 +317,10 @@ function WeatherPanel({ dark }) {
   const val      = dark ? "text-gray-100" : "text-gray-800";
   const sub      = dark ? "text-gray-400" : "text-gray-500";
   const emptyBar = dark ? "bg-gray-700" : "bg-gray-200";
+  const tIdx     = weather != null ? getLevelIdx(TEMP_LEVELS, weather.temperature_2m) : -1;
   const hIdx     = weather != null ? getLevelIdx(HUMIDITY_LEVELS, weather.relative_humidity_2m) : -1;
   const wIdx     = weather != null ? getLevelIdx(WIND_LEVELS, weather.wind_speed_10m) : -1;
+  const tLevel   = tIdx >= 0 ? TEMP_LEVELS[tIdx] : null;
   const hLevel   = hIdx >= 0 ? HUMIDITY_LEVELS[hIdx] : null;
   const wLevel   = wIdx >= 0 ? WIND_LEVELS[wIdx] : null;
 
@@ -339,6 +349,18 @@ function WeatherPanel({ dark }) {
             <div className={`rounded-xl border px-3 py-2.5 md:px-4 md:py-3 ${card}`}>
               <p className="text-[11px] md:text-xs font-medium mb-0.5 md:mb-1 text-gray-400">기온</p>
               <p className={`text-lg md:text-2xl font-extrabold leading-tight ${val}`}>{weather.temperature_2m}°C</p>
+              {tLevel && (
+                <>
+                  <div className={`flex items-center gap-1 mt-1 text-xs font-medium ${tLevel.color}`}>
+                    <span>{tLevel.emoji}</span><span>{tLevel.label}</span>
+                  </div>
+                  <div className="flex gap-0.5 mt-1.5">
+                    {TEMP_LEVELS.map((l,i)=>(
+                      <div key={i} className={`h-1.5 flex-1 rounded-full ${i<=tIdx ? l.bar : emptyBar}`}/>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
             <div className={`rounded-xl border px-3 py-2.5 md:px-4 md:py-3 ${card}`}>
               <p className="text-[11px] md:text-xs font-medium mb-0.5 md:mb-1 text-gray-400">습도</p>
