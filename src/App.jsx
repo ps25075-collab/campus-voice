@@ -308,23 +308,13 @@ function WeatherPanel({ dark }) {
 /* ── 정보 캐러셀 (금융 지표 ↔ 날씨) ── */
 function InfoCarousel({ dark }) {
   const [slide, setSlide] = useState(0);
-  const [fade,  setFade]  = useState(true);
   const TOTAL = 2;
   const intervalRef = useRef(null);
-
-  const goTo = (idx) => {
-    setFade(false);
-    setTimeout(()=>{ setSlide(idx); setFade(true); }, 200);
-  };
 
   const startAutoPlay = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = setInterval(() => {
-      setFade(false);
-      setTimeout(() => {
-        setSlide(prev => (prev + 1) % TOTAL);
-        setFade(true);
-      }, 200);
+      setSlide(prev => (prev + 1) % TOTAL);
     }, 10000);
   };
 
@@ -334,7 +324,7 @@ function InfoCarousel({ dark }) {
   }, []);
 
   const handleGoTo = (idx) => {
-    goTo(idx);
+    setSlide(idx);
     startAutoPlay();
   };
 
@@ -347,8 +337,13 @@ function InfoCarousel({ dark }) {
           <button onClick={()=>handleGoTo((slide-1+TOTAL)%TOTAL)} className={arrowBtn}>
             <ChevronLeft size={16}/>
           </button>
-          <div className="flex-1 min-w-0 min-h-[360px] md:min-h-[280px]" style={{opacity: fade?1:0, transition:"opacity 0.2s"}}>
-            {slide===0 ? <FinancePanel dark={dark}/> : <WeatherPanel dark={dark}/>}
+          <div className="flex-1 min-w-0 grid">
+            <div className={`col-start-1 row-start-1 transition-opacity duration-300 ${slide===0?"opacity-100":"opacity-0 pointer-events-none"}`}>
+              <FinancePanel dark={dark}/>
+            </div>
+            <div className={`col-start-1 row-start-1 transition-opacity duration-300 ${slide===1?"opacity-100":"opacity-0 pointer-events-none"}`} aria-hidden={slide!==1}>
+              <WeatherPanel dark={dark}/>
+            </div>
           </div>
           <button onClick={()=>handleGoTo((slide+1)%TOTAL)} className={arrowBtn}>
             <ChevronRight size={16}/>
