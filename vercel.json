@@ -1,4 +1,8 @@
 {
+  "rewrites": [
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/article/:id", "destination": "/api/article/:id" }
+  ],
   "crons": [
     {
       "path": "/api/newsletter",

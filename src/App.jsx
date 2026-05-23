@@ -69,7 +69,7 @@ const memberRoleStyle = { pending:"bg-yellow-100 text-yellow-700", reporter:"bg-
 
 /* ── 이미지 컴포넌트 ── */
 const CAT_EMOJI = { 긴급:"⚠️", 경제:"💰", 문화:"🎨", 기술:"💡" };
-function ArticleImage({ image, category, title, className="", style={} }) {
+function ArticleImage({ image, category, title, priority=false, className="", style={} }) {
   const [failed, setFailed] = useState(false);
   const show = image && !failed;
   const emoji = CAT_EMOJI[category];
@@ -78,7 +78,11 @@ function ArticleImage({ image, category, title, className="", style={} }) {
     <div className={`relative overflow-hidden ${className}`}
       style={{ background: catGradient[category]||"linear-gradient(135deg,#374151,#6b7280)", ...style }}>
       {show
-        ? <img src={image} alt="" className="w-full h-full object-cover absolute inset-0" onError={()=>setFailed(true)}/>
+        ? <img src={image} alt={title||""}
+            loading={priority?"eager":"lazy"}
+            fetchpriority={priority?"high":"auto"}
+            decoding="async"
+            className="w-full h-full object-cover absolute inset-0" onError={()=>setFailed(true)}/>
         : <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-white/80 select-none">
             {emoji && <span className="text-4xl md:text-5xl drop-shadow-md leading-none">{emoji}</span>}
             {initial && <span className="text-white/90 font-bold text-base md:text-lg tracking-wide line-clamp-1 px-3 text-center drop-shadow">{initial}</span>}
@@ -944,7 +948,7 @@ function SearchDropdown({ results, query, onSelect, onViewAll, dark }) {
 
 function ShareModal({ article, onClose, dark }) {
   const [copied, setCopied] = useState(false);
-  const url = `${window.location.origin}/#article-${article.id}`;
+  const url = `${window.location.origin}/article/${article.id}`;
 
   const copyLink = async () => {
     try { await navigator.clipboard.writeText(url); } catch { }
@@ -1117,14 +1121,28 @@ export default function App() {
   },[]);
 
 
+  // path/hash → article 매핑 (초기 진입 + 뒤로가기/앞으로가기)
   useEffect(()=>{
     if(!articles.length) return;
-    const hash=window.location.hash;
-    if(hash.startsWith('#article-')){
-      const id=parseInt(hash.replace('#article-',''));
-      const article=articles.find(a=>a.id===id&&a.status==='published');
-      if(article){ setSelected(article); }
-    }
+    const openFromUrl = () => {
+      const path=window.location.pathname;
+      const m=path.match(/^\/article\/(\d+)/);
+      let id=null;
+      if(m){ id=parseInt(m[1]); }
+      else{
+        const hash=window.location.hash;
+        if(hash.startsWith('#article-')) id=parseInt(hash.replace('#article-',''));
+      }
+      if(id){
+        const article=articles.find(a=>a.id===id&&a.status==='published');
+        setSelected(article || null);
+      } else {
+        setSelected(null);
+      }
+    };
+    openFromUrl();
+    window.addEventListener('popstate', openFromUrl);
+    return ()=> window.removeEventListener('popstate', openFromUrl);
   },[articles]);
 
   const toggleDark=()=>setDark(d=>{ const n=!d; try{ localStorage.setItem(DARK_KEY,JSON.stringify(n)); }catch{} return n; });
@@ -1302,7 +1320,10 @@ export default function App() {
     const updated={...article,views:newViews};
     setSelected(updated);
     setArticles(prev=>prev.map(a=>a.id===article.id?{...a,views:newViews}:a));
-    window.location.hash=`article-${article.id}`;
+    const targetPath=`/article/${article.id}`;
+    if(window.location.pathname!==targetPath){
+      window.history.pushState({articleId:article.id}, '', targetPath);
+    }
     try{ await supabase.from('articles').update({views:newViews}).eq('id',article.id); }catch{}
   };
   const doDelete=async()=>{
@@ -1928,7 +1949,7 @@ export default function App() {
           <div className="flex flex-col md:flex-row gap-6 lg:gap-10">
             <ReadingProgress/>
             <article className="flex-1 min-w-0 md:max-w-3xl">
-              <button onClick={()=>{ setSelected(null); window.location.hash=""; if(user?.role==="admin"&&selected.status!=="published") setPage("admin"); }}
+              <button onClick={()=>{ setSelected(null); if(window.location.pathname.startsWith('/article/')){ window.history.pushState({}, '', '/'); } window.location.hash=""; if(user?.role==="admin"&&selected.status!=="published") setPage("admin"); }}
                 className="flex items-center gap-1 text-sm hover:underline mb-4" style={{color:SC}}>
                 <ArrowLeft size={15}/> {user?.role==="admin"&&selected.status!=="published"?"관리자 메뉴로":"목록으로"}
               </button>
@@ -1955,7 +1976,7 @@ export default function App() {
                 </div>
                 <button onClick={()=>setShowShare(true)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-colors hover:opacity-80" style={{borderColor:"#1a6b3c",color:"#1a6b3c"}}><Share2 size={12}/> 공유</button>
               </div>
-              <ArticleImage image={selected.image} category={selected.category} title={selected.title} className="w-full rounded-xl mb-6 md:mb-7 h-48 sm:h-64 md:h-80 lg:h-[420px]"/>
+              <ArticleImage image={selected.image} category={selected.category} title={selected.title} priority className="w-full rounded-xl mb-6 md:mb-7 h-48 sm:h-64 md:h-80 lg:h-[420px]"/>
               {selected.author&&<div className="border-l-4 border-amber-400 pl-4 mb-5 py-1.5"><p className="text-xs md:text-sm text-amber-600 font-medium">{selected.type==="칼럼" ? `✒️ 칼럼 — ${selected.author} 기고` : `✍️ 기사 — ${selected.author} 작성`}</p></div>}
               <div className="text-[15px] md:text-[17px] leading-relaxed md:leading-[1.85] whitespace-pre-line">{selected.body}</div>
 
@@ -2035,7 +2056,7 @@ export default function App() {
             )}
             {hero&&activeCategory==="전체"&&activeType==="전체"&&!search&&(
               <div onClick={()=>openArticle(hero)} className="cursor-pointer rounded-2xl overflow-hidden mb-6 md:mb-10 relative group h-56 sm:h-72 md:h-[360px] lg:h-[420px] shadow-md hover:shadow-2xl transition-shadow duration-300">
-                <ArticleImage image={hero.image} category={hero.category} title={hero.title} className="w-full h-full group-hover:scale-[1.04] transition-transform duration-700 ease-out"/>
+                <ArticleImage image={hero.image} category={hero.category} title={hero.title} priority className="w-full h-full group-hover:scale-[1.04] transition-transform duration-700 ease-out"/>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent"/>
                 <div className="absolute top-3 left-3 md:top-5 md:left-5">
                   <span className="bg-red-500 text-white text-[11px] md:text-xs font-bold px-2.5 py-1 rounded-full shadow-lg tracking-wide uppercase animate-pulse">⚡ Top</span>
