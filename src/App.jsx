@@ -1105,12 +1105,6 @@ export default function App() {
     }
   },[articles]);
 
-  // 직원(관리자·기자)의 저장한 글: 로컬 ID + articles에서 derive
-  useEffect(()=>{
-    if(!user || user.isMember) return;
-    setBookmarkedArticles(articles.filter(a=>bookmarks.includes(a.id)));
-  },[articles, bookmarks, user]);
-
   const toggleDark=()=>setDark(d=>{ const n=!d; try{ localStorage.setItem(DARK_KEY,JSON.stringify(n)); }catch{} return n; });
 
   const loadMemberProfile = async (authUser, termsAccepted=false) => {
@@ -1194,44 +1188,32 @@ export default function App() {
     setMyArticles(data||[]);
   };
 
-  const staffBookmarkKey = (uid) => `cv_bookmarks_staff_${uid}`;
+  // user_id 포맷: 회원은 auth.uid, 직원은 'staff:' + login id
+  const bookmarkKey = (uid, isMember) => isMember ? uid : `staff:${uid}`;
 
   const loadBookmarks=async(uid, isMember)=>{
-    if(isMember){
-      try{
-        const {data}=await supabase.from('bookmarks').select('article_id, created_at, articles(*)').eq('user_id',uid).order('created_at',{ascending:false});
-        const ids=(data||[]).map(b=>b.article_id);
-        const arts=(data||[]).map(b=>b.articles).filter(Boolean);
-        setBookmarks(ids);
-        setBookmarkedArticles(arts);
-      }catch{}
-    } else {
-      // 직원(관리자·기자): localStorage 기반. bookmarkedArticles는 articles 로드 후 useEffect로 derive
-      try{
-        const ids=JSON.parse(localStorage.getItem(staffBookmarkKey(uid))||"[]");
-        setBookmarks(ids);
-      }catch{ setBookmarks([]); }
-    }
+    const key = bookmarkKey(uid, isMember);
+    try{
+      const {data}=await supabase.from('bookmarks').select('article_id, created_at, articles(*)').eq('user_id',key).order('created_at',{ascending:false});
+      const ids=(data||[]).map(b=>b.article_id);
+      const arts=(data||[]).map(b=>b.articles).filter(Boolean);
+      setBookmarks(ids);
+      setBookmarkedArticles(arts);
+    }catch{}
   };
 
   const toggleBookmark=async(articleId, willActivate)=>{
     if(!user) return;
-    const nextIds = willActivate
-      ? (bookmarks.includes(articleId) ? bookmarks : [...bookmarks, articleId])
-      : bookmarks.filter(id=>id!==articleId);
-    setBookmarks(nextIds);
-    if(user.isMember){
-      if(willActivate){
-        const a=articles.find(x=>x.id===articleId);
-        if(a) setBookmarkedArticles(prev=>prev.some(x=>x.id===articleId)?prev:[a,...prev]);
-        try{ await supabase.from('bookmarks').insert({user_id:user.id, article_id:articleId}); }catch{}
-      } else {
-        setBookmarkedArticles(prev=>prev.filter(a=>a.id!==articleId));
-        try{ await supabase.from('bookmarks').delete().eq('user_id',user.id).eq('article_id',articleId); }catch{}
-      }
+    const key = bookmarkKey(user.id, !!user.isMember);
+    if(willActivate){
+      setBookmarks(prev=>prev.includes(articleId)?prev:[...prev,articleId]);
+      const a=articles.find(x=>x.id===articleId);
+      if(a) setBookmarkedArticles(prev=>prev.some(x=>x.id===articleId)?prev:[a,...prev]);
+      try{ await supabase.from('bookmarks').insert({user_id:key, article_id:articleId}); }catch{}
     } else {
-      // 직원: localStorage 영속화. bookmarkedArticles는 useEffect가 articles에서 derive
-      try{ localStorage.setItem(staffBookmarkKey(user.id), JSON.stringify(nextIds)); }catch{}
+      setBookmarks(prev=>prev.filter(id=>id!==articleId));
+      setBookmarkedArticles(prev=>prev.filter(a=>a.id!==articleId));
+      try{ await supabase.from('bookmarks').delete().eq('user_id',key).eq('article_id',articleId); }catch{}
     }
   };
 
