@@ -91,7 +91,7 @@ function ArticleImage({ image, category, title, className="", style={} }) {
 /* ── 북마크 토글 버튼 ── */
 function BookmarkButton({ articleId, user, bookmarks, onToggle, dark }) {
   const active = bookmarks.includes(articleId);
-  if (!user?.isMember) return null;
+  if (!user) return null;
   return (
     <button onClick={()=>onToggle(articleId, !active)}
       aria-label={active?"북마크 해제":"북마크 추가"}
@@ -1074,7 +1074,11 @@ export default function App() {
       let staffLoaded=false;
       try{
         const saved=localStorage.getItem("cv_user");
-        if(saved){ setUser(JSON.parse(saved)); staffLoaded=true; }
+        if(saved){
+          const u=JSON.parse(saved);
+          setUser(u); staffLoaded=true;
+          loadBookmarks(u.id, false);
+        }
       }catch{}
       if(!staffLoaded){
         try{
@@ -1101,6 +1105,12 @@ export default function App() {
     }
   },[articles]);
 
+  // 직원(관리자·기자)의 저장한 글: 로컬 ID + articles에서 derive
+  useEffect(()=>{
+    if(!user || user.isMember) return;
+    setBookmarkedArticles(articles.filter(a=>bookmarks.includes(a.id)));
+  },[articles, bookmarks, user]);
+
   const toggleDark=()=>setDark(d=>{ const n=!d; try{ localStorage.setItem(DARK_KEY,JSON.stringify(n)); }catch{} return n; });
 
   const loadMemberProfile = async (authUser, termsAccepted=false) => {
@@ -1119,7 +1129,7 @@ export default function App() {
     } else {
       setUser({id:authUser.id,name:profile.display_name,role:profile.role,email:profile.email||authUser.email,isMember:true});
     }
-    loadBookmarks(authUser.id);
+    loadBookmarks(authUser.id, true);
   };
 
   const handleLogin=async()=>{
@@ -1130,6 +1140,7 @@ export default function App() {
       const userObj=await res.json();
       setUser(userObj);
       localStorage.setItem("cv_user",JSON.stringify(userObj));
+      loadBookmarks(userObj.id, false);
       setShowLogin(false); setLoginForm({id:"",pw:""});
     }catch{ setLoginError("로그인 중 오류가 발생했습니다."); }
   };
@@ -1183,27 +1194,44 @@ export default function App() {
     setMyArticles(data||[]);
   };
 
-  const loadBookmarks=async(uid)=>{
-    try{
-      const {data}=await supabase.from('bookmarks').select('article_id, created_at, articles(*)').eq('user_id',uid).order('created_at',{ascending:false});
-      const ids=(data||[]).map(b=>b.article_id);
-      const arts=(data||[]).map(b=>b.articles).filter(Boolean);
-      setBookmarks(ids);
-      setBookmarkedArticles(arts);
-    }catch{}
+  const staffBookmarkKey = (uid) => `cv_bookmarks_staff_${uid}`;
+
+  const loadBookmarks=async(uid, isMember)=>{
+    if(isMember){
+      try{
+        const {data}=await supabase.from('bookmarks').select('article_id, created_at, articles(*)').eq('user_id',uid).order('created_at',{ascending:false});
+        const ids=(data||[]).map(b=>b.article_id);
+        const arts=(data||[]).map(b=>b.articles).filter(Boolean);
+        setBookmarks(ids);
+        setBookmarkedArticles(arts);
+      }catch{}
+    } else {
+      // 직원(관리자·기자): localStorage 기반. bookmarkedArticles는 articles 로드 후 useEffect로 derive
+      try{
+        const ids=JSON.parse(localStorage.getItem(staffBookmarkKey(uid))||"[]");
+        setBookmarks(ids);
+      }catch{ setBookmarks([]); }
+    }
   };
 
   const toggleBookmark=async(articleId, willActivate)=>{
-    if(!user?.isMember) return;
-    if(willActivate){
-      setBookmarks(prev=>prev.includes(articleId)?prev:[...prev,articleId]);
-      try{ await supabase.from('bookmarks').insert({user_id:user.id, article_id:articleId}); }catch{}
-      const a=articles.find(x=>x.id===articleId);
-      if(a) setBookmarkedArticles(prev=>prev.some(x=>x.id===articleId)?prev:[a,...prev]);
+    if(!user) return;
+    const nextIds = willActivate
+      ? (bookmarks.includes(articleId) ? bookmarks : [...bookmarks, articleId])
+      : bookmarks.filter(id=>id!==articleId);
+    setBookmarks(nextIds);
+    if(user.isMember){
+      if(willActivate){
+        const a=articles.find(x=>x.id===articleId);
+        if(a) setBookmarkedArticles(prev=>prev.some(x=>x.id===articleId)?prev:[a,...prev]);
+        try{ await supabase.from('bookmarks').insert({user_id:user.id, article_id:articleId}); }catch{}
+      } else {
+        setBookmarkedArticles(prev=>prev.filter(a=>a.id!==articleId));
+        try{ await supabase.from('bookmarks').delete().eq('user_id',user.id).eq('article_id',articleId); }catch{}
+      }
     } else {
-      setBookmarks(prev=>prev.filter(id=>id!==articleId));
-      setBookmarkedArticles(prev=>prev.filter(a=>a.id!==articleId));
-      try{ await supabase.from('bookmarks').delete().eq('user_id',user.id).eq('article_id',articleId); }catch{}
+      // 직원: localStorage 영속화. bookmarkedArticles는 useEffect가 articles에서 derive
+      try{ localStorage.setItem(staffBookmarkKey(user.id), JSON.stringify(nextIds)); }catch{}
     }
   };
 
@@ -1321,8 +1349,8 @@ export default function App() {
         {user?(
           <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
             <span style={{color:SC}} className="font-medium truncate max-w-[110px] sm:max-w-none">{roleLabel[user.role]} {user.name}</span>
-            {user?.isMember&&(
-              <button onClick={()=>{setPage("mypage");loadMyArticles(user.name);loadBookmarks(user.id);}} className="flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 rounded-lg border border-green-700 text-green-700 hover:bg-green-700 hover:text-white transition-colors text-xs md:text-sm font-medium whitespace-nowrap">
+            {user&&(
+              <button onClick={()=>{setPage("mypage");loadMyArticles(user.name);loadBookmarks(user.id, !!user.isMember);}} className="flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 rounded-lg border border-green-700 text-green-700 hover:bg-green-700 hover:text-white transition-colors text-xs md:text-sm font-medium whitespace-nowrap">
                 <span className="hidden sm:inline">마이페이지</span><span className="sm:hidden">MY</span>
               </button>
             )}
@@ -1706,7 +1734,7 @@ export default function App() {
         )}
 
         {/* MYPAGE */}
-        {page==="mypage"&&user?.isMember&&(
+        {page==="mypage"&&user&&(
           <div className="max-w-2xl mx-auto">
             <button onClick={()=>setPage("home")} className="flex items-center gap-1 text-sm hover:underline mb-4" style={{color:SC}}>
               <ArrowLeft size={15}/> 홈으로
@@ -1806,18 +1834,20 @@ export default function App() {
                 </div>
             )}
 
-            {/* 회원 탈퇴 */}
-            <div className={`rounded-xl border mt-8 p-5 ${dark?"border-red-900 bg-red-950/30":"border-red-100 bg-red-50"}`}>
-              <h3 className={`font-bold text-sm mb-1 ${dark?"text-red-400":"text-red-600"}`}>회원 탈퇴</h3>
-              <p className={`text-xs mb-3 ${dark?"text-gray-400":"text-gray-500"}`}>
-                탈퇴 시 계정 및 프로필 정보가 즉시 삭제되며 복구할 수 없습니다.<br/>
-                작성한 기사·칼럼은 삭제되지 않으며, 댓글 작성자명은 '탈퇴한 사용자'로 변경됩니다.
-              </p>
-              <button onClick={()=>setShowWithdraw(true)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border border-red-400 text-red-500 hover:bg-red-500 hover:text-white transition-colors">
-                <LogOut size={13}/> 회원 탈퇴
-              </button>
-            </div>
+            {/* 회원 탈퇴 (회원만) */}
+            {user.isMember&&(
+              <div className={`rounded-xl border mt-8 p-5 ${dark?"border-red-900 bg-red-950/30":"border-red-100 bg-red-50"}`}>
+                <h3 className={`font-bold text-sm mb-1 ${dark?"text-red-400":"text-red-600"}`}>회원 탈퇴</h3>
+                <p className={`text-xs mb-3 ${dark?"text-gray-400":"text-gray-500"}`}>
+                  탈퇴 시 계정 및 프로필 정보가 즉시 삭제되며 복구할 수 없습니다.<br/>
+                  작성한 기사·칼럼은 삭제되지 않으며, 댓글 작성자명은 '탈퇴한 사용자'로 변경됩니다.
+                </p>
+                <button onClick={()=>setShowWithdraw(true)}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border border-red-400 text-red-500 hover:bg-red-500 hover:text-white transition-colors">
+                  <LogOut size={13}/> 회원 탈퇴
+                </button>
+              </div>
+            )}
           </div>
         )}
 
