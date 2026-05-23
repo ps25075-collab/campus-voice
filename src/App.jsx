@@ -109,11 +109,11 @@ function FinancePanel({ dark }) {
   const renderCard = (label, value, change) => {
     const up = change?.startsWith("+");
     return (
-      <div key={label} className={`rounded-xl border px-4 py-3 ${card}`}>
-        <p className="text-xs font-medium mb-1 text-gray-400">{label}</p>
-        <p className={`text-2xl font-extrabold leading-tight ${dark?"text-gray-100":"text-gray-800"}`}>{value}</p>
+      <div key={label} className={`rounded-xl border px-3 py-2.5 md:px-4 md:py-3 ${card}`}>
+        <p className="text-[11px] md:text-xs font-medium mb-0.5 md:mb-1 text-gray-400">{label}</p>
+        <p className={`text-lg md:text-2xl font-extrabold leading-tight ${dark?"text-gray-100":"text-gray-800"}`}>{value}</p>
         {change && (
-          <p className={`text-sm font-semibold mt-0.5 ${up?"text-red-500":"text-blue-500"}`}>{change}</p>
+          <p className={`text-xs md:text-sm font-semibold mt-0.5 ${up?"text-red-500":"text-blue-500"}`}>{change}</p>
         )}
       </div>
     );
@@ -121,9 +121,9 @@ function FinancePanel({ dark }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <span className={`text-sm font-bold flex items-center gap-1.5 ${sub}`}>
-          <RefreshCw size={14}/> 실시간 금융 지표
+      <div className="flex items-center justify-between mb-3 md:mb-4">
+        <span className={`text-xs md:text-sm font-bold flex items-center gap-1.5 ${sub}`}>
+          <RefreshCw size={13}/> 실시간 금융 지표
         </span>
         <button onClick={fetchData} className={`transition-colors ${dark?"text-gray-600 hover:text-gray-300":"text-gray-300 hover:text-gray-600"}`} title="새로고침">
           <RefreshCw size={15}/>
@@ -138,8 +138,8 @@ function FinancePanel({ dark }) {
       {!loading&&!error&&data&&(
         <div className="space-y-3">
           <div>
-            <p className={`text-xs font-bold mb-2 ${sub}`}>📈 주가 지수</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <p className={`text-[11px] md:text-xs font-bold mb-1.5 md:mb-2 ${sub}`}>📈 주가 지수</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
               {renderCard("코스피",   data.kospi,   data.kospi_change)}
               {renderCard("NASDAQ",  data.nasdaq,  data.nasdaq_change)}
               {renderCard("S&P 500", data.sp500,   data.sp500_change)}
@@ -147,8 +147,8 @@ function FinancePanel({ dark }) {
             </div>
           </div>
           <div>
-            <p className={`text-xs font-bold mb-2 ${sub}`}>💱 환율 · 금리 · 원자재</p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <p className={`text-[11px] md:text-xs font-bold mb-1.5 md:mb-2 ${sub}`}>💱 환율 · 금리 · 원자재</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
               {renderCard("원/달러",  data.usdkrw+"원", null)}
               {renderCard("기준금리", data.rate,         null)}
               {renderCard("WTI 원유", "$"+data.oil,      data.oil_change)}
@@ -223,11 +223,11 @@ function WeatherPanel({ dark }) {
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-4">
-        <span className={`text-sm font-bold flex items-center gap-1.5 ${dark?"text-gray-400":"text-gray-500"}`}>
+      <div className="flex items-center gap-2 mb-3 md:mb-4 flex-wrap">
+        <span className={`text-xs md:text-sm font-bold flex items-center gap-1.5 ${dark?"text-gray-400":"text-gray-500"}`}>
           🌤️ 현재 날씨
         </span>
-        <span className={`text-xs ${dark?"text-gray-600":"text-gray-400"}`}>제주 표선 기준</span>
+        <span className={`text-[11px] md:text-xs ${dark?"text-gray-600":"text-gray-400"}`}>제주 표선 기준</span>
       </div>
       {loading && (
         <div className={`flex items-center gap-2 py-2 ${dark?"text-gray-500":"text-gray-400"}`}>
@@ -237,19 +237,19 @@ function WeatherPanel({ dark }) {
       {error && <span className="text-sm text-red-400">날씨 데이터 로드 실패</span>}
       {!loading&&!error&&weather&&(
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
-            <div className={`rounded-xl border px-4 py-3 ${card}`}>
-              <p className="text-xs font-medium mb-1 text-gray-400">날씨</p>
-              <p className="text-3xl leading-tight">{WMO_ICON[code]??"🌡️"}</p>
-              <p className={`text-sm font-semibold mt-1 ${dark?"text-gray-300":"text-gray-600"}`}>{WMO_LABEL[code]??"알 수 없음"}</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-4 md:mb-5">
+            <div className={`rounded-xl border px-3 py-2.5 md:px-4 md:py-3 ${card}`}>
+              <p className="text-[11px] md:text-xs font-medium mb-0.5 md:mb-1 text-gray-400">날씨</p>
+              <p className="text-2xl md:text-3xl leading-tight">{WMO_ICON[code]??"🌡️"}</p>
+              <p className={`text-xs md:text-sm font-semibold mt-0.5 md:mt-1 ${dark?"text-gray-300":"text-gray-600"}`}>{WMO_LABEL[code]??"알 수 없음"}</p>
             </div>
-            <div className={`rounded-xl border px-4 py-3 ${card}`}>
-              <p className="text-xs font-medium mb-1 text-gray-400">기온</p>
-              <p className={`text-2xl font-extrabold leading-tight ${val}`}>{weather.temperature_2m}°C</p>
+            <div className={`rounded-xl border px-3 py-2.5 md:px-4 md:py-3 ${card}`}>
+              <p className="text-[11px] md:text-xs font-medium mb-0.5 md:mb-1 text-gray-400">기온</p>
+              <p className={`text-lg md:text-2xl font-extrabold leading-tight ${val}`}>{weather.temperature_2m}°C</p>
             </div>
-            <div className={`rounded-xl border px-4 py-3 ${card}`}>
-              <p className="text-xs font-medium mb-1 text-gray-400">습도</p>
-              <p className={`text-2xl font-extrabold leading-tight ${val}`}>{weather.relative_humidity_2m}%</p>
+            <div className={`rounded-xl border px-3 py-2.5 md:px-4 md:py-3 ${card}`}>
+              <p className="text-[11px] md:text-xs font-medium mb-0.5 md:mb-1 text-gray-400">습도</p>
+              <p className={`text-lg md:text-2xl font-extrabold leading-tight ${val}`}>{weather.relative_humidity_2m}%</p>
               {hLevel && (
                 <>
                   <div className={`flex items-center gap-1 mt-1 text-xs font-medium ${hLevel.color}`}>
@@ -263,9 +263,9 @@ function WeatherPanel({ dark }) {
                 </>
               )}
             </div>
-            <div className={`rounded-xl border px-4 py-3 ${card}`}>
-              <p className="text-xs font-medium mb-1 text-gray-400">풍속</p>
-              <p className={`text-2xl font-extrabold leading-tight ${val}`}>{weather.wind_speed_10m}<span className="text-sm font-medium"> km/h</span></p>
+            <div className={`rounded-xl border px-3 py-2.5 md:px-4 md:py-3 ${card}`}>
+              <p className="text-[11px] md:text-xs font-medium mb-0.5 md:mb-1 text-gray-400">풍속</p>
+              <p className={`text-lg md:text-2xl font-extrabold leading-tight ${val}`}>{weather.wind_speed_10m}<span className="text-xs md:text-sm font-medium"> km/h</span></p>
               {wLevel && (
                 <>
                   <div className={`flex items-center gap-1 mt-1 text-xs font-medium ${wLevel.color}`}>
@@ -342,19 +342,19 @@ function InfoCarousel({ dark }) {
 
   return (
     <div className={`border-b shadow-sm ${dark?"bg-gray-900 border-gray-800":"bg-white border-gray-200"}`}>
-      <div className="max-w-6xl mx-auto px-6 py-5">
-        <div className="flex items-center gap-3">
+      <div className="max-w-6xl mx-auto px-3 py-3 md:px-6 md:py-5">
+        <div className="flex items-center gap-2 md:gap-3">
           <button onClick={()=>handleGoTo((slide-1+TOTAL)%TOTAL)} className={arrowBtn}>
             <ChevronLeft size={16}/>
           </button>
-          <div className="flex-1 min-h-[390px] md:min-h-[280px]" style={{opacity: fade?1:0, transition:"opacity 0.2s"}}>
+          <div className="flex-1 min-w-0 min-h-[360px] md:min-h-[280px]" style={{opacity: fade?1:0, transition:"opacity 0.2s"}}>
             {slide===0 ? <FinancePanel dark={dark}/> : <WeatherPanel dark={dark}/>}
           </div>
           <button onClick={()=>handleGoTo((slide+1)%TOTAL)} className={arrowBtn}>
             <ChevronRight size={16}/>
           </button>
         </div>
-        <div className="flex justify-center gap-2 mt-4">
+        <div className="flex justify-center gap-2 mt-3 md:mt-4">
           {Array.from({length:TOTAL}).map((_,i)=>(
             <button key={i} onClick={()=>handleGoTo(i)}
               className={`rounded-full transition-all duration-300 ${slide===i?"w-5 h-2":"w-2 h-2"}`}
@@ -394,11 +394,11 @@ function LikeButton({ articleId, dark }) {
   };
 
   return (
-    <div className="flex justify-center my-8">
+    <div className="flex justify-center my-6 md:my-8">
       <button onClick={toggle}
-        className={`flex flex-col items-center gap-1.5 px-8 py-4 rounded-2xl border-2 transition-all duration-200 ${liked?"border-red-400 bg-red-50":"border-gray-200 hover:border-red-300 hover:bg-red-50"} ${dark&&!liked?"bg-gray-800 border-gray-700 hover:bg-gray-700":""}`}
+        className={`flex flex-col items-center gap-1 md:gap-1.5 px-6 py-3 md:px-8 md:py-4 rounded-2xl border-2 transition-all duration-200 ${liked?"border-red-400 bg-red-50":"border-gray-200 hover:border-red-300 hover:bg-red-50"} ${dark&&!liked?"bg-gray-800 border-gray-700 hover:bg-gray-700":""}`}
         style={{transform: bounce?"scale(1.25)":"scale(1)", transition:"transform 0.2s cubic-bezier(.36,.07,.19,.97)"}}>
-        <span style={{fontSize:32, lineHeight:1, filter: liked?"drop-shadow(0 0 6px #f87171)":"none"}}>
+        <span style={{lineHeight:1, filter: liked?"drop-shadow(0 0 6px #f87171)":"none"}} className="text-2xl md:text-3xl">
           {liked?"❤️":"🤍"}
         </span>
         <span className={`text-sm font-bold ${liked?"text-red-500":"text-gray-400"}`}>{count}</span>
@@ -596,17 +596,18 @@ function SuggestionBox({ user, dark }) {
 
   return (
     <>
-      <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-2 items-end">
+      <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-40 flex flex-col gap-2 items-end">
         {canReadBox(user?.role)&&(
           <button onClick={()=>setViewOpen(true)}
-            className="flex items-center gap-2 px-3 py-2 rounded-full text-white text-xs font-medium shadow-lg hover:scale-105 transition-transform"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-full text-white text-xs font-medium shadow-lg hover:scale-105 transition-transform"
             style={{backgroundColor:SC}}>
-            <Inbox size={14}/> 건의함 열람
+            <Inbox size={14}/> <span className="hidden sm:inline">건의함 열람</span><span className="sm:hidden">열람</span>
           </button>
         )}
         <button onClick={()=>setOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-full text-white text-sm font-medium shadow-lg hover:scale-105 transition-transform bg-amber-500 hover:bg-amber-600">
-          <MessageSquarePlus size={16}/> 기사 건의하기
+          aria-label="기사 건의하기"
+          className="flex items-center gap-2 px-3.5 py-2.5 md:px-4 rounded-full text-white text-sm font-medium shadow-lg hover:scale-105 transition-transform bg-amber-500 hover:bg-amber-600">
+          <MessageSquarePlus size={16}/> <span className="hidden sm:inline">기사 건의하기</span><span className="sm:hidden">건의</span>
         </button>
       </div>
 
@@ -1192,52 +1193,60 @@ export default function App() {
     <div className={`min-h-screen ${bg} transition-colors duration-300`}>
 
       {/* TOP BAR */}
-      <div className={`w-full flex justify-end items-center px-4 py-1.5 text-xs gap-3 flex-wrap ${dark?"bg-gray-900 border-b border-gray-800 text-gray-400":"bg-gray-100 border-b border-gray-200 text-gray-900"}`}>
-        <span>{dark?"🌙 다크 모드":"☀️ 라이트 모드"}</span>
-        <button onClick={toggleDark} style={{position:"relative",width:40,height:20,borderRadius:999,background:dark?"#2563eb":"#d1d5db",transition:"background 0.3s",flexShrink:0,border:"none",cursor:"pointer",padding:0}}>
+      <div className={`w-full flex justify-end items-center px-3 md:px-4 py-1.5 text-xs gap-2 md:gap-3 ${dark?"bg-gray-900 border-b border-gray-800 text-gray-400":"bg-gray-100 border-b border-gray-200 text-gray-900"}`}>
+        <span className="hidden sm:inline">{dark?"🌙 다크 모드":"☀️ 라이트 모드"}</span>
+        <button onClick={toggleDark} aria-label="다크 모드 전환" style={{position:"relative",width:40,height:20,borderRadius:999,background:dark?"#2563eb":"#d1d5db",transition:"background 0.3s",flexShrink:0,border:"none",cursor:"pointer",padding:0}}>
           <span style={{position:"absolute",top:2,left:2,width:16,height:16,borderRadius:"50%",background:"white",boxShadow:"0 1px 3px rgba(0,0,0,.3)",transition:"transform 0.3s",transform:dark?"translateX(20px)":"translateX(0)",display:"block"}}/>
         </button>
         {user?(
-          <div className="flex items-center gap-2 flex-wrap">
-            <span style={{color:SC}} className="font-medium">{roleLabel[user.role]} {user.name}</span>
+          <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
+            <span style={{color:SC}} className="font-medium truncate max-w-[110px] sm:max-w-none">{roleLabel[user.role]} {user.name}</span>
             {user?.isMember&&(
-              <button onClick={()=>{setPage("mypage");loadMyArticles(user.name);}} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-green-700 text-green-700 hover:bg-green-700 hover:text-white transition-colors text-sm font-medium">
-                마이페이지
+              <button onClick={()=>{setPage("mypage");loadMyArticles(user.name);}} className="flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 rounded-lg border border-green-700 text-green-700 hover:bg-green-700 hover:text-white transition-colors text-xs md:text-sm font-medium whitespace-nowrap">
+                <span className="hidden sm:inline">마이페이지</span><span className="sm:hidden">MY</span>
               </button>
             )}
             {user.role==="admin"&&(
-              <button onClick={()=>{setPage("admin");loadMembers();}} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-green-700 text-green-700 hover:bg-green-700 hover:text-white transition-colors text-sm font-medium">
-                <ShieldCheck size={14}/> 관리자 메뉴
-                {(pendingCount+pendingMemberCount)>0&&<span className="bg-red-500 text-white rounded-full px-1.5 py-0.5 text-xs">{pendingCount+pendingMemberCount}</span>}
+              <button onClick={()=>{setPage("admin");loadMembers();}} className="flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 rounded-lg border border-green-700 text-green-700 hover:bg-green-700 hover:text-white transition-colors text-xs md:text-sm font-medium whitespace-nowrap">
+                <ShieldCheck size={13}/> <span className="hidden sm:inline">관리자 메뉴</span><span className="sm:hidden">관리</span>
+                {(pendingCount+pendingMemberCount)>0&&<span className="bg-red-500 text-white rounded-full px-1.5 py-0.5 text-[10px] md:text-xs">{pendingCount+pendingMemberCount}</span>}
               </button>
             )}
-            <button onClick={handleLogout} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-400 text-red-400 hover:bg-red-400 hover:text-white transition-colors text-sm font-medium"><LogOut size={14}/> 로그아웃</button>
+            <button onClick={handleLogout} aria-label="로그아웃" className="flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 rounded-lg border border-red-400 text-red-400 hover:bg-red-400 hover:text-white transition-colors text-xs md:text-sm font-medium whitespace-nowrap">
+              <LogOut size={13}/> <span className="hidden sm:inline">로그아웃</span>
+            </button>
           </div>
         ):(
-          <button onClick={()=>setShowLogin(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-green-700 text-green-700 hover:bg-green-700 hover:text-white transition-colors text-sm font-medium"><LogIn size={14}/> 로그인</button>
+          <button onClick={()=>setShowLogin(true)} className="flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-1 md:py-1.5 rounded-lg border border-green-700 text-green-700 hover:bg-green-700 hover:text-white transition-colors text-xs md:text-sm font-medium whitespace-nowrap"><LogIn size={13}/> 로그인</button>
         )}
       </div>
 
       {/* HEADER */}
-      <header style={{backgroundColor:SC}} className="sticky top-0 z-40 shadow-md">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button className="md:hidden text-white" onClick={()=>setMenuOpen(!menuOpen)}>
+      <header style={{backgroundColor:SC}} className="sticky top-0 z-40 shadow-md backdrop-blur supports-[backdrop-filter]:bg-opacity-95">
+        <div className="max-w-6xl mx-auto px-3 md:px-6 py-2.5 md:py-3.5 flex items-center justify-between gap-2 md:gap-6">
+          <div className="flex items-center gap-2 md:gap-3 min-w-0">
+            <button aria-label="메뉴" className="md:hidden text-white flex-shrink-0" onClick={()=>setMenuOpen(!menuOpen)}>
               {menuOpen?<X size={22}/>:<Menu size={22}/>}
             </button>
-            <button onClick={()=>{setPage("home");setSelected(null);setActiveCat("전체");setActiveType("전체");setSearch("");setSearchOpen(false);setMenuOpen(false);}} className="text-white font-bold text-xl tracking-tight">📰 세계를 알리다</button>
+            <button onClick={()=>{setPage("home");setSelected(null);setActiveCat("전체");setActiveType("전체");setSearch("");setSearchOpen(false);setMenuOpen(false);}} className="text-white font-bold text-lg md:text-[22px] tracking-tight truncate hover:opacity-90 transition-opacity">📰 세계를 알리다</button>
           </div>
-          <nav className="hidden md:flex items-center gap-1">
-            {CATEGORIES.map(c=>(
-              <button key={c} onClick={()=>{setActiveCat(c);setPage("home");setSelected(null);}}
-                className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${activeCategory===c&&page==="home"?"bg-white/25 text-white":"text-green-100 hover:bg-white/15 hover:text-white"}`}>{c}</button>
-            ))}
+          <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 flex-1 justify-center">
+            {CATEGORIES.map(c=>{
+              const active = activeCategory===c&&page==="home"&&!selected;
+              return (
+                <button key={c} onClick={()=>{setActiveCat(c);setPage("home");setSelected(null);}}
+                  className={`relative px-3 lg:px-4 py-2 rounded-md text-sm font-medium transition-all ${active?"text-white":"text-green-100 hover:bg-white/10 hover:text-white"}`}>
+                  {c}
+                  {active&&<span className="absolute left-2 right-2 lg:left-3 lg:right-3 -bottom-0.5 h-0.5 bg-white rounded-full"/>}
+                </button>
+              );
+            })}
             {user&&canWrite(user.role)&&(
               <button onClick={()=>{setEditId(null);setForm({title:"",category:"경제",type:allowedTypes(user.role)[0],body:"",image:""});setPage("write");}}
-                className="ml-2 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded text-sm font-medium border border-white/30">✏️ 글 작성</button>
+                className="ml-2 px-3 lg:px-4 py-1.5 bg-white/15 hover:bg-white/25 text-white rounded-lg text-sm font-medium border border-white/30 transition-colors">✏️ 글 작성</button>
             )}
           </nav>
-          <div className="flex items-center gap-2 relative">
+          <div className="flex items-center gap-2 relative flex-shrink-0">
             {searchOpen && (
               <div className="flex items-center gap-1 bg-white rounded-lg overflow-hidden shadow-sm">
                 <input ref={searchRef} autoFocus value={search}
@@ -1245,11 +1254,11 @@ export default function App() {
                   onKeyDown={e=>{ if(e.key==="Escape"){ setSearch(""); setSearchOpen(false); setShowDrop(false); } if(e.key==="Enter"&&search.trim()){ setShowDrop(false); const q=search.trim(); setRecentSearches(prev=>{ const n=[q,...prev.filter(x=>x!==q)].slice(0,5); try{localStorage.setItem("cv_recent_q",JSON.stringify(n));}catch{}; return n; }); } }}
                   onFocus={()=>setShowDrop(true)}
                   placeholder="제목, 내용, 작성자 검색..."
-                  className="px-3 py-1.5 text-sm text-gray-900 w-52 md:w-72 focus:outline-none bg-transparent"/>
-                {search && <button onClick={()=>{ setSearch(""); setShowDrop(false); searchRef.current?.focus(); }} className="pr-2 text-gray-400 hover:text-gray-600"><X size={14}/></button>}
+                  className="px-3 py-1.5 text-sm text-gray-900 w-40 sm:w-52 md:w-64 lg:w-72 focus:outline-none bg-transparent"/>
+                {search && <button onClick={()=>{ setSearch(""); setShowDrop(false); searchRef.current?.focus(); }} aria-label="검색어 지우기" className="pr-2 text-gray-400 hover:text-gray-600"><X size={14}/></button>}
               </div>
             )}
-            <button onClick={()=>{ if(searchOpen){ setSearch(""); setShowDrop(false); } setSearchOpen(s=>!s); }} className="text-white hover:text-green-200 flex-shrink-0"><Search size={20}/></button>
+            <button aria-label="검색" onClick={()=>{ if(searchOpen){ setSearch(""); setShowDrop(false); } setSearchOpen(s=>!s); }} className="text-white hover:text-green-200 flex-shrink-0 p-1 rounded-md hover:bg-white/10 transition-colors"><Search size={20}/></button>
           </div>
         </div>
         {/* 검색 드롭다운 */}
@@ -1279,12 +1288,12 @@ export default function App() {
           </div>
         )}
         {menuOpen&&(
-          <div style={{backgroundColor:SCD}} className="md:hidden border-t border-green-900 px-4 pb-3 pt-2 flex flex-col gap-2">
+          <div style={{backgroundColor:SCD}} className="md:hidden border-t border-green-900 px-4 pb-3 pt-2 flex flex-col gap-1">
             {CATEGORIES.map(c=>(
-              <button key={c} onClick={()=>{setActiveCat(c);setMenuOpen(false);setPage("home");}} className="text-green-100 hover:text-white text-sm py-1 text-left">{c}</button>
+              <button key={c} onClick={()=>{setActiveCat(c);setMenuOpen(false);setPage("home");setSelected(null);}} className={`text-sm py-2 text-left px-2 rounded transition-colors ${activeCategory===c?"bg-white/20 text-white font-medium":"text-green-100 hover:bg-white/10"}`}>{c}</button>
             ))}
-            {user&&canWrite(user.role)&&<button onClick={()=>{setPage("write");setMenuOpen(false);}} className="text-green-200 text-sm py-1 text-left">✏️ 글 작성</button>}
-            {user?.role==="admin"&&<button onClick={()=>{setPage("admin");setMenuOpen(false);}} className="text-yellow-300 text-sm py-1 text-left">👑 관리자 메뉴</button>}
+            {user&&canWrite(user.role)&&<button onClick={()=>{setEditId(null);setForm({title:"",category:"경제",type:allowedTypes(user.role)[0],body:"",image:""});setPage("write");setMenuOpen(false);}} className="text-green-200 hover:text-white text-sm py-2 text-left px-2 rounded hover:bg-white/10">✏️ 글 작성</button>}
+            {user?.role==="admin"&&<button onClick={()=>{setPage("admin");loadMembers();setMenuOpen(false);}} className="text-yellow-300 hover:text-yellow-200 text-sm py-2 text-left px-2 rounded hover:bg-white/10">👑 관리자 메뉴</button>}
           </div>
         )}
       </header>
@@ -1480,7 +1489,7 @@ export default function App() {
       {/* 실시간 금융 */}
       <InfoCarousel dark={dark}/>
 
-      <main className="max-w-6xl mx-auto px-4 py-6">
+      <main className="max-w-6xl mx-auto px-3 md:px-4 py-5 md:py-6">
 
         {/* ADMIN */}
         {page==="admin"&&user?.role==="admin"&&(
@@ -1718,8 +1727,8 @@ export default function App() {
 
         {/* DETAIL */}
         {page==="home"&&selected&&(
-          <div className="flex flex-col md:flex-row gap-6">
-            <div className="flex-1 min-w-0">
+          <div className="flex flex-col md:flex-row gap-6 lg:gap-10">
+            <article className="flex-1 min-w-0 md:max-w-3xl">
               <button onClick={()=>{ setSelected(null); window.location.hash=""; if(user?.role==="admin"&&selected.status!=="published") setPage("admin"); }}
                 className="flex items-center gap-1 text-sm hover:underline mb-4" style={{color:SC}}>
                 <ArrowLeft size={15}/> {user?.role==="admin"&&selected.status!=="published"?"관리자 메뉴로":"목록으로"}
@@ -1729,49 +1738,50 @@ export default function App() {
                 <span className={`text-xs text-white px-2 py-0.5 rounded-full ${typeColor[selected.type]||"bg-gray-500"}`}>{selected.type||"기사"}</span>
                 <span className={`text-xs text-white px-2 py-0.5 rounded-full ${catColor[selected.category]||"bg-gray-500"}`}>{selected.category}</span>
               </div>
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <h1 className="text-2xl font-bold leading-tight">{selected.title}</h1>
-                {user&&<div className="flex gap-2 flex-shrink-0 mt-1">
-                  <button onClick={()=>startEdit(selected)} style={{backgroundColor:SC}} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg text-white hover:opacity-90"><Edit2 size={12}/> 수정</button>
-                  {user.role==="admin"&&<button onClick={()=>setConfirmDel(selected.id)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600"><Trash2 size={12}/> 삭제</button>}
+              <div className="mb-3 md:mb-4">
+                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-[34px] font-bold leading-tight md:leading-[1.25] mb-3 tracking-tight">{selected.title}</h1>
+                {user&&<div className="flex gap-2 flex-wrap">
+                  <button onClick={()=>startEdit(selected)} style={{backgroundColor:SC}} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg text-white hover:opacity-90 transition-opacity"><Edit2 size={12}/> 수정</button>
+                  {user.role==="admin"&&<button onClick={()=>setConfirmDel(selected.id)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"><Trash2 size={12}/> 삭제</button>}
                 </div>}
               </div>
-              <div className="flex items-center justify-between gap-3 text-xs text-gray-500 mb-4">
-                <span>{selected.date}</span>
-                {selected.author&&<span className="text-amber-600 font-medium flex items-center gap-1"><PenLine size={11}/> {selected.author}</span>}
-                <span className="flex items-center gap-1"><Eye size={11}/> {selected.views.toLocaleString()}</span>
-                <button onClick={()=>setShowShare(true)} className="flex items-center gap-1 ml-auto px-2.5 py-1 rounded-lg border transition-colors hover:opacity-80" style={{borderColor:"#1a6b3c",color:"#1a6b3c"}}><Share2 size={12}/> 공유</button>
+              <div className={`flex items-center justify-between gap-3 text-xs md:text-sm mb-5 pb-4 border-b flex-wrap ${dark?"text-gray-400 border-gray-800":"text-gray-500 border-gray-200"}`}>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span>{selected.date}</span>
+                  {selected.author&&<span className="text-amber-600 font-medium flex items-center gap-1"><PenLine size={12}/> {selected.author}</span>}
+                  <span className="flex items-center gap-1"><Eye size={12}/> {selected.views.toLocaleString()}</span>
+                </div>
+                <button onClick={()=>setShowShare(true)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-colors hover:opacity-80" style={{borderColor:"#1a6b3c",color:"#1a6b3c"}}><Share2 size={12}/> 공유</button>
               </div>
-              <ArticleImage image={selected.image} category={selected.category} className="w-full rounded-xl mb-5" style={{height:280}}/>
-              {selected.author&&<div className="border-l-4 border-amber-400 pl-4 mb-4 py-1"><p className="text-xs text-amber-600 font-medium">{selected.type==="칼럼" ? `✒️ 칼럼
-  — ${selected.author} 기고` : `✍️ 기사 — ${selected.author} 작성`}</p></div>}
-              <div className="text-sm leading-relaxed whitespace-pre-line">{selected.body}</div>
+              <ArticleImage image={selected.image} category={selected.category} className="w-full rounded-xl mb-6 md:mb-7 h-48 sm:h-64 md:h-80 lg:h-[420px]"/>
+              {selected.author&&<div className="border-l-4 border-amber-400 pl-4 mb-5 py-1.5"><p className="text-xs md:text-sm text-amber-600 font-medium">{selected.type==="칼럼" ? `✒️ 칼럼 — ${selected.author} 기고` : `✍️ 기사 — ${selected.author} 작성`}</p></div>}
+              <div className="text-[15px] md:text-[17px] leading-relaxed md:leading-[1.85] whitespace-pre-line">{selected.body}</div>
 
               <LikeButton articleId={selected.id} dark={dark}/>
 
               <div className={`border-t mt-8 pt-2 ${dark?"border-gray-800":"border-gray-200"}`}>
                 <CommentSection articleId={selected.id} user={user} dark={dark}/>
               </div>
-            </div>
-            <aside className="md:w-64 space-y-4 flex-shrink-0">
-              <div className={`rounded-xl border p-4 ${card}`}>
-                <h3 className="font-bold text-sm mb-3 flex items-center gap-1"><TrendingUp size={15} className="text-red-500"/> 가장 많이 본 뉴스</h3>
-                <ol className="space-y-2">
+            </article>
+            <aside className="md:w-64 lg:w-72 space-y-4 flex-shrink-0">
+              <div className={`rounded-xl border p-4 lg:p-5 md:sticky md:top-20 ${card}`}>
+                <h3 className="font-bold text-sm mb-3 flex items-center gap-1.5"><TrendingUp size={15} className="text-red-500"/> 가장 많이 본 뉴스</h3>
+                <ol className="space-y-2.5">
                   {topViewed.map((a,i)=>(
                     <li key={a.id} onClick={()=>openArticle(a)} className="cursor-pointer flex gap-2 items-start group">
                       <span className={`font-bold text-sm w-5 flex-shrink-0 ${i===0?"text-red-500":i===1?"text-orange-400":i===2?"text-yellow-500":"text-gray-400"}`}>{i+1}</span>
-                      <div><span className="text-xs leading-snug group-hover:underline line-clamp-2">{a.title}</span>
+                      <div className="min-w-0"><span className="text-xs leading-snug group-hover:underline line-clamp-2">{a.title}</span>
                       {a.type==="칼럼"&&<span className="text-xs text-amber-500 block">✒️ 칼럼</span>}</div>
                     </li>
                   ))}
                 </ol>
               </div>
-              <div className={`rounded-xl border p-4 ${card}`}>
+              <div className={`rounded-xl border p-4 lg:p-5 ${card}`}>
                 <h3 className="font-bold text-sm mb-3">세계를 알리다 SNS</h3>
                 <div className="space-y-2">
                   {SNS.map(s=>(
                     <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
-                      className={`flex items-center gap-2 text-xs hover:underline ${s.color}`}>{s.icon}{s.label} 팔로우</a>
+                      className={`flex items-center gap-2 text-xs hover:underline transition-opacity hover:opacity-80 ${s.color}`}>{s.icon}{s.label} 팔로우</a>
                   ))}
                 </div>
               </div>
@@ -1785,16 +1795,16 @@ export default function App() {
             <div className="flex flex-wrap gap-2 mb-3">
               {CATEGORIES.map(c=>(
                 <button key={c} onClick={()=>setActiveCat(c)}
-                  className="px-4 py-1.5 rounded-full text-sm font-medium border transition-colors"
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all hover:-translate-y-0.5 ${activeCategory===c?"shadow-md":"hover:shadow-sm"}`}
                   style={activeCategory===c?{backgroundColor:SC,color:"white",borderColor:SC}:{}}>
                   <span className={activeCategory!==c?(dark?"text-gray-300":"text-gray-600"):""}>{c}</span>
                 </button>
               ))}
             </div>
-            <div className="flex gap-2 mb-5">
+            <div className="flex gap-2 mb-5 md:mb-6">
               {["전체","기사","칼럼"].map(t=>(
                 <button key={t} onClick={()=>setActiveType(t)}
-                  className="px-3 py-1 rounded-full text-xs font-medium border transition-colors"
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-all hover:-translate-y-0.5 ${activeType===t?"shadow":""}`}
                   style={activeType===t?{backgroundColor:t==="칼럼"?"#d97706":t==="기사"?"#475569":SC,color:"white",borderColor:"transparent"}:{}}>
                   <span className={activeType!==t?(dark?"text-gray-400":"text-gray-500"):""}>{t==="기사"?"📄 기사":t==="칼럼"?"✒️ 칼럼":"전체"}</span>
                 </button>
@@ -1810,41 +1820,50 @@ export default function App() {
                 <div className="space-y-2">
                   {urgent.slice(0,3).map(a=>(
                     <div key={a.id} onClick={()=>openArticle(a)}
-                      className={`cursor-pointer flex items-center gap-3 border border-red-200 rounded-xl px-4 py-3 transition-colors ${dark?"bg-red-950 hover:bg-red-900":"bg-red-50 hover:bg-red-100"}`}>
+                      className={`cursor-pointer flex items-center gap-3 border border-red-200 rounded-xl px-3 md:px-4 py-2.5 md:py-3 transition-colors ${dark?"bg-red-950 hover:bg-red-900":"bg-red-50 hover:bg-red-100"}`}>
                       <span className="text-xs font-bold text-white bg-red-600 px-2 py-0.5 rounded-full flex-shrink-0">긴급</span>
-                      <span className="text-sm font-semibold text-red-900 line-clamp-1">{a.title}</span>
-                      <span className="text-xs text-red-400 flex-shrink-0 ml-auto">{a.date}</span>
+                      <span className="text-sm font-semibold text-red-900 line-clamp-1 min-w-0">{a.title}</span>
+                      <span className="text-xs text-red-400 flex-shrink-0 ml-auto whitespace-nowrap">{a.date}</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
             {hero&&activeCategory==="전체"&&activeType==="전체"&&!search&&(
-              <div onClick={()=>openArticle(hero)} className="cursor-pointer rounded-2xl overflow-hidden mb-8 relative group" style={{height:320}}>
-                <ArticleImage image={hero.image} category={hero.category} className="w-full h-full group-hover:scale-105 transition-transform duration-500"/>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"/>
-                <div className="absolute bottom-0 left-0 right-0 p-6">
-                  <div className="flex gap-2 mb-2">
-                    <span className={`text-xs text-white px-2 py-0.5 rounded-full ${typeColor[hero.type]||"bg-slate-600"}`}>{hero.type||"기사"}</span>
-                    <span className={`text-xs text-white px-2 py-0.5 rounded-full ${catColor[hero.category]}`}>{hero.category}</span>
+              <div onClick={()=>openArticle(hero)} className="cursor-pointer rounded-2xl overflow-hidden mb-6 md:mb-10 relative group h-56 sm:h-72 md:h-[360px] lg:h-[420px] shadow-md hover:shadow-2xl transition-shadow duration-300">
+                <ArticleImage image={hero.image} category={hero.category} className="w-full h-full group-hover:scale-[1.04] transition-transform duration-700 ease-out"/>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent"/>
+                <div className="absolute top-3 left-3 md:top-5 md:left-5">
+                  <span className="bg-red-500 text-white text-[11px] md:text-xs font-bold px-2.5 py-1 rounded-full shadow-lg tracking-wide uppercase animate-pulse">⚡ Top</span>
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-4 md:p-7 lg:p-9">
+                  <div className="flex gap-1.5 md:gap-2 mb-2 md:mb-3">
+                    <span className={`text-xs text-white px-2.5 py-0.5 rounded-full ${typeColor[hero.type]||"bg-slate-600"}`}>{hero.type||"기사"}</span>
+                    <span className={`text-xs text-white px-2.5 py-0.5 rounded-full ${catColor[hero.category]}`}>{hero.category}</span>
                   </div>
-                  <h2 className="text-white text-xl md:text-2xl font-bold mb-1 leading-tight">{hero.title}</h2>
-                  <p className="text-gray-300 text-sm line-clamp-2 hidden md:block">{hero.summary}</p>
-                  <span className="text-gray-400 text-xs mt-1 block">{hero.date}</span>
+                  <h2 className="text-white text-lg md:text-3xl lg:text-4xl font-bold mb-2 md:mb-3 leading-tight line-clamp-2 max-w-3xl tracking-tight">{hero.title}</h2>
+                  <p className="text-gray-200 text-sm md:text-base line-clamp-2 hidden md:block max-w-2xl">{hero.summary}</p>
+                  <div className="flex items-center gap-3 mt-2 md:mt-3 text-gray-300 text-xs md:text-sm">
+                    <span>{hero.date}</span>
+                    <span className="opacity-50">·</span>
+                    <span className="flex items-center gap-1"><Eye size={12}/> {hero.views?.toLocaleString()||0}</span>
+                  </div>
                 </div>
               </div>
             )}
 
-            <div className="flex flex-col md:flex-row gap-6">
-              <div className="flex-1">
+            <div className="flex flex-col md:flex-row gap-6 lg:gap-8">
+              <div className="flex-1 min-w-0">
                 {search&&<div className="mb-4"><p className={"text-sm font-medium " + (dark?"text-gray-300":"text-gray-700")}><span className="text-green-600 font-bold">{filtered.length}건</span> — <span className="text-green-600 font-semibold">{search}</span> 검색 결과</p><p className={"text-xs mt-0.5 " + (dark?"text-gray-500":"text-gray-400")}>제목 · 본문 · 작성자 · 카테고리에서 검색됨</p></div>}
                 {filtered.length===0&&<div className="py-12 text-center"><p className="text-gray-400 text-sm mb-1">{search ? "검색 결과가 없습니다." : "게재된 글이 없습니다."}</p>{search&&<p className={"text-xs " + (dark?"text-gray-600":"text-gray-400")}>다른 검색어를 입력해보세요</p>}</div>}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 md:gap-5">
                   {filtered.map(a=>(
                     <div key={a.id} onClick={()=>openArticle(a)}
-                      className={`cursor-pointer rounded-xl border overflow-hidden hover:shadow-lg transition-shadow group ${card} ${a.type==="칼럼"?"border-l-4 border-l-amber-400":""}`}>
-                      <ArticleImage image={a.image} category={a.category} className="w-full group-hover:scale-105 transition-transform duration-500" style={{height:160}}/>
-                      <div className="p-4">
+                      className={`cursor-pointer rounded-xl border overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-200 group ${card} ${a.type==="칼럼"?"border-l-4 border-l-amber-400":""}`}>
+                      <div className="relative overflow-hidden">
+                        <ArticleImage image={a.image} category={a.category} className="w-full group-hover:scale-105 transition-transform duration-500 h-36 sm:h-40 md:h-44 lg:h-48"/>
+                      </div>
+                      <div className="p-3 md:p-4">
                         <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
                           <div className="flex gap-1">
                             <span className={`text-xs text-white px-2 py-0.5 rounded-full ${typeColor[a.type]||"bg-gray-500"}`}>{a.type||"기사"}</span>
@@ -1852,7 +1871,7 @@ export default function App() {
                           </div>
                           <span className="text-xs text-gray-400">{a.date}</span>
                         </div>
-                        <h3 className="font-semibold text-sm leading-snug mb-1 line-clamp-2">{a.title}</h3>
+                        <h3 className="font-semibold text-[15px] md:text-base leading-snug mb-1 line-clamp-2 group-hover:opacity-80 transition-opacity">{a.title}</h3>
                         {a.author&&<p className="text-xs text-amber-600 mb-0.5">✒️ {a.author}</p>}
                         <p className="text-xs text-gray-500 line-clamp-2">{a.summary}</p>
                       </div>
@@ -1860,25 +1879,25 @@ export default function App() {
                   ))}
                 </div>
               </div>
-              <aside className="md:w-64 space-y-4">
-                <div className={`rounded-xl border p-4 ${card}`}>
-                  <h3 className="font-bold text-sm mb-3 flex items-center gap-1"><TrendingUp size={15} className="text-red-500"/> 가장 많이 본 뉴스</h3>
-                  <ol className="space-y-2">
+              <aside className="md:w-64 lg:w-72 space-y-4 md:flex-shrink-0">
+                <div className={`rounded-xl border p-4 lg:p-5 md:sticky md:top-20 ${card}`}>
+                  <h3 className="font-bold text-sm mb-3 flex items-center gap-1.5"><TrendingUp size={15} className="text-red-500"/> 가장 많이 본 뉴스</h3>
+                  <ol className="space-y-2.5">
                     {topViewed.map((a,i)=>(
                       <li key={a.id} onClick={()=>openArticle(a)} className="cursor-pointer flex gap-2 items-start group">
                         <span className={`font-bold text-sm w-5 flex-shrink-0 ${i===0?"text-red-500":i===1?"text-orange-400":i===2?"text-yellow-500":"text-gray-400"}`}>{i+1}</span>
-                        <div><span className="text-xs leading-snug group-hover:underline line-clamp-2">{a.title}</span>
+                        <div className="min-w-0"><span className="text-xs leading-snug group-hover:underline line-clamp-2">{a.title}</span>
                         {a.type==="칼럼"&&<span className="text-xs text-amber-500 block">✒️ 칼럼</span>}</div>
                       </li>
                     ))}
                   </ol>
                 </div>
-                <div className={`rounded-xl border p-4 ${card}`}>
+                <div className={`rounded-xl border p-4 lg:p-5 ${card}`}>
                   <h3 className="font-bold text-sm mb-3">세계를 알리다 SNS</h3>
                   <div className="space-y-2">
                     {SNS.map(s=>(
                       <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
-                        className={`flex items-center gap-2 text-xs hover:underline ${s.color}`}>{s.icon}{s.label} 팔로우</a>
+                        className={`flex items-center gap-2 text-xs hover:underline transition-opacity hover:opacity-80 ${s.color}`}>{s.icon}{s.label} 팔로우</a>
                     ))}
                   </div>
                 </div>
@@ -1889,29 +1908,49 @@ export default function App() {
       </main>
 
       {page==="home"&&!selected&&(
-        <section className="mt-10" style={{backgroundColor:SCD}}>
-          <div className="max-w-6xl mx-auto px-4 py-10 text-center">
-            <h3 className="text-white text-xl font-bold mb-1">📬 세계를 알리다 뉴스레터 구독</h3>
-            <p className="text-green-200 text-sm mb-4">매주 목요일 아침 주요 소식을 이메일로 받아보세요.</p>
+        <section className="mt-8 md:mt-12 relative overflow-hidden" style={{backgroundColor:SCD}}>
+          <div className="absolute inset-0 opacity-10 pointer-events-none" style={{backgroundImage:"radial-gradient(circle at 20% 50%, white 0%, transparent 50%), radial-gradient(circle at 80% 50%, white 0%, transparent 50%)"}}/>
+          <div className="relative max-w-6xl mx-auto px-4 py-8 md:py-14 text-center">
+            <h3 className="text-white text-lg md:text-2xl lg:text-3xl font-bold mb-1.5 md:mb-2 tracking-tight">📬 세계를 알리다 뉴스레터 구독</h3>
+            <p className="text-green-200 text-xs md:text-base mb-4 md:mb-6 px-2">매주 목요일 아침 주요 소식을 이메일로 받아보세요.</p>
             {subscribed
-              ?<p className="text-green-300 font-medium text-sm">✅ 구독이 완료되었습니다!</p>
-              :<div className="flex flex-col sm:flex-row justify-center gap-2 max-w-sm mx-auto">
-                <input value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="이메일 주소를 입력하세요" className="flex-1 px-4 py-2 rounded-lg text-sm text-gray-900 focus:outline-none"/>
+              ?<p className="text-green-300 font-medium text-sm md:text-base">✅ 구독이 완료되었습니다!</p>
+              :<div className="flex flex-col sm:flex-row justify-center gap-2 max-w-sm md:max-w-md mx-auto">
+                <input value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="이메일 주소를 입력하세요" className="flex-1 px-4 py-2.5 md:py-3 rounded-lg text-sm md:text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-400 shadow-sm"/>
                 <button onClick={async()=>{
                 if(!email) return;
                 try{
                   const r=await fetch("/api/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})});
                   if(r.ok) setSubscribed(true);
                 }catch{}
-              }} style={{backgroundColor:SC}} className="px-5 py-2 text-white rounded-lg text-sm font-medium hover:opacity-90 border border-green-400">구독하기</button>
+              }} style={{backgroundColor:SC}} className="px-5 md:px-6 py-2.5 md:py-3 text-white rounded-lg text-sm md:text-base font-medium hover:opacity-90 border border-green-400 transition-opacity whitespace-nowrap">구독하기</button>
               </div>
             }
           </div>
         </section>
       )}
 
-      <footer className={`border-t text-center py-5 text-xs text-gray-500 ${dark?"border-gray-800 bg-gray-950":"border-gray-200 bg-white"}`}>
-        © 2026 세계를 알리다 · 표선고등학교 학생 언론사 | 문의: psnewspaper01@gmail.com
+      <footer className={`border-t ${dark?"border-gray-800 bg-gray-950":"border-gray-200 bg-white"}`}>
+        <div className="max-w-6xl mx-auto px-4 py-6 md:py-10">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+            <div>
+              <p className="font-bold text-base md:text-lg mb-1" style={{color:SC}}>📰 세계를 알리다</p>
+              <p className="text-xs md:text-sm text-gray-500">표선고등학교 학생 언론사</p>
+            </div>
+            <div className="text-xs md:text-sm text-gray-500 space-y-1 md:text-right">
+              <p>문의: <a href="mailto:psnewspaper01@gmail.com" className="hover:underline break-all">psnewspaper01@gmail.com</a></p>
+              <div className="flex gap-3 md:justify-end pt-1">
+                {SNS.map(s=>(
+                  <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label}
+                    className={`${s.color} hover:opacity-70 transition-opacity`}>{s.icon}</a>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className={`mt-5 md:mt-7 pt-4 md:pt-5 text-center text-[11px] md:text-xs text-gray-400 border-t ${dark?"border-gray-800":"border-gray-100"}`}>
+            © 2026 세계를 알리다. All rights reserved.
+          </div>
+        </div>
       </footer>
 
       <SuggestionBox user={user} dark={dark}/>
