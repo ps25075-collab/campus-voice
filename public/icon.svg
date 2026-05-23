@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="96" fill="#1a6b3c"/>
+  <text x="256" y="245" font-family="-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="220" font-weight="900" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">세</text>
+  <text x="256" y="395" font-family="-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" font-size="64" font-weight="700" text-anchor="middle" fill="#a7f3d0" letter-spacing="4">세계를 알리다</text>
+</svg>
