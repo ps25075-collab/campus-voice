@@ -1,0 +1,33 @@
+{
+  "name": "세계를 알리다",
+  "short_name": "세계를 알리다",
+  "description": "표선고등학교 학생 언론사 — 매주 새로운 기사·칼럼",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1a6b3c",
+  "lang": "ko-KR",
+  "orientation": "portrait-primary",
+  "categories": ["news", "education"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

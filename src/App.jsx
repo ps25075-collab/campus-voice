@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from './lib/supabase';
-import { Search, Menu, X, TrendingUp, Instagram, Facebook, Youtube, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle, ChevronLeft, ChevronRight, Share2, Copy, Link, Mail } from "lucide-react";
+import { Search, Menu, X, TrendingUp, Instagram, Facebook, Youtube, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle, ChevronLeft, ChevronRight, Share2, Copy, Link, Mail, Bookmark, BookmarkCheck } from "lucide-react";
 
 /* ── 날짜 헬퍼 ── */
 const today = () => {
@@ -68,17 +68,110 @@ const memberRoleLabel = { pending:"승인 대기", reporter:"기자 승인됨", 
 const memberRoleStyle = { pending:"bg-yellow-100 text-yellow-700", reporter:"bg-blue-100 text-blue-700", columnist:"bg-green-100 text-green-700", rejected:"bg-red-100 text-red-600" };
 
 /* ── 이미지 컴포넌트 ── */
-function ArticleImage({ image, category, className="", style={} }) {
+const CAT_EMOJI = { 긴급:"⚠️", 경제:"💰", 문화:"🎨", 기술:"💡" };
+function ArticleImage({ image, category, title, className="", style={} }) {
   const [failed, setFailed] = useState(false);
   const show = image && !failed;
+  const emoji = CAT_EMOJI[category];
+  const initial = (title||"").trim()[0]||"";
   return (
     <div className={`relative overflow-hidden ${className}`}
       style={{ background: catGradient[category]||"linear-gradient(135deg,#374151,#6b7280)", ...style }}>
       {show
         ? <img src={image} alt="" className="w-full h-full object-cover absolute inset-0" onError={()=>setFailed(true)}/>
-        : <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-white/40">
-            <FileText size={22}/><span className="text-xs">이미지 없음</span>
+        : <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-white/80 select-none">
+            {emoji && <span className="text-4xl md:text-5xl drop-shadow-md leading-none">{emoji}</span>}
+            {initial && <span className="text-white/90 font-bold text-base md:text-lg tracking-wide line-clamp-1 px-3 text-center drop-shadow">{initial}</span>}
+            {!emoji && !initial && <><FileText size={22}/><span className="text-xs">이미지 없음</span></>}
           </div>}
+    </div>
+  );
+}
+
+/* ── 북마크 토글 버튼 ── */
+function BookmarkButton({ articleId, user, bookmarks, onToggle, dark }) {
+  const active = bookmarks.includes(articleId);
+  if (!user?.isMember) return null;
+  return (
+    <button onClick={()=>onToggle(articleId, !active)}
+      aria-label={active?"북마크 해제":"북마크 추가"}
+      className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border transition-all ${active?"bg-amber-500 border-amber-500 text-white hover:bg-amber-600":(dark?"border-gray-700 text-gray-300 hover:bg-gray-800":"border-gray-300 text-gray-600 hover:bg-gray-50")}`}>
+      {active ? <BookmarkCheck size={13}/> : <Bookmark size={13}/>}
+      {active ? "저장됨" : "저장"}
+    </button>
+  );
+}
+
+/* ── 관련 기사 추천 ── */
+function RelatedArticles({ current, articles, onOpen, dark }) {
+  const card = dark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200";
+  const related = articles
+    .filter(a => a.id !== current.id && a.status === "published" && a.category === current.category)
+    .slice(0, 4);
+  if (related.length === 0) return null;
+  return (
+    <div className="mt-10 md:mt-12">
+      <h3 className="font-bold text-base md:text-lg mb-4 flex items-center gap-2"><FileText size={17} style={{color:SC}}/> 이 기사와 관련된 글</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+        {related.map(a => (
+          <div key={a.id} onClick={()=>onOpen(a)}
+            className={`cursor-pointer rounded-xl border overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group ${card} ${a.type==="칼럼"?"border-l-4 border-l-amber-400":""}`}>
+            <ArticleImage image={a.image} category={a.category} title={a.title} className="w-full h-24 sm:h-28"/>
+            <div className="p-3">
+              <div className="flex gap-1 mb-1.5">
+                <span className={`text-[10px] text-white px-2 py-0.5 rounded-full ${typeColor[a.type]||"bg-gray-500"}`}>{a.type||"기사"}</span>
+                <span className={`text-[10px] text-white px-2 py-0.5 rounded-full ${catColor[a.category]||"bg-gray-500"}`}>{a.category}</span>
+              </div>
+              <p className="font-semibold text-sm leading-snug line-clamp-2 group-hover:opacity-80 transition-opacity">{a.title}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── 읽기 진도바 ── */
+function ReadingProgress() {
+  const [pct, setPct] = useState(0);
+  useEffect(()=>{
+    const onScroll = () => {
+      const h = document.documentElement;
+      const total = h.scrollHeight - h.clientHeight;
+      setPct(total > 0 ? Math.min(100, Math.max(0, (h.scrollTop / total) * 100)) : 0);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return ()=>{ window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); };
+  },[]);
+  return (
+    <div className="fixed top-0 left-0 right-0 z-50 h-1 pointer-events-none">
+      <div className="h-full transition-[width] duration-150 ease-out" style={{width:`${pct}%`, backgroundColor:"#1a6b3c", boxShadow:"0 0 8px rgba(26,107,60,0.5)"}}/>
+    </div>
+  );
+}
+
+/* ── 카드 스켈레톤 ── */
+function SkeletonCard({ dark, count=4 }) {
+  const base = dark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200";
+  const bar  = dark ? "bg-gray-800" : "bg-gray-200";
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 md:gap-5">
+      {Array.from({length:count}).map((_,i)=>(
+        <div key={i} className={`rounded-xl border overflow-hidden ${base} animate-pulse`}>
+          <div className={`w-full h-36 sm:h-40 md:h-44 lg:h-48 ${bar}`}/>
+          <div className="p-3 md:p-4 space-y-2">
+            <div className="flex gap-1.5">
+              <div className={`h-4 w-12 rounded-full ${bar}`}/>
+              <div className={`h-4 w-12 rounded-full ${bar}`}/>
+            </div>
+            <div className={`h-4 w-full rounded ${bar}`}/>
+            <div className={`h-4 w-4/5 rounded ${bar}`}/>
+            <div className={`h-3 w-3/5 rounded ${bar}`}/>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -940,6 +1033,10 @@ export default function App() {
   const [email,setEmail]             = useState("");
   const [subscribed,setSubscribed]   = useState(false);
   const [articles,setArticles]       = useState([]);
+  const [articlesLoading,setArticlesLoading] = useState(true);
+  const [bookmarks,setBookmarks]     = useState([]);
+  const [bookmarkedArticles,setBookmarkedArticles] = useState([]);
+  const [readProgress,setReadProgress] = useState(0);
   const [form,setForm]               = useState({title:"",category:"경제",type:"기사",body:"",image:""});
   const [editId,setEditId]           = useState(null);
   const [confirmDel,setConfirmDel]   = useState(null);
@@ -964,6 +1061,7 @@ export default function App() {
   const [showShare,setShowShare]   = useState(false);
   const [members,setMembers]         = useState([]);
   const [myArticles,setMyArticles]   = useState([]);
+  const [mypageTab,setMypageTab]     = useState("written");
 
   useEffect(()=>{
     (async()=>{
@@ -971,6 +1069,7 @@ export default function App() {
         const { data } = await supabase.from('articles').select('*').order('created_at',{ascending:false});
         setArticles(data && data.length > 0 ? data : DUMMY_ARTICLES);
       }catch{ setArticles(DUMMY_ARTICLES); }
+      setArticlesLoading(false);
       try{ const d=localStorage.getItem(DARK_KEY); if(d) setDark(JSON.parse(d)); }catch{}
       let staffLoaded=false;
       try{
@@ -1020,6 +1119,7 @@ export default function App() {
     } else {
       setUser({id:authUser.id,name:profile.display_name,role:profile.role,email:profile.email||authUser.email,isMember:true});
     }
+    loadBookmarks(authUser.id);
   };
 
   const handleLogin=async()=>{
@@ -1083,6 +1183,30 @@ export default function App() {
     setMyArticles(data||[]);
   };
 
+  const loadBookmarks=async(uid)=>{
+    try{
+      const {data}=await supabase.from('bookmarks').select('article_id, created_at, articles(*)').eq('user_id',uid).order('created_at',{ascending:false});
+      const ids=(data||[]).map(b=>b.article_id);
+      const arts=(data||[]).map(b=>b.articles).filter(Boolean);
+      setBookmarks(ids);
+      setBookmarkedArticles(arts);
+    }catch{}
+  };
+
+  const toggleBookmark=async(articleId, willActivate)=>{
+    if(!user?.isMember) return;
+    if(willActivate){
+      setBookmarks(prev=>prev.includes(articleId)?prev:[...prev,articleId]);
+      try{ await supabase.from('bookmarks').insert({user_id:user.id, article_id:articleId}); }catch{}
+      const a=articles.find(x=>x.id===articleId);
+      if(a) setBookmarkedArticles(prev=>prev.some(x=>x.id===articleId)?prev:[a,...prev]);
+    } else {
+      setBookmarks(prev=>prev.filter(id=>id!==articleId));
+      setBookmarkedArticles(prev=>prev.filter(a=>a.id!==articleId));
+      try{ await supabase.from('bookmarks').delete().eq('user_id',user.id).eq('article_id',articleId); }catch{}
+    }
+  };
+
   const handleWithdraw=async()=>{
     try{
       await supabase.rpc('delete_own_account');
@@ -1103,6 +1227,7 @@ export default function App() {
     if(user?.isMember) await supabase.auth.signOut();
     else localStorage.removeItem("cv_user");
     setUser(null); setPage("home");
+    setBookmarks([]); setBookmarkedArticles([]);
   };
 
   const submitArticle=async()=>{
@@ -1197,7 +1322,7 @@ export default function App() {
           <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
             <span style={{color:SC}} className="font-medium truncate max-w-[110px] sm:max-w-none">{roleLabel[user.role]} {user.name}</span>
             {user?.isMember&&(
-              <button onClick={()=>{setPage("mypage");loadMyArticles(user.name);}} className="flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 rounded-lg border border-green-700 text-green-700 hover:bg-green-700 hover:text-white transition-colors text-xs md:text-sm font-medium whitespace-nowrap">
+              <button onClick={()=>{setPage("mypage");loadMyArticles(user.name);loadBookmarks(user.id);}} className="flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 rounded-lg border border-green-700 text-green-700 hover:bg-green-700 hover:text-white transition-colors text-xs md:text-sm font-medium whitespace-nowrap">
                 <span className="hidden sm:inline">마이페이지</span><span className="sm:hidden">MY</span>
               </button>
             )}
@@ -1553,7 +1678,7 @@ export default function App() {
                 {articles.filter(a=>a.status===adminTab).map(a=>(
                   <div key={a.id} className={`rounded-xl border p-4 ${card}`}>
                     <div className="flex items-start gap-4">
-                      <ArticleImage image={a.image} category={a.category} className="rounded-lg flex-shrink-0" style={{width:80,height:64,minWidth:80}}/>
+                      <ArticleImage image={a.image} category={a.category} title={a.title} className="rounded-lg flex-shrink-0" style={{width:80,height:64,minWidth:80}}/>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <span className={`text-xs text-white px-2 py-0.5 rounded-full ${typeColor[a.type]||"bg-gray-500"}`}>{a.type||"기사"}</span>
@@ -1617,25 +1742,69 @@ export default function App() {
               )}
             </div>
 
+            {/* 탭 */}
+            <div className={`flex gap-1 mb-4 p-1 rounded-lg ${dark?"bg-gray-800":"bg-gray-100"}`}>
+              <button onClick={()=>setMypageTab("written")}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium transition-colors ${mypageTab==="written"?(dark?"bg-gray-700 text-white shadow":"bg-white shadow text-gray-900"):(dark?"text-gray-400":"text-gray-500")}`}>
+                <FileText size={14}/> 내가 쓴 글 <span className={`text-xs px-1.5 rounded-full ${mypageTab==="written"?(dark?"bg-gray-600":"bg-gray-100 text-gray-600"):"opacity-60"}`}>{myArticles.length}</span>
+              </button>
+              <button onClick={()=>setMypageTab("bookmarks")}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium transition-colors ${mypageTab==="bookmarks"?(dark?"bg-gray-700 text-white shadow":"bg-white shadow text-gray-900"):(dark?"text-gray-400":"text-gray-500")}`}>
+                <BookmarkCheck size={14}/> 저장한 글 <span className={`text-xs px-1.5 rounded-full ${mypageTab==="bookmarks"?(dark?"bg-gray-600":"bg-gray-100 text-gray-600"):"opacity-60"}`}>{bookmarkedArticles.length}</span>
+              </button>
+            </div>
+
             {/* 내가 쓴 글 */}
-            <h3 className="font-bold text-base mb-3 flex items-center gap-2"><FileText size={16} style={{color:SC}}/> 내가 쓴 글</h3>
-            {myArticles.length===0
-              ?<div className={`rounded-xl border p-8 text-center text-gray-400 text-sm ${card}`}>아직 작성한 글이 없습니다.</div>
-              :<div className="space-y-3">
-                {myArticles.map(a=>(
-                  <div key={a.id} onClick={()=>{setSelected(a);setPage("home");}}
-                    className={`cursor-pointer rounded-xl border p-4 hover:shadow-md transition-shadow ${card}`}>
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className={`text-xs text-white px-2 py-0.5 rounded-full ${typeColor[a.type]||"bg-gray-500"}`}>{a.type||"기사"}</span>
-                      <span className={`text-xs text-white px-2 py-0.5 rounded-full ${catColor[a.category]||"bg-gray-500"}`}>{a.category}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusStyle[a.status]}`}>{statusLabel[a.status]}</span>
-                      <span className={`text-xs ${dark?"text-gray-400":"text-gray-400"}`}>{a.date}</span>
+            {mypageTab==="written"&&(
+              myArticles.length===0
+                ?<div className={`rounded-xl border p-10 text-center ${card}`}>
+                  <div className="text-5xl mb-2 opacity-60">📝</div>
+                  <p className={`text-sm ${dark?"text-gray-300":"text-gray-600"} mb-1`}>아직 작성한 글이 없습니다</p>
+                  {canWrite(user.role)&&<button onClick={()=>{setEditId(null);setForm({title:"",category:"경제",type:allowedTypes(user.role)[0],body:"",image:""});setPage("write");}} style={{backgroundColor:SC}} className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-medium hover:opacity-90">✏️ 글 작성하기</button>}
+                </div>
+                :<div className="space-y-3">
+                  {myArticles.map(a=>(
+                    <div key={a.id} onClick={()=>{setSelected(a);setPage("home");}}
+                      className={`cursor-pointer rounded-xl border p-4 hover:shadow-md transition-shadow ${card}`}>
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className={`text-xs text-white px-2 py-0.5 rounded-full ${typeColor[a.type]||"bg-gray-500"}`}>{a.type||"기사"}</span>
+                        <span className={`text-xs text-white px-2 py-0.5 rounded-full ${catColor[a.category]||"bg-gray-500"}`}>{a.category}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusStyle[a.status]}`}>{statusLabel[a.status]}</span>
+                        <span className={`text-xs ${dark?"text-gray-400":"text-gray-400"}`}>{a.date}</span>
+                      </div>
+                      <p className="font-semibold text-sm leading-snug">{a.title}</p>
                     </div>
-                    <p className="font-semibold text-sm leading-snug">{a.title}</p>
-                  </div>
-                ))}
-              </div>
-            }
+                  ))}
+                </div>
+            )}
+
+            {/* 저장한 글 (북마크) */}
+            {mypageTab==="bookmarks"&&(
+              bookmarkedArticles.length===0
+                ?<div className={`rounded-xl border p-10 text-center ${card}`}>
+                  <div className="text-5xl mb-2 opacity-60">🔖</div>
+                  <p className={`text-sm ${dark?"text-gray-300":"text-gray-600"} mb-1`}>아직 저장한 글이 없습니다</p>
+                  <p className={`text-xs ${dark?"text-gray-500":"text-gray-400"}`}>기사 상단의 <span className="font-medium">저장</span> 버튼을 눌러 보관하세요</p>
+                </div>
+                :<div className="space-y-3">
+                  {bookmarkedArticles.map(a=>(
+                    <div key={a.id} className={`rounded-xl border p-4 hover:shadow-md transition-shadow ${card} ${a.type==="칼럼"?"border-l-4 border-l-amber-400":""}`}>
+                      <div onClick={()=>{setSelected(a);setPage("home");}} className="cursor-pointer">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className={`text-xs text-white px-2 py-0.5 rounded-full ${typeColor[a.type]||"bg-gray-500"}`}>{a.type||"기사"}</span>
+                          <span className={`text-xs text-white px-2 py-0.5 rounded-full ${catColor[a.category]||"bg-gray-500"}`}>{a.category}</span>
+                          <span className={`text-xs ${dark?"text-gray-400":"text-gray-400"}`}>{a.date}</span>
+                        </div>
+                        <p className="font-semibold text-sm leading-snug mb-1">{a.title}</p>
+                        {a.summary&&<p className="text-xs text-gray-500 line-clamp-2">{a.summary}</p>}
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-dashed border-gray-200 flex justify-end">
+                        <button onClick={(e)=>{e.stopPropagation();toggleBookmark(a.id,false);}} className="text-xs text-amber-600 hover:text-amber-700 flex items-center gap-1"><Trash2 size={11}/> 저장 해제</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+            )}
 
             {/* 회원 탈퇴 */}
             <div className={`rounded-xl border mt-8 p-5 ${dark?"border-red-900 bg-red-950/30":"border-red-100 bg-red-50"}`}>
@@ -1723,6 +1892,7 @@ export default function App() {
         {/* DETAIL */}
         {page==="home"&&selected&&(
           <div className="flex flex-col md:flex-row gap-6 lg:gap-10">
+            <ReadingProgress/>
             <article className="flex-1 min-w-0 md:max-w-3xl">
               <button onClick={()=>{ setSelected(null); window.location.hash=""; if(user?.role==="admin"&&selected.status!=="published") setPage("admin"); }}
                 className="flex items-center gap-1 text-sm hover:underline mb-4" style={{color:SC}}>
@@ -1735,10 +1905,13 @@ export default function App() {
               </div>
               <div className="mb-3 md:mb-4">
                 <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-[34px] font-bold leading-tight md:leading-[1.25] mb-3 tracking-tight">{selected.title}</h1>
-                {user&&<div className="flex gap-2 flex-wrap">
-                  <button onClick={()=>startEdit(selected)} style={{backgroundColor:SC}} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg text-white hover:opacity-90 transition-opacity"><Edit2 size={12}/> 수정</button>
-                  {user.role==="admin"&&<button onClick={()=>setConfirmDel(selected.id)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"><Trash2 size={12}/> 삭제</button>}
-                </div>}
+                <div className="flex gap-2 flex-wrap">
+                  <BookmarkButton articleId={selected.id} user={user} bookmarks={bookmarks} onToggle={toggleBookmark} dark={dark}/>
+                  {user&&<>
+                    <button onClick={()=>startEdit(selected)} style={{backgroundColor:SC}} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg text-white hover:opacity-90 transition-opacity"><Edit2 size={12}/> 수정</button>
+                    {user.role==="admin"&&<button onClick={()=>setConfirmDel(selected.id)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"><Trash2 size={12}/> 삭제</button>}
+                  </>}
+                </div>
               </div>
               <div className={`flex items-center justify-between gap-3 text-xs md:text-sm mb-5 pb-4 border-b flex-wrap ${dark?"text-gray-400 border-gray-800":"text-gray-500 border-gray-200"}`}>
                 <div className="flex items-center gap-3 flex-wrap">
@@ -1748,11 +1921,13 @@ export default function App() {
                 </div>
                 <button onClick={()=>setShowShare(true)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-colors hover:opacity-80" style={{borderColor:"#1a6b3c",color:"#1a6b3c"}}><Share2 size={12}/> 공유</button>
               </div>
-              <ArticleImage image={selected.image} category={selected.category} className="w-full rounded-xl mb-6 md:mb-7 h-48 sm:h-64 md:h-80 lg:h-[420px]"/>
+              <ArticleImage image={selected.image} category={selected.category} title={selected.title} className="w-full rounded-xl mb-6 md:mb-7 h-48 sm:h-64 md:h-80 lg:h-[420px]"/>
               {selected.author&&<div className="border-l-4 border-amber-400 pl-4 mb-5 py-1.5"><p className="text-xs md:text-sm text-amber-600 font-medium">{selected.type==="칼럼" ? `✒️ 칼럼 — ${selected.author} 기고` : `✍️ 기사 — ${selected.author} 작성`}</p></div>}
               <div className="text-[15px] md:text-[17px] leading-relaxed md:leading-[1.85] whitespace-pre-line">{selected.body}</div>
 
               <LikeButton articleId={selected.id} dark={dark}/>
+
+              <RelatedArticles current={selected} articles={articles} onOpen={openArticle} dark={dark}/>
 
               <div className={`border-t mt-8 pt-2 ${dark?"border-gray-800":"border-gray-200"}`}>
                 <CommentSection articleId={selected.id} user={user} dark={dark}/>
@@ -1826,7 +2001,7 @@ export default function App() {
             )}
             {hero&&activeCategory==="전체"&&activeType==="전체"&&!search&&(
               <div onClick={()=>openArticle(hero)} className="cursor-pointer rounded-2xl overflow-hidden mb-6 md:mb-10 relative group h-56 sm:h-72 md:h-[360px] lg:h-[420px] shadow-md hover:shadow-2xl transition-shadow duration-300">
-                <ArticleImage image={hero.image} category={hero.category} className="w-full h-full group-hover:scale-[1.04] transition-transform duration-700 ease-out"/>
+                <ArticleImage image={hero.image} category={hero.category} title={hero.title} className="w-full h-full group-hover:scale-[1.04] transition-transform duration-700 ease-out"/>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent"/>
                 <div className="absolute top-3 left-3 md:top-5 md:left-5">
                   <span className="bg-red-500 text-white text-[11px] md:text-xs font-bold px-2.5 py-1 rounded-full shadow-lg tracking-wide uppercase animate-pulse">⚡ Top</span>
@@ -1849,14 +2024,51 @@ export default function App() {
 
             <div className="flex flex-col md:flex-row gap-6 lg:gap-8">
               <div className="flex-1 min-w-0">
+                {(activeCategory!=="전체"||activeType!=="전체"||search)&&(
+                  <div className="flex items-center gap-2 mb-4 flex-wrap">
+                    <span className={`text-xs font-medium ${dark?"text-gray-400":"text-gray-500"}`}>활성 필터:</span>
+                    {activeCategory!=="전체"&&(
+                      <button onClick={()=>setActiveCat("전체")} className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full text-white ${catColor[activeCategory]||"bg-gray-500"} hover:opacity-80 transition-opacity`}>
+                        {activeCategory} <X size={11}/>
+                      </button>
+                    )}
+                    {activeType!=="전체"&&(
+                      <button onClick={()=>setActiveType("전체")} className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full text-white hover:opacity-80 transition-opacity`} style={{backgroundColor:activeType==="칼럼"?"#d97706":"#475569"}}>
+                        {activeType==="기사"?"📄 기사":"✒️ 칼럼"} <X size={11}/>
+                      </button>
+                    )}
+                    {search&&(
+                      <button onClick={()=>{setSearch("");}} className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border transition-colors ${dark?"border-gray-700 text-gray-300 hover:bg-gray-800":"border-gray-300 text-gray-600 hover:bg-gray-100"}`}>
+                        <Search size={11}/> "{search}" <X size={11}/>
+                      </button>
+                    )}
+                    <button onClick={()=>{setActiveCat("전체");setActiveType("전체");setSearch("");}} className={`text-xs underline ml-1 ${dark?"text-gray-500 hover:text-gray-300":"text-gray-400 hover:text-gray-600"}`}>
+                      모두 지우기
+                    </button>
+                  </div>
+                )}
                 {search&&<div className="mb-4"><p className={"text-sm font-medium " + (dark?"text-gray-300":"text-gray-700")}><span className="text-green-600 font-bold">{filtered.length}건</span> — <span className="text-green-600 font-semibold">{search}</span> 검색 결과</p><p className={"text-xs mt-0.5 " + (dark?"text-gray-500":"text-gray-400")}>제목 · 본문 · 작성자 · 카테고리에서 검색됨</p></div>}
-                {filtered.length===0&&<div className="py-12 text-center"><p className="text-gray-400 text-sm mb-1">{search ? "검색 결과가 없습니다." : "게재된 글이 없습니다."}</p>{search&&<p className={"text-xs " + (dark?"text-gray-600":"text-gray-400")}>다른 검색어를 입력해보세요</p>}</div>}
+                {articlesLoading&&filtered.length===0&&<SkeletonCard dark={dark} count={4}/>}
+                {!articlesLoading&&filtered.length===0&&(
+                  <div className={`rounded-xl border py-12 px-6 text-center ${card}`}>
+                    <div className="text-5xl md:text-6xl mb-3 opacity-60">{search ? "🔍" : "📭"}</div>
+                    <p className={`text-base font-medium mb-1 ${dark?"text-gray-200":"text-gray-700"}`}>{search ? "검색 결과가 없습니다" : "게재된 글이 없습니다"}</p>
+                    <p className={`text-xs md:text-sm mb-4 ${dark?"text-gray-500":"text-gray-400"}`}>
+                      {search ? "다른 키워드로 검색해 보세요" : "조건을 바꿔서 다시 시도해 보세요"}
+                    </p>
+                    {(activeCategory!=="전체"||activeType!=="전체"||search)&&(
+                      <button onClick={()=>{setActiveCat("전체");setActiveType("전체");setSearch("");}} style={{backgroundColor:SC}} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-medium hover:opacity-90 transition-opacity">
+                        <RefreshCw size={13}/> 전체 보기
+                      </button>
+                    )}
+                  </div>
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 md:gap-5">
                   {filtered.map(a=>(
                     <div key={a.id} onClick={()=>openArticle(a)}
                       className={`cursor-pointer rounded-xl border overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-200 group ${card} ${a.type==="칼럼"?"border-l-4 border-l-amber-400":""}`}>
                       <div className="relative overflow-hidden">
-                        <ArticleImage image={a.image} category={a.category} className="w-full group-hover:scale-105 transition-transform duration-500 h-36 sm:h-40 md:h-44 lg:h-48"/>
+                        <ArticleImage image={a.image} category={a.category} title={a.title} className="w-full group-hover:scale-105 transition-transform duration-500 h-36 sm:h-40 md:h-44 lg:h-48"/>
                       </div>
                       <div className="p-3 md:p-4">
                         <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
