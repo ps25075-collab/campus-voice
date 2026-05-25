@@ -161,7 +161,7 @@ function SkeletonCard({ dark, count=4 }) {
   const base = dark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200";
   const bar  = dark ? "bg-gray-800" : "bg-gray-200";
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 md:gap-5">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5">
       {Array.from({length:count}).map((_,i)=>(
         <div key={i} className={`rounded-xl border overflow-hidden ${base} animate-pulse`}>
           <div className={`w-full h-36 sm:h-40 md:h-44 lg:h-48 ${bar}`}/>
@@ -1046,6 +1046,7 @@ function ShareModal({ article, onClose, dark }) {
 
 export default function App() {
   const [dark,setDark]               = useState(false);
+  const SC = dark ? "#4ade80" : "#1a6b3c";
   const [menuOpen,setMenuOpen]       = useState(false);
   const [activeCategory,setActiveCat]= useState("전체");
   const [activeType,setActiveType]   = useState("전체");
@@ -1058,6 +1059,7 @@ export default function App() {
   const searchRef                          = useRef(null);
   const [email,setEmail]             = useState("");
   const [subscribed,setSubscribed]   = useState(false);
+  const [subscribeErr,setSubscribeErr] = useState("");
   const [articles,setArticles]       = useState([]);
   const [articlesLoading,setArticlesLoading] = useState(true);
   const [bookmarks,setBookmarks]     = useState([]);
@@ -1074,7 +1076,7 @@ export default function App() {
   const [loginTab,setLoginTab]       = useState("member");
   const [memberForm,setMemberForm]   = useState({email:"",pw:""});
   const [showSignup,setShowSignup]   = useState(false);
-  const [signupForm,setSignupForm]   = useState({name:"",email:"",pw:""});
+  const [signupForm,setSignupForm]   = useState({name:"",email:"",pw:"",pwConfirm:""});
   const [signupErr,setSignupErr]     = useState("");
   const [signupDone,setSignupDone]   = useState(false);
   const [termsView,setTermsView]         = useState("");         // "service"|"privacy"|""
@@ -1195,6 +1197,7 @@ export default function App() {
     setSignupErr("");
     if(!signupForm.name.trim()){ setSignupErr("이름을 입력해주세요."); return; }
     if(!signupForm.email||!signupForm.pw){ setSignupErr("이메일과 비밀번호를 입력해주세요."); return; }
+    if(signupForm.pw!==signupForm.pwConfirm){ setSignupErr("비밀번호가 일치하지 않습니다."); return; }
     if(!termsCheck.service){ setSignupErr("서비스 이용약관에 동의해주세요."); return; }
     if(!termsCheck.privacy){ setSignupErr("개인정보 처리방침에 동의해주세요."); return; }
     const {data,error}=await supabase.auth.signUp({email:signupForm.email,password:signupForm.pw});
@@ -1530,7 +1533,7 @@ export default function App() {
                 <input value={signupForm.name} onChange={e=>setSignupForm({...signupForm,name:e.target.value})} placeholder="이름 *" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
                 <input type="email" value={signupForm.email} onChange={e=>setSignupForm({...signupForm,email:e.target.value})} placeholder="이메일 *" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
                 <input type="password" value={signupForm.pw} onChange={e=>setSignupForm({...signupForm,pw:e.target.value})} placeholder="비밀번호 * (6자 이상)" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
-                <input type="password" value={signupForm.pw} onChange={e=>setSignupForm({...signupForm,pw:e.target.value})} placeholder="비밀번호 * (6자 이상)" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
+                <input type="password" value={signupForm.pwConfirm} onChange={e=>setSignupForm({...signupForm,pwConfirm:e.target.value})} placeholder="비밀번호 확인 *" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
                 {/* 약관 동의 */}
                 <div className={`rounded-xl border p-3 space-y-2 ${dark?"bg-gray-800 border-gray-700":"bg-gray-50 border-gray-200"}`}>
                   <p className={`text-xs font-semibold ${dark?"text-gray-300":"text-gray-600"}`}>약관 동의 (필수)</p>
@@ -1563,7 +1566,7 @@ export default function App() {
                 <CheckCircle size={40} className="text-green-500 mx-auto"/>
                 <p className="font-medium text-green-600">가입 신청이 완료됐습니다!</p>
                 <p className="text-xs text-gray-400">관리자 승인 후 칼럼을 작성할 수 있습니다.</p>
-                <button onClick={()=>{setShowLogin(false);setShowSignup(false);setSignupDone(false);setSignupForm({name:"",email:"",pw:""}); }} style={{backgroundColor:SC}} className="w-full py-2 text-white rounded-lg text-sm font-medium hover:opacity-90">확인</button>
+                <button onClick={()=>{setShowLogin(false);setShowSignup(false);setSignupDone(false);setSignupForm({name:"",email:"",pw:"",pwConfirm:""});}} style={{backgroundColor:SC}} className="w-full py-2 text-white rounded-lg text-sm font-medium hover:opacity-90">확인</button>
               </div>
             )}
           </div>
@@ -1930,7 +1933,7 @@ export default function App() {
                 <label className="text-sm font-medium mb-1 block">본문 *</label>
                 <div className={`flex gap-1 mb-1 p-1 rounded border ${dark?"bg-gray-800 border-gray-700":"bg-gray-50 border-gray-200"}`}>
                   {[<Bold size={14}/>,<Italic size={14}/>,<List size={14}/>].map((ic,i)=>(
-                    <button key={i} className={`p-1.5 rounded transition-colors ${dark?"text-gray-300 hover:bg-gray-700":"text-gray-600 hover:bg-gray-200"}`}>{ic}</button>
+                    <button key={i} disabled title="준비 중" className={`p-1.5 rounded transition-colors opacity-40 cursor-not-allowed ${dark?"text-gray-300":"text-gray-600"}`}>{ic}</button>
                   ))}
                 </div>
                 <textarea value={form.body} onChange={e=>setForm({...form,body:e.target.value})} rows={8} placeholder="본문을 입력하세요..." className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 resize-none ${inp}`}/>
@@ -2118,7 +2121,7 @@ export default function App() {
                     )}
                   </div>
                 )}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 md:gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5">
                   {filtered.map(a=>(
                     <div key={a.id} onClick={()=>openArticle(a)}
                       className={`cursor-pointer rounded-xl border overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-200 group ${card} ${a.type==="칼럼"?"border-l-4 border-l-amber-400":""}`}>
@@ -2177,15 +2180,20 @@ export default function App() {
             <p className="text-green-200 text-xs md:text-base mb-4 md:mb-6 px-2">매주 목요일 아침 주요 소식을 이메일로 받아보세요.</p>
             {subscribed
               ?<p className="text-green-300 font-medium text-sm md:text-base">✅ 구독이 완료되었습니다!</p>
-              :<div className="flex flex-col sm:flex-row justify-center gap-2 max-w-sm md:max-w-md mx-auto">
-                <input value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="이메일 주소를 입력하세요" className="flex-1 px-4 py-2.5 md:py-3 rounded-lg text-sm md:text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-400 shadow-sm"/>
-                <button onClick={async()=>{
-                if(!email) return;
-                try{
-                  const r=await fetch("/api/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})});
-                  if(r.ok) setSubscribed(true);
-                }catch{}
-              }} style={{backgroundColor:SC}} className="px-5 md:px-6 py-2.5 md:py-3 text-white rounded-lg text-sm md:text-base font-medium hover:opacity-90 border border-green-400 transition-opacity whitespace-nowrap">구독하기</button>
+              :<div className="max-w-sm md:max-w-md mx-auto">
+                <div className="flex flex-col sm:flex-row justify-center gap-2">
+                  <input value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="이메일 주소를 입력하세요" className="flex-1 px-4 py-2.5 md:py-3 rounded-lg text-sm md:text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-400 shadow-sm"/>
+                  <button onClick={async()=>{
+                    if(!email){ setSubscribeErr("이메일을 입력해주세요."); return; }
+                    setSubscribeErr("");
+                    try{
+                      const r=await fetch("/api/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})});
+                      if(r.ok){ setSubscribed(true); }
+                      else { setSubscribeErr("구독 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."); }
+                    }catch{ setSubscribeErr("네트워크 오류로 구독에 실패했습니다."); }
+                  }} style={{backgroundColor:SC}} className="px-5 md:px-6 py-2.5 md:py-3 text-white rounded-lg text-sm md:text-base font-medium hover:opacity-90 border border-green-400 transition-opacity whitespace-nowrap">구독하기</button>
+                </div>
+                {subscribeErr&&<p className="text-red-300 text-xs md:text-sm mt-2 text-center">{subscribeErr}</p>}
               </div>
             }
           </div>
