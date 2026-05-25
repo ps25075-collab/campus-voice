@@ -41,6 +41,8 @@ function renderInlineMarkdown(text){
   return tokens;
 }
 
+const readingTime = (body) => Math.max(1, Math.round((body||'').length / 700));
+
 function renderArticleBody(text){
   if(!text) return null;
   const lines = text.split("\n");
@@ -616,7 +618,7 @@ function CommentSection({ articleId, user, dark }) {
 
   const submitComment = async () => {
     if(!text.trim()) return;
-    const newC = { article_id:articleId, name:name.trim()||"익명", text:text.trim(), date:today(), parent_id:null, likes:0 };
+    const newC = { article_id:articleId, name:(user?.name||name.trim()||"익명"), text:text.trim(), date:today(), parent_id:null, likes:0 };
     const { data } = await supabase.from("comments").insert(newC).select().single();
     if(data) setComments(prev=>[...prev, data]);
     setName(""); setText("");
@@ -624,7 +626,7 @@ function CommentSection({ articleId, user, dark }) {
 
   const submitReply = async () => {
     if(!replyText.trim()||!replyTo) return;
-    const newC = { article_id:articleId, name:replyName.trim()||"익명", text:replyText.trim(), date:today(), parent_id:replyTo.id, likes:0 };
+    const newC = { article_id:articleId, name:(user?.name||replyName.trim()||"익명"), text:replyText.trim(), date:today(), parent_id:replyTo.id, likes:0 };
     const { data } = await supabase.from("comments").insert(newC).select().single();
     if(data) setComments(prev=>[...prev, data]);
     setReplyTo(null); setReplyText(""); setReplyName("");
@@ -681,8 +683,11 @@ function CommentSection({ articleId, user, dark }) {
         <span className="text-sm font-normal text-gray-400">({comments.length})</span>
       </h3>
       <div className={"rounded-xl border p-4 mb-4 space-y-2 " + (dark?"bg-gray-900 border-gray-800":"bg-white border-gray-200")}>
-        <input value={name} onChange={e=>setName(e.target.value)} placeholder="이름 (선택, 미입력 시 익명)"
-          className={"w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-green-600 " + inp}/>
+        {user
+          ? <p className={"text-xs font-medium " + (dark?"text-green-400":"text-green-600")}>{user.name} 으로 댓글 작성</p>
+          : <input value={name} onChange={e=>setName(e.target.value)} placeholder="이름 (선택, 미입력 시 익명)"
+              className={"w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-green-600 " + inp}/>
+        }
         <textarea value={text} onChange={e=>setText(e.target.value)} rows={3} placeholder="댓글을 입력하세요..."
           className={"w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 resize-none " + inp}/>
         <button onClick={submitComment} style={{backgroundColor:SC}}
@@ -706,8 +711,8 @@ function CommentSection({ articleId, user, dark }) {
                 <p className={"text-xs font-medium " + (dark?"text-blue-400":"text-blue-500")}>
                   ↳ <span className="font-semibold">{replyTo.name}</span> 님에게 답글
                 </p>
-                <input value={replyName} onChange={e=>setReplyName(e.target.value)} placeholder="이름 (선택, 미입력 시 익명)"
-                  className={"w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 " + inp}/>
+                {!user && <input value={replyName} onChange={e=>setReplyName(e.target.value)} placeholder="이름 (선택, 미입력 시 익명)"
+                  className={"w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 " + inp}/>}
                 <textarea value={replyText} onChange={e=>setReplyText(e.target.value)} rows={2} placeholder="답글을 입력하세요..."
                   className={"w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none " + inp}/>
                 <div className="flex gap-2">
@@ -1011,7 +1016,6 @@ function ShareModal({ article, onClose, dark }) {
     if (navigator.share) {
       navigator.share({ title: article.title, text: article.summary || article.body?.slice(0,80) || '', url });
     } else {
-      const kakaoUrl = `https://sharer.kakao.com/talk/friends/picker/easylink?app_id=KAKAO_APP_ID&amp;link_ver=4.0&text=${encodeURIComponent(article.title)}&amp;url=${encodeURIComponent(url)}`;
       copyLink();
       alert('링크가 복사됐습니다. 카카오톡에서 붙여넣기 해주세요.');
     }
@@ -1112,6 +1116,7 @@ export default function App() {
   const [subscribeErr,setSubscribeErr] = useState("");
   const [articles,setArticles]       = useState([]);
   const [articlesLoading,setArticlesLoading] = useState(true);
+  const [visibleCount,setVisibleCount] = useState(20);
   const [bookmarks,setBookmarks]     = useState([]);
   const [bookmarkedArticles,setBookmarkedArticles] = useState([]);
   const [readProgress,setReadProgress] = useState(0);
@@ -1393,12 +1398,21 @@ export default function App() {
       setSubmitting(false);
     }
   };
+  const uploadImage = async (file) => {
+    const ext = file.name.split('.').pop();
+    const path = `articles/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('article-images').upload(path, file, { upsert: true });
+    if (error) { alert('이미지 업로드에 실패했습니다.'); return; }
+    const { data } = supabase.storage.from('article-images').getPublicUrl(path);
+    setForm(fm => ({ ...fm, image: data.publicUrl }));
+  };
   const startEdit=a=>{ setForm({title:a.title,category:a.category,type:a.type||"기사",body:a.body,image:a.image||""}); setEditId(a.id); setSelected(null); setPage("write"); };
   const openArticle=async(article)=>{
     if(!article) return;
     const newViews=(article.views||0)+1;
     const updated={...article,views:newViews};
     setSelected(updated);
+    document.title = `${article.title} — 세계를 알리다`;
     setArticles(prev=>prev.map(a=>a.id===article.id?{...a,views:newViews}:a));
     const targetPath=`/article/${article.id}`;
     if(window.location.pathname!==targetPath){
@@ -1415,6 +1429,13 @@ export default function App() {
     await supabase.from('articles').update({status}).eq('id',id);
     setArticles(prev=>prev.map(a=>a.id===id?{...a,status}:a));
   };
+  const toggleHero=async(id,value)=>{
+    if(value) await supabase.from('articles').update({hero:false}).eq('status','published');
+    await supabase.from('articles').update({hero:value}).eq('id',id);
+    setArticles(prev=>prev.map(a=>({...a,hero:value?a.id===id:(a.id===id?false:a.hero)})));
+  };
+
+  useEffect(()=>{ setVisibleCount(20); },[activeCategory,activeType,search]);
 
   const published=articles.filter(a=>a.status==="published");
   const hero=published.find(a=>a.hero);
@@ -1479,7 +1500,7 @@ export default function App() {
       <header style={{backgroundColor:SC}} className="sticky top-0 z-40 shadow-md backdrop-blur supports-[backdrop-filter]:bg-opacity-95">
         <div className="max-w-6xl mx-auto px-3 md:px-6 py-2.5 md:py-3.5 flex items-center justify-between gap-2 md:gap-6">
           <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-shrink-0">
-            <button onClick={()=>{setPage("home");setSelected(null);setActiveCat("전체");setActiveType("전체");setSearch("");setSearchOpen(false);}} className="text-white font-bold text-lg md:text-[22px] tracking-tight truncate hover:opacity-90 transition-opacity">📰 세계를 알리다</button>
+            <button onClick={()=>{setPage("home");setSelected(null);setActiveCat("전체");setActiveType("전체");setSearch("");setSearchOpen(false);document.title="세계를 알리다 — 표선고등학교 학생 언론사";}} className="text-white font-bold text-lg md:text-[22px] tracking-tight truncate hover:opacity-90 transition-opacity">📰 세계를 알리다</button>
           </div>
           <nav className="flex items-center gap-0.5 lg:gap-1 flex-1 justify-center flex-wrap">
             {CATEGORIES.map(c=>{
@@ -1815,6 +1836,7 @@ export default function App() {
                       <button onClick={()=>{setSelected(a);setPage("home");}} className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border ${dark?"border-gray-700 text-gray-300":"border-gray-300 text-gray-600"}`}><Eye size={12}/> 미리보기</button>
                       {a.status!=="published"&&<button onClick={()=>updateStatus(a.id,"published")} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white"><CheckCircle size={12}/> 승인 게재</button>}
                       {a.status!=="rejected"&&<button onClick={()=>updateStatus(a.id,"rejected")} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white"><XCircle size={12}/> 반려</button>}
+                      {a.status==="published"&&<button onClick={()=>toggleHero(a.id,!a.hero)} className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border transition-colors ${a.hero?(dark?"border-yellow-500 text-yellow-400 bg-yellow-500/10":"border-yellow-500 text-yellow-600 bg-yellow-50"):(dark?"border-gray-700 text-gray-300":"border-gray-300 text-gray-600")}`}>{a.hero?"⭐ 헤드라인":"☆ 헤드라인 설정"}</button>}
                       <button onClick={()=>startEdit(a)} style={{backgroundColor:SC}} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg text-white hover:opacity-90"><Edit2 size={12}/> 수정</button>
                       <button onClick={()=>setConfirmDel(a.id)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white"><Trash2 size={12}/> 삭제</button>
                     </div>
@@ -1988,7 +2010,7 @@ export default function App() {
                   <span className="text-gray-400">{form.image?"✅ 이미지 업로드됨":"클릭해서 이미지 파일 선택"}</span>
                   <input type="file" accept="image/*" className="hidden" onChange={e=>{
                     const f=e.target.files?.[0]; if(!f) return;
-                    const r=new FileReader(); r.onload=ev=>setForm(fm=>({...fm,image:ev.target.result})); r.readAsDataURL(f);
+                    uploadImage(f);
                   }}/>
                 </label>
                 {form.image&&<div className="mt-2 relative"><img src={form.image} alt="" className="w-full h-36 object-cover rounded-lg"/><button onClick={()=>setForm(f=>({...f,image:""}))} className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5"><X size={14}/></button></div>}
@@ -2017,7 +2039,7 @@ export default function App() {
           <div className="flex flex-col md:flex-row gap-6 lg:gap-10">
             <ReadingProgress/>
             <article className="flex-1 min-w-0 md:max-w-3xl">
-              <button onClick={()=>{ setSelected(null); if(window.location.pathname.startsWith('/article/')){ window.history.pushState({}, '', '/'); } window.location.hash=""; if(user?.role==="admin"&&selected.status!=="published") setPage("admin"); }}
+              <button onClick={()=>{ setSelected(null); document.title="세계를 알리다 — 표선고등학교 학생 언론사"; if(window.location.pathname.startsWith('/article/')){ window.history.pushState({}, '', '/'); } window.location.hash=""; if(user?.role==="admin"&&selected.status!=="published") setPage("admin"); }}
                 className="flex items-center gap-1 text-sm hover:underline mb-4" style={{color:SC}}>
                 <ArrowLeft size={15}/> {user?.role==="admin"&&selected.status!=="published"?"관리자 메뉴로":"목록으로"}
               </button>
@@ -2041,6 +2063,7 @@ export default function App() {
                   <span>{selected.date}</span>
                   {selected.author&&<span className="text-amber-600 font-medium flex items-center gap-1"><PenLine size={12}/> {selected.author}</span>}
                   <span className="flex items-center gap-1"><Eye size={12}/> {selected.views.toLocaleString()}</span>
+                  <span className="flex items-center gap-1"><Clock size={12}/> 약 {readingTime(selected.body)}분</span>
                 </div>
                 <button onClick={()=>setShowShare(true)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-colors hover:opacity-80" style={{borderColor:SC,color:SC}}><Share2 size={12}/> 공유</button>
               </div>
@@ -2187,7 +2210,7 @@ export default function App() {
                   </div>
                 )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5">
-                  {filtered.map(a=>(
+                  {filtered.slice(0,visibleCount).map(a=>(
                     <div key={a.id} onClick={()=>openArticle(a)}
                       className={`cursor-pointer rounded-xl border overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-200 group ${card} ${a.type==="칼럼"?"border-l-4 border-l-amber-400":""}`}>
                       <div className="relative overflow-hidden">
@@ -2199,7 +2222,7 @@ export default function App() {
                             <span className={`text-xs text-white px-2 py-0.5 rounded-full ${typeColor[a.type]||"bg-gray-500"}`}>{a.type||"기사"}</span>
                             <span className={`text-xs text-white px-2 py-0.5 rounded-full ${catColor[a.category]||"bg-gray-500"}`}>{a.category}</span>
                           </div>
-                          <span className="text-xs text-gray-400">{a.date}</span>
+                          <span className="text-xs text-gray-400 flex items-center gap-1">{a.date} · <Clock size={10}/> 약 {readingTime(a.body)}분</span>
                         </div>
                         <h3 className="font-semibold text-[15px] md:text-base leading-snug mb-1 line-clamp-2 group-hover:opacity-80 transition-opacity">{a.title}</h3>
                         {a.author&&<p className="text-xs text-amber-600 mb-0.5">✒️ {a.author}</p>}
@@ -2208,6 +2231,14 @@ export default function App() {
                     </div>
                   ))}
                 </div>
+                {filtered.length>visibleCount&&(
+                  <div className="mt-6 text-center">
+                    <button onClick={()=>setVisibleCount(n=>n+20)} style={{borderColor:SC,color:SC}}
+                      className="px-6 py-2.5 rounded-full border-2 text-sm font-medium hover:opacity-80 transition-opacity">
+                      더 보기 ({filtered.length-visibleCount}개 남음)
+                    </button>
+                  </div>
+                )}
               </div>
               <aside className="md:w-64 lg:w-72 space-y-4 md:flex-shrink-0">
                 <div className={`rounded-xl border p-4 lg:p-5 md:sticky md:top-20 ${card}`}>
