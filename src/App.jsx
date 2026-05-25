@@ -22,6 +22,49 @@ const SC_DARK = "#4ade80";
 const SCContext = createContext(SC);
 const SCD = "#145530";
 
+function renderInlineMarkdown(text){
+  const tokens = [];
+  let i = 0, buf = "", key = 0;
+  const flush = () => { if(buf){ tokens.push(buf); buf = ""; } };
+  while(i < text.length){
+    if(text[i]==="*" && text[i+1]==="*"){
+      const end = text.indexOf("**", i+2);
+      if(end > i+2){ flush(); tokens.push(<strong key={`b${key++}`}>{text.slice(i+2,end)}</strong>); i = end+2; continue; }
+    }
+    if(text[i]==="_"){
+      const end = text.indexOf("_", i+1);
+      if(end > i+1){ flush(); tokens.push(<em key={`i${key++}`}>{text.slice(i+1,end)}</em>); i = end+1; continue; }
+    }
+    buf += text[i]; i++;
+  }
+  flush();
+  return tokens;
+}
+
+function renderArticleBody(text){
+  if(!text) return null;
+  const lines = text.split("\n");
+  const out = [];
+  let list = [];
+  let key = 0;
+  const flushList = () => {
+    if(list.length){
+      out.push(<ul key={`ul${key++}`} className="list-disc pl-6 my-2 space-y-1">{list.map((it,idx)=><li key={idx}>{renderInlineMarkdown(it)}</li>)}</ul>);
+      list = [];
+    }
+  };
+  lines.forEach((line)=>{
+    if(/^- /.test(line)){ list.push(line.slice(2)); }
+    else{
+      flushList();
+      if(line.trim()===""){ out.push(<div key={`sp${key++}`} className="h-3"/>); }
+      else{ out.push(<p key={`p${key++}`} className="mb-2">{renderInlineMarkdown(line)}</p>); }
+    }
+  });
+  flushList();
+  return out;
+}
+
 const canWrite    = r => ["admin","editor","columnist","reporter"].includes(r);
 const canReadBox  = r => ["admin","editor"].includes(r);
 const canDelComment = r => ["admin","editor"].includes(r);
@@ -1074,6 +1117,33 @@ export default function App() {
   const [bookmarkedArticles,setBookmarkedArticles] = useState([]);
   const [readProgress,setReadProgress] = useState(0);
   const [form,setForm]               = useState({title:"",category:"경제",type:"기사",body:"",image:""});
+  const bodyRef                      = useRef(null);
+  const applyFormat = (type) => {
+    const ta = bodyRef.current;
+    if(!ta) return;
+    const start = ta.selectionStart, end = ta.selectionEnd;
+    const body = form.body;
+    const before = body.slice(0,start), sel = body.slice(start,end), after = body.slice(end);
+    let newBody, newStart, newEnd;
+    if(type==="bold"){
+      const inner = sel || "굵게";
+      newBody = before + "**" + inner + "**" + after;
+      newStart = start + 2; newEnd = newStart + inner.length;
+    } else if(type==="italic"){
+      const inner = sel || "기울임";
+      newBody = before + "_" + inner + "_" + after;
+      newStart = start + 1; newEnd = newStart + inner.length;
+    } else {
+      const baseSel = sel || "항목";
+      const listed = baseSel.split("\n").map(l => /^- /.test(l) ? l : "- " + l).join("\n");
+      const needsNL = start > 0 && body[start-1] !== "\n";
+      const prefix = needsNL ? "\n" : "";
+      newBody = before + prefix + listed + after;
+      newStart = start + prefix.length; newEnd = newStart + listed.length;
+    }
+    setForm(f=>({...f, body:newBody}));
+    setTimeout(()=>{ ta.focus(); ta.setSelectionRange(newStart, newEnd); }, 0);
+  };
   const [editId,setEditId]           = useState(null);
   const [confirmDel,setConfirmDel]   = useState(null);
   const [user,setUser]               = useState(null);
@@ -1941,11 +2011,12 @@ export default function App() {
               <div>
                 <label className="text-sm font-medium mb-1 block">본문 *</label>
                 <div className={`flex gap-1 mb-1 p-1 rounded border ${dark?"bg-gray-800 border-gray-700":"bg-gray-50 border-gray-200"}`}>
-                  {[<Bold size={14}/>,<Italic size={14}/>,<List size={14}/>].map((ic,i)=>(
-                    <button key={i} disabled title="준비 중" className={`p-1.5 rounded transition-colors opacity-40 cursor-not-allowed ${dark?"text-gray-300":"text-gray-600"}`}>{ic}</button>
-                  ))}
+                  <button type="button" onClick={()=>applyFormat("bold")} title="굵게 (선택 영역을 **로 감쌈)" className={`p-1.5 rounded transition-colors ${dark?"text-gray-300 hover:bg-gray-700":"text-gray-600 hover:bg-gray-200"}`}><Bold size={14}/></button>
+                  <button type="button" onClick={()=>applyFormat("italic")} title="기울임 (선택 영역을 _로 감쌈)" className={`p-1.5 rounded transition-colors ${dark?"text-gray-300 hover:bg-gray-700":"text-gray-600 hover:bg-gray-200"}`}><Italic size={14}/></button>
+                  <button type="button" onClick={()=>applyFormat("list")} title="목록 (각 줄 앞에 - 추가)" className={`p-1.5 rounded transition-colors ${dark?"text-gray-300 hover:bg-gray-700":"text-gray-600 hover:bg-gray-200"}`}><List size={14}/></button>
+                  <span className={`ml-auto self-center text-[10px] pr-1 ${dark?"text-gray-500":"text-gray-400"}`}>마크다운: **굵게** _기울임_ - 목록</span>
                 </div>
-                <textarea value={form.body} onChange={e=>setForm({...form,body:e.target.value})} rows={8} placeholder="본문을 입력하세요..." className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 resize-none ${inp}`}/>
+                <textarea ref={bodyRef} value={form.body} onChange={e=>setForm({...form,body:e.target.value})} rows={8} placeholder="본문을 입력하세요..." className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 resize-none ${inp}`}/>
               </div>
               {submitErr&&<p className="text-sm text-red-500 text-center">{submitErr}</p>}
               <button onClick={submitArticle} disabled={submitting} style={{backgroundColor:form.type==="칼럼"?"#d97706":SC}}
@@ -1990,7 +2061,7 @@ export default function App() {
               </div>
               <ArticleImage image={selected.image} category={selected.category} title={selected.title} priority className="w-full rounded-xl mb-6 md:mb-7 h-48 sm:h-64 md:h-80 lg:h-[420px]"/>
               {selected.author&&<div className="border-l-4 border-amber-400 pl-4 mb-5 py-1.5"><p className="text-xs md:text-sm text-amber-600 font-medium">{selected.type==="칼럼" ? `✒️ 칼럼 — ${selected.author} 기고` : `✍️ 기사 — ${selected.author} 작성`}</p></div>}
-              <div className="text-[15px] md:text-[17px] leading-relaxed md:leading-[1.85] whitespace-pre-line">{selected.body}</div>
+              <div className="text-[15px] md:text-[17px] leading-relaxed md:leading-[1.85]">{renderArticleBody(selected.body)}</div>
 
               <LikeButton articleId={selected.id} dark={dark}/>
 
