@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { supabase } from './lib/supabase';
-import { Search, Menu, X, TrendingUp, Instagram, Facebook, Youtube, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle, ChevronLeft, ChevronRight, Share2, Copy, Link, Mail, Bookmark, BookmarkCheck } from "lucide-react";
+import { Search, X, TrendingUp, Instagram, Facebook, Youtube, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle, ChevronLeft, ChevronRight, Share2, Copy, Link, Mail, Bookmark, BookmarkCheck } from "lucide-react";
 
 /* ── 날짜 헬퍼 ── */
 const today = () => {
@@ -1098,7 +1098,6 @@ function ShareModal({ article, onClose, dark }) {
 export default function App() {
   const [dark,setDark]               = useState(false);
   const SC = dark ? SC_DARK : "#1a6b3c";
-  const [menuOpen,setMenuOpen]       = useState(false);
   const [activeCategory,setActiveCat]= useState("전체");
   const [activeType,setActiveType]   = useState("전체");
   const [selected,setSelected]       = useState(null);
@@ -1479,13 +1478,10 @@ export default function App() {
       {/* HEADER */}
       <header style={{backgroundColor:SC}} className="sticky top-0 z-40 shadow-md backdrop-blur supports-[backdrop-filter]:bg-opacity-95">
         <div className="max-w-6xl mx-auto px-3 md:px-6 py-2.5 md:py-3.5 flex items-center justify-between gap-2 md:gap-6">
-          <div className="flex items-center gap-2 md:gap-3 min-w-0">
-            <button aria-label="메뉴" className="md:hidden text-white flex-shrink-0" onClick={()=>setMenuOpen(!menuOpen)}>
-              {menuOpen?<X size={22}/>:<Menu size={22}/>}
-            </button>
-            <button onClick={()=>{setPage("home");setSelected(null);setActiveCat("전체");setActiveType("전체");setSearch("");setSearchOpen(false);setMenuOpen(false);}} className="text-white font-bold text-lg md:text-[22px] tracking-tight truncate hover:opacity-90 transition-opacity">📰 세계를 알리다</button>
+          <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-shrink-0">
+            <button onClick={()=>{setPage("home");setSelected(null);setActiveCat("전체");setActiveType("전체");setSearch("");setSearchOpen(false);}} className="text-white font-bold text-lg md:text-[22px] tracking-tight truncate hover:opacity-90 transition-opacity">📰 세계를 알리다</button>
           </div>
-          <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 flex-1 justify-center">
+          <nav className="flex items-center gap-0.5 lg:gap-1 flex-1 justify-center flex-wrap">
             {CATEGORIES.map(c=>{
               const active = activeCategory===c&&page==="home"&&!selected;
               return (
@@ -1540,15 +1536,6 @@ export default function App() {
                 ))}
               </div>
             </div>
-          </div>
-        )}
-        {menuOpen&&(
-          <div style={{backgroundColor:SCD}} className="md:hidden border-t border-green-900 px-4 pb-3 pt-2 flex flex-col gap-1">
-            {CATEGORIES.map(c=>(
-              <button key={c} onClick={()=>{setActiveCat(c);setMenuOpen(false);setPage("home");setSelected(null);}} className={`text-sm py-2 text-left px-2 rounded transition-colors ${activeCategory===c?"bg-white/20 text-white font-medium":"text-green-100 hover:bg-white/10"}`}>{c}</button>
-            ))}
-            {user&&canWrite(user.role)&&<button onClick={()=>{setEditId(null);setForm({title:"",category:"경제",type:allowedTypes(user.role)[0],body:"",image:""});setPage("write");setMenuOpen(false);}} className="text-green-200 hover:text-white text-sm py-2 text-left px-2 rounded hover:bg-white/10">✏️ 글 작성</button>}
-            {user?.role==="admin"&&<button onClick={()=>{setPage("admin");loadMembers();setMenuOpen(false);}} className="text-yellow-300 hover:text-yellow-200 text-sm py-2 text-left px-2 rounded hover:bg-white/10">👑 관리자 메뉴</button>}
           </div>
         )}
       </header>
@@ -1668,10 +1655,8 @@ export default function App() {
       )}
 
       {showShare&&selected&&<ShareModal article={selected} onClose={()=>setShowShare(false)} dark={dark}/>}
-      {showShare&&selected&&<ShareModal article={selected} onClose={()=>setShowShare(false)} dark={dark}/>}
 
       {/* 약관 전문 보기 모달 */}
-      {termsView&&<TermsViewModal type={termsView} onClose={()=>setTermsView("")} dark={dark}/>}
       {termsView&&<TermsViewModal type={termsView} onClose={()=>setTermsView("")} dark={dark}/>}
 
       {/* 탈퇴 확인 모달 */}
