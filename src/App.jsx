@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { supabase } from './lib/supabase';
 import { Search, Menu, X, TrendingUp, Instagram, Facebook, Youtube, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle, ChevronLeft, ChevronRight, Share2, Copy, Link, Mail, Bookmark, BookmarkCheck } from "lucide-react";
 
@@ -18,6 +18,8 @@ const catGradient = {
   긴급:"linear-gradient(135deg,#7f1d1d,#ef4444)",
 };
 const SC  = "#1a6b3c";
+const SC_DARK = "#4ade80";
+const SCContext = createContext(SC);
 const SCD = "#145530";
 
 const canWrite    = r => ["admin","editor","columnist","reporter"].includes(r);
@@ -108,6 +110,7 @@ function BookmarkButton({ articleId, user, bookmarks, onToggle, dark }) {
 
 /* ── 관련 기사 추천 ── */
 function RelatedArticles({ current, articles, onOpen, dark }) {
+  const SC = useContext(SCContext);
   const card = dark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200";
   const related = articles
     .filter(a => a.id !== current.id && a.status === "published" && a.category === current.category)
@@ -137,6 +140,7 @@ function RelatedArticles({ current, articles, onOpen, dark }) {
 
 /* ── 읽기 진도바 ── */
 function ReadingProgress() {
+  const SC = useContext(SCContext);
   const [pct, setPct] = useState(0);
   useEffect(()=>{
     const onScroll = () => {
@@ -151,7 +155,7 @@ function ReadingProgress() {
   },[]);
   return (
     <div className="fixed top-0 left-0 right-0 z-50 h-1 pointer-events-none">
-      <div className="h-full transition-[width] duration-150 ease-out" style={{width:`${pct}%`, backgroundColor:"#1a6b3c", boxShadow:"0 0 8px rgba(26,107,60,0.5)"}}/>
+      <div className="h-full transition-[width] duration-150 ease-out" style={{width:`${pct}%`, backgroundColor:SC, boxShadow:`0 0 8px ${SC}80`}}/>
     </div>
   );
 }
@@ -426,6 +430,7 @@ function WeatherPanel({ dark }) {
 }
 /* ── 정보 캐러셀 (금융 지표 ↔ 날씨) ── */
 function InfoCarousel({ dark }) {
+  const SC = useContext(SCContext);
   const [slide, setSlide] = useState(0);
   const TOTAL = 2;
   const intervalRef = useRef(null);
@@ -472,7 +477,7 @@ function InfoCarousel({ dark }) {
           {Array.from({length:TOTAL}).map((_,i)=>(
             <button key={i} onClick={()=>handleGoTo(i)}
               className={`rounded-full transition-all duration-300 ${slide===i?"w-5 h-2":"w-2 h-2"}`}
-              style={{backgroundColor: slide===i?"#1a6b3c": dark?"#374151":"#d1d5db"}}/>
+              style={{backgroundColor: slide===i?SC: dark?"#374151":"#d1d5db"}}/>
           ))}
         </div>
       </div>
@@ -524,6 +529,7 @@ function LikeButton({ articleId, dark }) {
 
 /* ── 댓글 섹션 ── */
 function CommentSection({ articleId, user, dark }) {
+  const SC = useContext(SCContext);
   const [comments,  setComments]  = useState([]);
   const [name,      setName]      = useState("");
   const [text,      setText]      = useState("");
@@ -682,6 +688,7 @@ function CommentSection({ articleId, user, dark }) {
 
 /* ── 건의함 ── */
 function SuggestionBox({ user, dark }) {
+  const SC = useContext(SCContext);
   const [open, setOpen]         = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
@@ -865,6 +872,7 @@ const TERMS_TEXT = {
 };
 
 function TermsViewModal({ type, onClose, dark }) {
+  const SC = useContext(SCContext);
   const t = TERMS_TEXT[type];
   if (!t) return null;
   const bg = dark ? "bg-gray-900 border-gray-700 text-gray-100" : "bg-white border-gray-200 text-gray-900";
@@ -880,7 +888,7 @@ function TermsViewModal({ type, onClose, dark }) {
           <pre className={"text-xs leading-relaxed whitespace-pre-wrap font-sans " + sub}>{t.content}</pre>
         </div>
         <div className="px-5 py-3 border-t" style={{borderColor:dark?"#374151":"#e5e7eb"}}>
-          <button onClick={onClose} style={{backgroundColor:"#1a6b3c"}} className="w-full py-2 text-white rounded-lg text-sm font-medium hover:opacity-90">확인</button>
+          <button onClick={onClose} style={{backgroundColor:SC}} className="w-full py-2 text-white rounded-lg text-sm font-medium hover:opacity-90">확인</button>
         </div>
       </div>
     </div>
@@ -1046,7 +1054,7 @@ function ShareModal({ article, onClose, dark }) {
 
 export default function App() {
   const [dark,setDark]               = useState(false);
-  const SC = dark ? "#4ade80" : "#1a6b3c";
+  const SC = dark ? SC_DARK : "#1a6b3c";
   const [menuOpen,setMenuOpen]       = useState(false);
   const [activeCategory,setActiveCat]= useState("전체");
   const [activeType,setActiveType]   = useState("전체");
@@ -1366,6 +1374,7 @@ export default function App() {
   ];
 
   return (
+    <SCContext.Provider value={SC}>
     <div className={`min-h-screen ${bg} transition-colors duration-300`}>
 
       {/* TOP BAR */}
@@ -1651,7 +1660,7 @@ export default function App() {
                 setPendingAuthUser(null);
                 setTermsCheck({service:false,privacy:false});
               }}
-              style={{backgroundColor:(termsCheck.service&&termsCheck.privacy)?"#1a6b3c":"#9ca3af"}}
+              style={{backgroundColor:(termsCheck.service&&termsCheck.privacy)?SC:"#9ca3af"}}
               className="w-full py-2 text-white rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed">
               동의하고 가입 완료
             </button>
@@ -1977,7 +1986,7 @@ export default function App() {
                   {selected.author&&<span className="text-amber-600 font-medium flex items-center gap-1"><PenLine size={12}/> {selected.author}</span>}
                   <span className="flex items-center gap-1"><Eye size={12}/> {selected.views.toLocaleString()}</span>
                 </div>
-                <button onClick={()=>setShowShare(true)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-colors hover:opacity-80" style={{borderColor:"#1a6b3c",color:"#1a6b3c"}}><Share2 size={12}/> 공유</button>
+                <button onClick={()=>setShowShare(true)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-colors hover:opacity-80" style={{borderColor:SC,color:SC}}><Share2 size={12}/> 공유</button>
               </div>
               <ArticleImage image={selected.image} category={selected.category} title={selected.title} priority className="w-full rounded-xl mb-6 md:mb-7 h-48 sm:h-64 md:h-80 lg:h-[420px]"/>
               {selected.author&&<div className="border-l-4 border-amber-400 pl-4 mb-5 py-1.5"><p className="text-xs md:text-sm text-amber-600 font-medium">{selected.type==="칼럼" ? `✒️ 칼럼 — ${selected.author} 기고` : `✍️ 기사 — ${selected.author} 작성`}</p></div>}
@@ -2225,5 +2234,6 @@ export default function App() {
 
       <SuggestionBox user={user} dark={dark}/>
     </div>
+    </SCContext.Provider>
   );
 }
