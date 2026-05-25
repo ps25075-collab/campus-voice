@@ -43,6 +43,17 @@ function renderInlineMarkdown(text){
 
 const readingTime = (body) => Math.max(1, Math.round((body||'').length / 700));
 
+const getAnonId = () => {
+  try {
+    let id = localStorage.getItem('cv_anon_id');
+    if (!id) {
+      id = 'anon:' + (crypto.randomUUID?.() || Math.random().toString(36).slice(2) + Date.now().toString(36));
+      localStorage.setItem('cv_anon_id', id);
+    }
+    return id;
+  } catch { return 'anon:unknown'; }
+};
+
 const relTime = (ts) => {
   if (!ts) return null;
   const d = Math.floor((Date.now() - new Date(ts)) / 1000);
@@ -545,8 +556,7 @@ function LikeButton({ articleId, user, dark }) {
   const [liked, setLiked]   = useState(false);
   const [count, setCount]   = useState(0);
   const [bounce, setBounce] = useState(false);
-  const LS_KEY = `cv_liked_${articleId}`;
-  const userKey = user ? (user.isMember ? user.id : `staff:${user.id}`) : null;
+  const userKey = user ? (user.isMember ? user.id : `staff:${user.id}`) : getAnonId();
 
   useEffect(()=>{
     (async()=>{
@@ -554,18 +564,11 @@ function LikeButton({ articleId, user, dark }) {
         const { data } = await supabase.from('articles').select('like_count').eq('id', articleId).single();
         if(data) setCount(data.like_count || 0);
       }catch{}
-      if(userKey){
-        try{
-          const { data } = await supabase.from('article_likes')
-            .select('article_id').eq('user_id', userKey).eq('article_id', articleId).maybeSingle();
-          setLiked(!!data);
-        }catch{}
-      } else {
-        try{
-          const saved = localStorage.getItem(LS_KEY);
-          if(saved) setLiked(JSON.parse(saved));
-        }catch{}
-      }
+      try{
+        const { data } = await supabase.from('article_likes')
+          .select('article_id').eq('user_id', userKey).eq('article_id', articleId).maybeSingle();
+        setLiked(!!data);
+      }catch{}
     })();
   },[articleId, userKey]);
 
@@ -575,14 +578,10 @@ function LikeButton({ articleId, user, dark }) {
     setLiked(newLiked); setCount(newCount);
     if(newLiked){ setBounce(true); setTimeout(()=>setBounce(false),400); }
     try{ await supabase.from('articles').update({ like_count: newCount }).eq('id', articleId); }catch{}
-    if(userKey){
-      try{
-        if(newLiked) await supabase.from('article_likes').insert({ user_id:userKey, article_id:articleId });
-        else await supabase.from('article_likes').delete().eq('user_id', userKey).eq('article_id', articleId);
-      }catch{}
-    } else {
-      localStorage.setItem(LS_KEY, JSON.stringify(newLiked));
-    }
+    try{
+      if(newLiked) await supabase.from('article_likes').insert({ user_id:userKey, article_id:articleId });
+      else await supabase.from('article_likes').delete().eq('user_id', userKey).eq('article_id', articleId);
+    }catch{}
   };
 
   return (
