@@ -43,6 +43,16 @@ function renderInlineMarkdown(text){
 
 const readingTime = (body) => Math.max(1, Math.round((body||'').length / 700));
 
+const relTime = (ts) => {
+  if (!ts) return null;
+  const d = Math.floor((Date.now() - new Date(ts)) / 1000);
+  if (d < 60) return "방금 전";
+  if (d < 3600) return `${Math.floor(d/60)}분 전`;
+  if (d < 86400) return `${Math.floor(d/3600)}시간 전`;
+  if (d < 604800) return `${Math.floor(d/86400)}일 전`;
+  return new Date(ts).toLocaleDateString('ko-KR');
+};
+
 function renderArticleBody(text){
   if(!text) return null;
   const lines = text.split("\n");
@@ -500,7 +510,9 @@ function InfoCarousel({ dark }) {
   const arrowBtn = `flex items-center justify-center w-8 h-8 rounded-full border transition-colors flex-shrink-0 ${dark?"border-gray-700 text-gray-400 hover:bg-gray-800 hover:text-gray-100":"border-gray-200 text-gray-400 hover:bg-gray-100 hover:text-gray-700"}`;
 
   return (
-    <div className={`border-b shadow-sm ${dark?"bg-gray-900 border-gray-800":"bg-white border-gray-200"}`}>
+    <div className={`border-b shadow-sm ${dark?"bg-gray-900 border-gray-800":"bg-white border-gray-200"}`}
+      onMouseEnter={()=>{ if(intervalRef.current) clearInterval(intervalRef.current); }}
+      onMouseLeave={()=>startAutoPlay()}>
       <div className="max-w-6xl mx-auto px-3 py-3 md:px-6 md:py-5">
         <div className="flex items-center gap-2 md:gap-3">
           <button onClick={()=>handleGoTo((slide-1+TOTAL)%TOTAL)} className={arrowBtn}>
@@ -529,11 +541,12 @@ function InfoCarousel({ dark }) {
     </div>
   );
 }
-function LikeButton({ articleId, dark }) {
+function LikeButton({ articleId, user, dark }) {
   const [liked, setLiked]   = useState(false);
   const [count, setCount]   = useState(0);
   const [bounce, setBounce] = useState(false);
   const LS_KEY = `cv_liked_${articleId}`;
+  const userKey = user ? (user.isMember ? user.id : `staff:${user.id}`) : null;
 
   useEffect(()=>{
     (async()=>{
@@ -541,12 +554,20 @@ function LikeButton({ articleId, dark }) {
         const { data } = await supabase.from('articles').select('like_count').eq('id', articleId).single();
         if(data) setCount(data.like_count || 0);
       }catch{}
-      try{
-        const saved = localStorage.getItem(LS_KEY);
-        if(saved) setLiked(JSON.parse(saved));
-      }catch{}
+      if(userKey){
+        try{
+          const { data } = await supabase.from('article_likes')
+            .select('article_id').eq('user_id', userKey).eq('article_id', articleId).maybeSingle();
+          setLiked(!!data);
+        }catch{}
+      } else {
+        try{
+          const saved = localStorage.getItem(LS_KEY);
+          if(saved) setLiked(JSON.parse(saved));
+        }catch{}
+      }
     })();
-  },[articleId]);
+  },[articleId, userKey]);
 
   const toggle = async () => {
     const newLiked = !liked;
@@ -554,7 +575,14 @@ function LikeButton({ articleId, dark }) {
     setLiked(newLiked); setCount(newCount);
     if(newLiked){ setBounce(true); setTimeout(()=>setBounce(false),400); }
     try{ await supabase.from('articles').update({ like_count: newCount }).eq('id', articleId); }catch{}
-    localStorage.setItem(LS_KEY, JSON.stringify(newLiked));
+    if(userKey){
+      try{
+        if(newLiked) await supabase.from('article_likes').insert({ user_id:userKey, article_id:articleId });
+        else await supabase.from('article_likes').delete().eq('user_id', userKey).eq('article_id', articleId);
+      }catch{}
+    } else {
+      localStorage.setItem(LS_KEY, JSON.stringify(newLiked));
+    }
   };
 
   return (
@@ -651,7 +679,7 @@ function CommentSection({ articleId, user, dark }) {
           <div className="flex items-center gap-2">
             {isReply && <span className={"text-xs " + sub}>↳</span>}
             <span className="text-xs font-semibold">{c.name}</span>
-            <span className={"text-xs " + sub}>{c.date}</span>
+            <span className={"text-xs " + sub} title={c.date}>{relTime(c.created_at) || c.date}</span>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={()=>toggleLike(c)}
@@ -1409,16 +1437,21 @@ export default function App() {
   const startEdit=a=>{ setForm({title:a.title,category:a.category,type:a.type||"기사",body:a.body,image:a.image||""}); setEditId(a.id); setSelected(null); setPage("write"); };
   const openArticle=async(article)=>{
     if(!article) return;
-    const newViews=(article.views||0)+1;
+    const sessionKey=`cv_view_${article.id}`;
+    const alreadyCounted=sessionStorage.getItem(sessionKey);
+    const newViews=alreadyCounted?(article.views||0):(article.views||0)+1;
     const updated={...article,views:newViews};
     setSelected(updated);
     document.title = `${article.title} — 세계를 알리다`;
-    setArticles(prev=>prev.map(a=>a.id===article.id?{...a,views:newViews}:a));
+    if(!alreadyCounted){
+      setArticles(prev=>prev.map(a=>a.id===article.id?{...a,views:newViews}:a));
+      try{ sessionStorage.setItem(sessionKey,'1'); }catch{}
+      try{ await supabase.from('articles').update({views:newViews}).eq('id',article.id); }catch{}
+    }
     const targetPath=`/article/${article.id}`;
     if(window.location.pathname!==targetPath){
       window.history.pushState({articleId:article.id}, '', targetPath);
     }
-    try{ await supabase.from('articles').update({views:newViews}).eq('id',article.id); }catch{}
   };
   const doDelete=async()=>{
     await supabase.from('articles').delete().eq('id',confirmDel);
@@ -1436,6 +1469,16 @@ export default function App() {
   };
 
   useEffect(()=>{ setVisibleCount(20); },[activeCategory,activeType,search]);
+
+  useEffect(()=>{
+    if(!showDrop) return;
+    const handler = (e) => {
+      if(e.target.closest && e.target.closest('[data-search-region]')) return;
+      setShowDrop(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  },[showDrop]);
 
   const published=articles.filter(a=>a.status==="published");
   const hero=published.find(a=>a.hero);
@@ -1458,9 +1501,9 @@ export default function App() {
 
   const SNS=[
     {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.265 5.632L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg>,label:"X (트위터)",color:"text-gray-800",href:"https://twitter.com/intent/follow?screen_name=se_al_official_"},
-    {icon:<Instagram size={14}/>,label:"인스타그램",color:"text-pink-500",href:"#"},
-    {icon:<Facebook size={14}/>,label:"페이스북",color:"text-blue-600",href:"#"},
-    {icon:<Youtube size={14}/>,label:"유튜브",color:"text-red-600",href:"#"},
+    {icon:<Instagram size={14}/>,label:"인스타그램",color:"text-pink-500",href:null},
+    {icon:<Facebook size={14}/>,label:"페이스북",color:"text-blue-600",href:null},
+    {icon:<Youtube size={14}/>,label:"유튜브",color:"text-red-600",href:null},
   ];
 
   return (
@@ -1518,7 +1561,7 @@ export default function App() {
                 className="ml-2 px-3 lg:px-4 py-1.5 bg-white/15 hover:bg-white/25 text-white rounded-lg text-sm font-medium border border-white/30 transition-colors">✏️ 글 작성</button>
             )}
           </nav>
-          <div className="flex items-center gap-2 relative flex-shrink-0">
+          <div className="flex items-center gap-2 relative flex-shrink-0" data-search-region>
             {searchOpen && (
               <div className="flex items-center gap-1 bg-white rounded-lg overflow-hidden shadow-sm">
                 <input ref={searchRef} autoFocus value={search}
@@ -1535,14 +1578,16 @@ export default function App() {
         </div>
         {/* 검색 드롭다운 */}
         {searchOpen&&showDrop&&search.trim()&&(
-          <SearchDropdown
-            results={searchResults} query={search} dark={dark}
-            onSelect={a=>{ openArticle(a); setShowDrop(false); setSearchOpen(false); setSearch(""); }}
-            onViewAll={()=>{ setShowDrop(false); }}/>
+          <div data-search-region>
+            <SearchDropdown
+              results={searchResults} query={search} dark={dark}
+              onSelect={a=>{ openArticle(a); setShowDrop(false); setSearchOpen(false); setSearch(""); }}
+              onViewAll={()=>{ setShowDrop(false); }}/>
+          </div>
         )}
         {/* 최근 검색어 */}
         {searchOpen&&showDrop&&!search.trim()&&recentSearches.length>0&&(
-          <div className={"absolute top-full left-0 right-0 z-50 border-b shadow-lg " + (dark?"bg-gray-900 border-gray-700":"bg-white border-gray-200")}>
+          <div data-search-region className={"absolute top-full left-0 right-0 z-50 border-b shadow-lg " + (dark?"bg-gray-900 border-gray-700":"bg-white border-gray-200")}>
             <div className="max-w-6xl mx-auto px-4 py-3">
               <div className="flex items-center justify-between mb-2">
                 <span className={"text-xs font-medium " + (dark?"text-gray-400":"text-gray-500")}>최근 검색어</span>
@@ -1585,6 +1630,10 @@ export default function App() {
             {/* 직원 로그인 */}
             {!showSignup&&loginTab==="staff"&&(
               <div className="space-y-3">
+                <div className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-xs ${dark?"bg-amber-950/30 border-amber-800 text-amber-300":"bg-amber-50 border-amber-200 text-amber-700"}`}>
+                  <ShieldCheck size={14} className="flex-shrink-0 mt-0.5"/>
+                  <span>관리자 전용입니다. 계정은 담당 관리자에게 문의하세요. 일반 회원은 위 <strong>회원</strong> 탭을 이용해 주세요.</span>
+                </div>
                 <input value={loginForm.id} onChange={e=>setLoginForm({...loginForm,id:e.target.value})} placeholder="아이디" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
                 <input type="password" value={loginForm.pw} onChange={e=>setLoginForm({...loginForm,pw:e.target.value})} onKeyDown={e=>e.key==="Enter"&&handleLogin()} placeholder="비밀번호" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
                 {loginError&&<p className="text-red-500 text-xs">{loginError}</p>}
@@ -1760,16 +1809,22 @@ export default function App() {
               <button onClick={()=>setPage("home")} className="text-sm hover:underline flex items-center gap-1" style={{color:SC}}><ArrowLeft size={14}/> 홈으로</button>
             </div>
             <div className="flex gap-2 mb-5 flex-wrap">
-              {[{key:"pending",label:"승인 대기",icon:<Clock size={13}/>,cnt:articles.filter(a=>a.status==="pending").length},
-                {key:"published",label:"게재된 글",icon:<CheckCircle size={13}/>,cnt:articles.filter(a=>a.status==="published").length},
-                {key:"rejected",label:"반려된 글",icon:<XCircle size={13}/>,cnt:articles.filter(a=>a.status==="rejected").length},
-                {key:"members",label:"회원 관리",icon:<ShieldCheck size={13}/>,cnt:pendingMemberCount},
+              {[{key:"pending",label:"승인 대기",icon:<Clock size={13}/>,cnt:articles.filter(a=>a.status==="pending").length,urgent:true},
+                {key:"published",label:"게재된 글",icon:<CheckCircle size={13}/>,cnt:articles.filter(a=>a.status==="published").length,urgent:false},
+                {key:"rejected",label:"반려된 글",icon:<XCircle size={13}/>,cnt:articles.filter(a=>a.status==="rejected").length,urgent:false},
+                {key:"members",label:"회원 관리",icon:<ShieldCheck size={13}/>,cnt:pendingMemberCount,urgent:true},
               ].map(t=>(
                 <button key={t.key} onClick={()=>setAdminTab(t.key)}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border transition-colors"
                   style={adminTab===t.key?{backgroundColor:SC,color:"white",borderColor:SC}:{}}>
                   {t.icon}<span className={adminTab!==t.key?(dark?"text-gray-300":"text-gray-600"):""}>{t.label}</span>
-                  {t.cnt>0&&<span className={`rounded-full px-1.5 text-xs py-0.5 ${adminTab===t.key?"bg-white/25 text-white":"bg-gray-200 text-gray-600"}`}>{t.cnt}</span>}
+                  {t.cnt>0&&<span className={`rounded-full px-1.5 text-xs py-0.5 font-semibold ${
+                    adminTab===t.key
+                      ? "bg-white/25 text-white"
+                      : t.urgent
+                        ? "bg-red-500 text-white"
+                        : (dark?"bg-gray-700 text-gray-300":"bg-gray-200 text-gray-600")
+                  }`}>{t.cnt}</span>}
                 </button>
               ))}
             </div>
@@ -2071,7 +2126,14 @@ export default function App() {
               {selected.author&&<div className="border-l-4 border-amber-400 pl-4 mb-5 py-1.5"><p className="text-xs md:text-sm text-amber-600 font-medium">{selected.type==="칼럼" ? `✒️ 칼럼 — ${selected.author} 기고` : `✍️ 기사 — ${selected.author} 작성`}</p></div>}
               <div className="text-[15px] md:text-[17px] leading-relaxed md:leading-[1.85]">{renderArticleBody(selected.body)}</div>
 
-              <LikeButton articleId={selected.id} dark={dark}/>
+              <LikeButton articleId={selected.id} user={user} dark={dark}/>
+
+              <div className="flex justify-center -mt-2 mb-6">
+                <button onClick={()=>setShowShare(true)} style={{borderColor:SC,color:SC}}
+                  className="flex items-center gap-2 px-5 py-2 rounded-full border-2 text-sm font-medium hover:opacity-80 transition-opacity">
+                  <Share2 size={14}/> 이 기사 공유하기
+                </button>
+              </div>
 
               <RelatedArticles current={selected} articles={articles} onOpen={openArticle} dark={dark}/>
 
@@ -2096,8 +2158,14 @@ export default function App() {
                 <h3 className="font-bold text-sm mb-3">세계를 알리다 SNS</h3>
                 <div className="space-y-2">
                   {SNS.map(s=>(
-                    <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
-                      className={`flex items-center gap-2 text-xs hover:underline transition-opacity hover:opacity-80 ${s.color}`}>{s.icon}{s.label} 팔로우</a>
+                    s.href ? (
+                      <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
+                        className={`flex items-center gap-2 text-xs hover:underline transition-opacity hover:opacity-80 ${s.color}`}>{s.icon}{s.label} 팔로우</a>
+                    ) : (
+                      <span key={s.label} className={`flex items-center gap-2 text-xs cursor-not-allowed ${dark?"text-gray-500":"text-gray-400"}`}>
+                        {s.icon}{s.label} <span className="text-[10px] italic opacity-70">(준비 중)</span>
+                      </span>
+                    )
                   ))}
                 </div>
               </div>
@@ -2222,7 +2290,7 @@ export default function App() {
                             <span className={`text-xs text-white px-2 py-0.5 rounded-full ${typeColor[a.type]||"bg-gray-500"}`}>{a.type||"기사"}</span>
                             <span className={`text-xs text-white px-2 py-0.5 rounded-full ${catColor[a.category]||"bg-gray-500"}`}>{a.category}</span>
                           </div>
-                          <span className="text-xs text-gray-400 flex items-center gap-1">{a.date} · <Clock size={10}/> 약 {readingTime(a.body)}분</span>
+                          <span className="text-xs text-gray-400 flex items-center gap-1">{a.date} · <Eye size={10}/> {(a.views||0).toLocaleString()} · <Clock size={10}/> 약 {readingTime(a.body)}분</span>
                         </div>
                         <h3 className="font-semibold text-[15px] md:text-base leading-snug mb-1 line-clamp-2 group-hover:opacity-80 transition-opacity">{a.title}</h3>
                         {a.author&&<p className="text-xs text-amber-600 mb-0.5">✒️ {a.author}</p>}
