@@ -59,9 +59,10 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
   res.setHeader('Access-Control-Allow-Methods', 'GET');
 
-  const [usdkrw, kospi, nasdaq, sp500, dow, oil, rate] = await Promise.allSettled([
+  const [usdkrw, kospi, kosdaq, nasdaq, sp500, dow, oil, rate] = await Promise.allSettled([
     fetchUsdKrw(),
     fetchIndex('https://query1.finance.yahoo.com/v8/finance/chart/%5EKS11?interval=1d&range=2d'),
+    fetchIndex('https://query1.finance.yahoo.com/v8/finance/chart/%5EKQ11?interval=1d&range=2d'),
     fetchIndex('https://query1.finance.yahoo.com/v8/finance/chart/%5EIXIC?interval=1d&range=2d'),
     fetchIndex('https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&range=2d'),
     fetchIndex('https://query1.finance.yahoo.com/v8/finance/chart/%5EDJI?interval=1d&range=2d'),
@@ -73,6 +74,7 @@ export default async function handler(req, res) {
   const out = {};
   if (ok(usdkrw)) out.usdkrw = usdkrw.value;
   if (ok(kospi))  { out.kospi  = kospi.value.cur.toFixed(2);  out.kospi_change  = kospi.value.change; }
+  if (ok(kosdaq)) { out.kosdaq = kosdaq.value.cur.toFixed(2); out.kosdaq_change = kosdaq.value.change; }
   if (ok(nasdaq)) { out.nasdaq = nasdaq.value.cur.toFixed(2); out.nasdaq_change = nasdaq.value.change; }
   if (ok(sp500))  { out.sp500  = sp500.value.cur.toFixed(2);  out.sp500_change  = sp500.value.change; }
   if (ok(dow))    { out.dow    = Math.round(dow.value.cur).toLocaleString('en-US'); out.dow_change = dow.value.change; }
