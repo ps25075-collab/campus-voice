@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { supabase } from './lib/supabase';
-import { Search, X, TrendingUp, Instagram, Facebook, Youtube, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle, ChevronLeft, ChevronRight, Share2, Copy, Link, Mail, Bookmark, BookmarkCheck } from "lucide-react";
+import { Search, X, TrendingUp, Instagram, Facebook, Youtube, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle, ChevronLeft, ChevronRight, Share2, Copy, Link, Mail, Bookmark, BookmarkCheck, BookOpen } from "lucide-react";
 
 /* ── 날짜 헬퍼 ── */
 const today = () => {
@@ -19,6 +19,7 @@ const catGradient = {
 };
 const SC  = "#1a6b3c";
 const SC_DARK = "#4ade80";
+const HEADER_GREEN = "#1a6b3c";   // 헤더는 다크 모드에서도 브랜드 짙은 녹색 유지
 const SCContext = createContext(SC);
 const SCD = "#145530";
 
@@ -42,6 +43,21 @@ function renderInlineMarkdown(text){
 }
 
 const readingTime = (body) => Math.max(1, Math.round((body||'').length / 700));
+
+// 카드 요약용: 마크다운 문법 문자(**굵게**, _기울임_, - 목록 등)를 제거한 순수 텍스트
+const stripMarkdown = (s) => (s||"")
+  .replace(/\*\*([^*]+)\*\*/g, "$1")
+  .replace(/__([^_]+)__/g, "$1")
+  .replace(/_([^_]+)_/g, "$1")
+  .replace(/^\s*[-*]\s+/gm, "")
+  .replace(/^#{1,6}\s+/gm, "")
+  .replace(/\s+/g, " ")
+  .trim();
+
+const makeSummary = (body) => {
+  const clean = stripMarkdown(body);
+  return clean.length > 80 ? clean.slice(0, 80) + "..." : clean;
+};
 
 const getAnonId = () => {
   try {
@@ -274,6 +290,7 @@ function FinancePanel({ dark }) {
   const sub  = dark ? "text-gray-400" : "text-gray-500";
 
   const renderCard = (label, value, change) => {
+    if (value == null) return null;
     const up = change?.startsWith("+");
     return (
       <div key={label} className={`rounded-xl border px-3 py-2.5 md:px-4 md:py-3 ${card}`}>
@@ -310,15 +327,15 @@ function FinancePanel({ dark }) {
               {renderCard("코스피",   data.kospi,   data.kospi_change)}
               {renderCard("NASDAQ",  data.nasdaq,  data.nasdaq_change)}
               {renderCard("S&P 500", data.sp500,   data.sp500_change)}
-              {renderCard("다우존스", "$"+data.dow, data.dow_change)}
+              {renderCard("다우존스", data.dow!=null?"$"+data.dow:null, data.dow_change)}
             </div>
           </div>
           <div>
             <p className={`text-[11px] md:text-xs font-bold mb-1.5 md:mb-2 ${sub}`}>💱 환율 · 금리 · 원자재</p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
-              {renderCard("원/달러",  data.usdkrw+"원", null)}
+              {renderCard("원/달러",  data.usdkrw!=null?data.usdkrw+"원":null, null)}
               {renderCard("기준금리", data.rate,         null)}
-              {renderCard("WTI 원유", "$"+data.oil,      data.oil_change)}
+              {renderCard("WTI 원유", data.oil!=null?"$"+data.oil:null,      data.oil_change)}
             </div>
           </div>
         </div>
@@ -330,6 +347,7 @@ function FinancePanel({ dark }) {
 function WeatherPanel({ dark }) {
   const [weather, setWeather] = useState(null);
   const [daily,   setDaily]   = useState(null);
+  const [air,     setAir]     = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(false);
 
@@ -360,6 +378,14 @@ function WeatherPanel({ dark }) {
     { max: Infinity, emoji: "⛈️", label: "폭풍",   color: "text-red-600",    bar: "bg-red-600" },
   ];
 
+  // 미세먼지(PM10) — 환경부 한국 기준
+  const DUST_LEVELS = [
+    { max: 30,       label: "좋음",     color: "text-green-500"  },
+    { max: 80,       label: "보통",     color: "text-yellow-500" },
+    { max: 150,      label: "나쁨",     color: "text-orange-500" },
+    { max: Infinity, label: "매우나쁨", color: "text-red-600"    },
+  ];
+
   const getLevelIdx = (levels, v) => {
     const i = levels.findIndex(l => v <= l.max);
     return i === -1 ? levels.length - 1 : i;
@@ -371,16 +397,23 @@ function WeatherPanel({ dark }) {
     (async()=>{
       setLoading(true); setError(false);
       try {
-        const res = await fetch(
-          "https://api.open-meteo.com/v1/forecast?latitude=33.32&longitude=126.84" +
-          "&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m" +
-          "&daily=weather_code,temperature_2m_max,temperature_2m_min" +
-          "&forecast_days=7&timezone=Asia/Seoul"
-        );
+        const [res, aqRes] = await Promise.all([
+          fetch(
+            "https://api.open-meteo.com/v1/forecast?latitude=33.32&longitude=126.84" +
+            "&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,precipitation" +
+            "&daily=weather_code,temperature_2m_max,temperature_2m_min" +
+            "&forecast_days=7&timezone=Asia/Seoul"
+          ),
+          fetch(
+            "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=33.32&longitude=126.84" +
+            "&current=pm10,pm2_5&timezone=Asia/Seoul"
+          ).catch(()=>null),
+        ]);
         if (!res.ok) throw new Error();
         const json = await res.json();
         setWeather(json.current);
         setDaily(json.daily);
+        if (aqRes && aqRes.ok) { try { const aj = await aqRes.json(); setAir(aj.current); } catch {} }
       } catch { setError(true); }
       setLoading(false);
     })();
@@ -397,6 +430,9 @@ function WeatherPanel({ dark }) {
   const tLevel   = tIdx >= 0 ? TEMP_LEVELS[tIdx] : null;
   const hLevel   = hIdx >= 0 ? HUMIDITY_LEVELS[hIdx] : null;
   const wLevel   = wIdx >= 0 ? WIND_LEVELS[wIdx] : null;
+  const pm10     = air?.pm10;
+  const dustLevel= pm10 != null ? DUST_LEVELS[getLevelIdx(DUST_LEVELS, pm10)] : null;
+  const precip   = weather?.precipitation ?? 0;
 
   return (
     <div>
@@ -419,6 +455,12 @@ function WeatherPanel({ dark }) {
               <p className="text-[11px] md:text-xs font-medium mb-0.5 md:mb-1 text-gray-400">날씨</p>
               <p className="text-2xl md:text-3xl leading-tight">{WMO_ICON[code]??"🌡️"}</p>
               <p className={`text-xs md:text-sm font-semibold mt-0.5 md:mt-1 ${dark?"text-gray-300":"text-gray-600"}`}>{WMO_LABEL[code]??"알 수 없음"}</p>
+              {(dustLevel || precip > 0) && (
+                <div className="flex flex-wrap items-center gap-x-1.5 mt-1 text-[10px] md:text-[11px] font-medium leading-tight">
+                  {dustLevel && <span className={dustLevel.color} title={`미세먼지 PM10 ${Math.round(pm10)}㎍/㎥`}>🌫️ {Math.round(pm10)} {dustLevel.label}</span>}
+                  {precip > 0 && <span className="text-blue-400" title="현재 강수량">☔ {precip}mm</span>}
+                </div>
+              )}
             </div>
             <div className={`rounded-xl border px-3 py-2.5 md:px-4 md:py-3 ${card}`}>
               <p className="text-[11px] md:text-xs font-medium mb-0.5 md:mb-1 text-gray-400">기온</p>
@@ -1127,11 +1169,13 @@ function ShareModal({ article, onClose, dark }) {
 }
 
 export default function App() {
-  const [dark,setDark]               = useState(false);
+  const [dark,setDark]               = useState(()=>{ try{ const d=localStorage.getItem(DARK_KEY); return d?JSON.parse(d):false; }catch{ return false; } });
   const SC = dark ? SC_DARK : "#1a6b3c";
   const [activeCategory,setActiveCat]= useState("전체");
   const [activeType,setActiveType]   = useState("전체");
   const [selected,setSelected]       = useState(null);
+  const listScrollRef                = useRef(0);    // 목록에서의 스크롤 위치 보관
+  const prevSelectedRef              = useRef(null); // 직전 selected (열기/복귀 판별)
   const [page,setPage]               = useState("home");
   const [search,setSearch]           = useState("");
   const [searchOpen,setSearchOpen]   = useState(false);
@@ -1195,6 +1239,7 @@ export default function App() {
   const [termsCheck,setTermsCheck]       = useState({service:false,privacy:false});
   const [submitting,setSubmitting] = useState(false);
   const [submitErr,setSubmitErr]   = useState("");
+  const [uploading,setUploading]   = useState(false);
   const [showShare,setShowShare]   = useState(false);
   const [members,setMembers]         = useState([]);
   const [myArticles,setMyArticles]   = useState([]);
@@ -1207,7 +1252,6 @@ export default function App() {
         setArticles(data && data.length > 0 ? data : DUMMY_ARTICLES);
       }catch{ setArticles(DUMMY_ARTICLES); }
       setArticlesLoading(false);
-      try{ const d=localStorage.getItem(DARK_KEY); if(d) setDark(JSON.parse(d)); }catch{}
       let staffLoaded=false;
       try{
         const saved=localStorage.getItem("cv_user");
@@ -1255,6 +1299,18 @@ export default function App() {
     window.addEventListener('popstate', openFromUrl);
     return ()=> window.removeEventListener('popstate', openFromUrl);
   },[articles]);
+
+  // 기사 열 때는 상단부터, 목록으로 돌아오면 이전 스크롤 위치 복원
+  useEffect(()=>{
+    const prev = prevSelectedRef.current;
+    if(selected && (!prev || prev.id!==selected.id)){
+      window.scrollTo(0,0);
+    } else if(!selected && prev){
+      const y = listScrollRef.current;
+      requestAnimationFrame(()=>window.scrollTo(0,y));
+    }
+    prevSelectedRef.current = selected;
+  },[selected]);
 
   const toggleDark=()=>setDark(d=>{ const n=!d; try{ localStorage.setItem(DARK_KEY,JSON.stringify(n)); }catch{} return n; });
 
@@ -1335,8 +1391,14 @@ export default function App() {
     setMembers(prev=>prev.map(m=>m.id===id?{...m,role:'rejected'}:m));
   };
 
-  const loadMyArticles=async(name)=>{
-    const {data}=await supabase.from('articles').select('*').eq('author',name).order('created_at',{ascending:false});
+  // 이름(author) 대신 안정적인 author_id로 조회. 구(舊) 기사는 이름으로 폴백.
+  const loadMyArticles=async(uid, name)=>{
+    const id = uid != null ? String(uid) : null;
+    let query = supabase.from('articles').select('*');
+    if(id && name)      query = query.or(`author_id.eq.${id},author.eq."${name}"`);
+    else if(id)         query = query.eq('author_id', id);
+    else if(name)       query = query.eq('author', name);
+    const {data}=await query.order('created_at',{ascending:false});
     setMyArticles(data||[]);
   };
 
@@ -1401,8 +1463,9 @@ export default function App() {
     const fields={
       title:form.title.trim(), category:form.category, type:form.type,
       body:form.body, image:form.image||"",
-      summary:form.body.slice(0,80)+"...", status:"pending",
+      summary:makeSummary(form.body), status:"pending",
       author: user?.name,
+      author_id: user?.id != null ? String(user.id) : null,
     };
     try {
       if(eid!==null){
@@ -1425,17 +1488,30 @@ export default function App() {
       setSubmitting(false);
     }
   };
+  const MAX_IMAGE_MB = 5;
   const uploadImage = async (file) => {
-    const ext = file.name.split('.').pop();
-    const path = `articles/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from('article-images').upload(path, file, { upsert: true });
-    if (error) { alert('이미지 업로드에 실패했습니다.'); return; }
-    const { data } = supabase.storage.from('article-images').getPublicUrl(path);
-    setForm(fm => ({ ...fm, image: data.publicUrl }));
+    if (uploading) return;
+    if (!file.type.startsWith('image/')) { alert('이미지 파일만 업로드할 수 있습니다.'); return; }
+    if (file.size > MAX_IMAGE_MB * 1024 * 1024) {
+      alert(`이미지 크기는 ${MAX_IMAGE_MB}MB 이하만 업로드할 수 있습니다. (현재 ${(file.size/1024/1024).toFixed(1)}MB)`);
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `articles/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from('article-images').upload(path, file, { upsert: true });
+      if (error) { alert('이미지 업로드에 실패했습니다.'); return; }
+      const { data } = supabase.storage.from('article-images').getPublicUrl(path);
+      setForm(fm => ({ ...fm, image: data.publicUrl }));
+    } finally {
+      setUploading(false);
+    }
   };
   const startEdit=a=>{ setForm({title:a.title,category:a.category,type:a.type||"기사",body:a.body,image:a.image||""}); setEditId(a.id); setSelected(null); setPage("write"); };
   const openArticle=async(article)=>{
     if(!article) return;
+    if(!selected) listScrollRef.current = window.scrollY;   // 목록에서 열 때만 위치 저장
     const sessionKey=`cv_view_${article.id}`;
     const alreadyCounted=sessionStorage.getItem(sessionKey);
     const newViews=alreadyCounted?(article.views||0):(article.views||0)+1;
@@ -1519,7 +1595,7 @@ export default function App() {
           <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
             <span style={{color:SC}} className="font-medium truncate max-w-[110px] sm:max-w-none">{roleLabel[user.role]} {user.name}</span>
             {user&&(
-              <button onClick={()=>{setPage("mypage");loadMyArticles(user.name);loadBookmarks(user.id, !!user.isMember);}} className="flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 rounded-lg border border-green-700 text-green-700 hover:bg-green-700 hover:text-white transition-colors text-xs md:text-sm font-medium whitespace-nowrap">
+              <button onClick={()=>{setPage("mypage");loadMyArticles(user.id, user.name);loadBookmarks(user.id, !!user.isMember);}} className="flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 rounded-lg border border-green-700 text-green-700 hover:bg-green-700 hover:text-white transition-colors text-xs md:text-sm font-medium whitespace-nowrap">
                 <span className="hidden sm:inline">마이페이지</span><span className="sm:hidden">MY</span>
               </button>
             )}
@@ -1539,7 +1615,7 @@ export default function App() {
       </div>
 
       {/* HEADER */}
-      <header style={{backgroundColor:SC}} className="sticky top-0 z-40 shadow-md backdrop-blur supports-[backdrop-filter]:bg-opacity-95">
+      <header style={{backgroundColor:HEADER_GREEN}} className="sticky top-0 z-40 shadow-md backdrop-blur supports-[backdrop-filter]:bg-opacity-95">
         <div className="max-w-6xl mx-auto px-3 md:px-6 py-2.5 md:py-3.5 flex items-center justify-between gap-2 md:gap-6">
           <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-shrink-0">
             <button onClick={()=>{setPage("home");setSelected(null);setActiveCat("전체");setActiveType("전체");setSearch("");setSearchOpen(false);document.title="세계를 알리다 — 표선고등학교 학생 언론사";}} className="text-white font-bold text-lg md:text-[22px] tracking-tight truncate hover:opacity-90 transition-opacity">📰 세계를 알리다</button>
@@ -2026,6 +2102,12 @@ export default function App() {
               <ArrowLeft size={15}/> {user.role==="admin"?"관리자 메뉴로":"홈으로"}
             </button>
             <h2 className="text-2xl font-bold mb-1">{editId!==null?"✏️ 글 수정":"✏️ 새 글 작성"}</h2>
+            {editId!==null&&articles.find(a=>a.id===editId)?.status==="published"&&(
+              <div className={`text-xs rounded-lg px-3 py-2.5 mb-3 flex items-start gap-1.5 ${dark?"bg-red-950/40 border border-red-900 text-red-300":"bg-red-50 border border-red-200 text-red-600"}`}>
+                <AlertTriangle size={13} className="flex-shrink-0 mt-0.5"/>
+                <span><strong>이미 게재된 글입니다.</strong> 수정하면 게재가 취소되고 다시 <strong>승인 대기</strong> 상태가 됩니다. 관리자 재승인 전까지는 독자에게 노출되지 않습니다.</span>
+              </div>
+            )}
             <p className="text-xs text-yellow-600 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 mb-4 flex items-center gap-1"><Clock size={12}/> 작성한 글은 관리자 승인 후 게재됩니다.</p>
             <div className={`rounded-xl border p-6 space-y-4 ${card}`}>
               <div>
@@ -2058,13 +2140,16 @@ export default function App() {
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">이미지 업로드 (선택)</label>
-                <label className={`flex items-center gap-2 cursor-pointer border rounded-lg px-3 py-2 text-sm ${inp}`} style={{borderStyle:"dashed"}}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                  <span className="text-gray-400">{form.image?"✅ 이미지 업로드됨":"클릭해서 이미지 파일 선택"}</span>
-                  <input type="file" accept="image/*" className="hidden" onChange={e=>{
+                <label className="text-sm font-medium mb-1 block">이미지 업로드 (선택, 최대 {MAX_IMAGE_MB}MB)</label>
+                <label className={`flex items-center gap-2 border rounded-lg px-3 py-2 text-sm ${inp} ${uploading?"opacity-60 cursor-not-allowed":"cursor-pointer"}`} style={{borderStyle:"dashed"}}>
+                  {uploading
+                    ? <RefreshCw size={16} className="animate-spin text-gray-400"/>
+                    : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>}
+                  <span className="text-gray-400">{uploading?"업로드 중...":(form.image?"✅ 이미지 업로드됨":"클릭해서 이미지 파일 선택")}</span>
+                  <input type="file" accept="image/*" disabled={uploading} className="hidden" onChange={e=>{
                     const f=e.target.files?.[0]; if(!f) return;
                     uploadImage(f);
+                    e.target.value="";
                   }}/>
                 </label>
                 {form.image&&<div className="mt-2 relative"><img src={form.image} alt="" className="w-full h-36 object-cover rounded-lg"/><button onClick={()=>setForm(f=>({...f,image:""}))} className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5"><X size={14}/></button></div>}
@@ -2080,9 +2165,9 @@ export default function App() {
                 <textarea ref={bodyRef} value={form.body} onChange={e=>setForm({...form,body:e.target.value})} rows={8} placeholder="본문을 입력하세요..." className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 resize-none ${inp}`}/>
               </div>
               {submitErr&&<p className="text-sm text-red-500 text-center">{submitErr}</p>}
-              <button onClick={submitArticle} disabled={submitting} style={{backgroundColor:form.type==="칼럼"?"#d97706":SC}}
+              <button onClick={submitArticle} disabled={submitting||uploading} style={{backgroundColor:form.type==="칼럼"?"#d97706":SC}}
                 className="w-full py-2.5 text-white rounded-lg font-medium text-sm hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
-                {submitting?<><RefreshCw size={15} className="animate-spin"/>전송 중...</>:<><Save size={15}/>{editId!==null?"수정 후 승인 요청":"승인 요청하기"}</>}
+                {submitting?<><RefreshCw size={15} className="animate-spin"/>전송 중...</>:uploading?<><RefreshCw size={15} className="animate-spin"/>이미지 업로드 중...</>:<><Save size={15}/>{editId!==null?"수정 후 승인 요청":"승인 요청하기"}</>}
               </button>
             </div>
           </div>
@@ -2117,7 +2202,7 @@ export default function App() {
                   <span>{selected.date}</span>
                   {selected.author&&<span className="text-amber-600 font-medium flex items-center gap-1"><PenLine size={12}/> {selected.author}</span>}
                   <span className="flex items-center gap-1"><Eye size={12}/> {selected.views.toLocaleString()}</span>
-                  <span className="flex items-center gap-1"><Clock size={12}/> 약 {readingTime(selected.body)}분</span>
+                  <span className="flex items-center gap-1"><BookOpen size={12}/> 약 {readingTime(selected.body)}분 읽기</span>
                 </div>
                 <button onClick={()=>setShowShare(true)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-colors hover:opacity-80" style={{borderColor:SC,color:SC}}><Share2 size={12}/> 공유</button>
               </div>
@@ -2289,7 +2374,7 @@ export default function App() {
                             <span className={`text-xs text-white px-2 py-0.5 rounded-full ${typeColor[a.type]||"bg-gray-500"}`}>{a.type||"기사"}</span>
                             <span className={`text-xs text-white px-2 py-0.5 rounded-full ${catColor[a.category]||"bg-gray-500"}`}>{a.category}</span>
                           </div>
-                          <span className="text-xs text-gray-400 flex items-center gap-1">{a.date} · <Eye size={10}/> {(a.views||0).toLocaleString()} · <Clock size={10}/> 약 {readingTime(a.body)}분</span>
+                          <span className="text-xs text-gray-400 flex items-center gap-1">{a.date} · <Eye size={10}/> {(a.views||0).toLocaleString()} · <BookOpen size={10}/> {readingTime(a.body)}분 읽기</span>
                         </div>
                         <h3 className="font-semibold text-[15px] md:text-base leading-snug mb-1 line-clamp-2 group-hover:opacity-80 transition-opacity">{a.title}</h3>
                         {a.author&&<p className="text-xs text-amber-600 mb-0.5">✒️ {a.author}</p>}
@@ -2324,8 +2409,14 @@ export default function App() {
                   <h3 className="font-bold text-sm mb-3">세계를 알리다 SNS</h3>
                   <div className="space-y-2">
                     {SNS.map(s=>(
-                      <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
-                        className={`flex items-center gap-2 text-xs hover:underline transition-opacity hover:opacity-80 ${s.color}`}>{s.icon}{s.label} 팔로우</a>
+                      s.href ? (
+                        <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
+                          className={`flex items-center gap-2 text-xs hover:underline transition-opacity hover:opacity-80 ${s.color}`}>{s.icon}{s.label} 팔로우</a>
+                      ) : (
+                        <span key={s.label} className={`flex items-center gap-2 text-xs cursor-not-allowed ${dark?"text-gray-500":"text-gray-400"}`}>
+                          {s.icon}{s.label} <span className="text-[10px] italic opacity-70">(준비 중)</span>
+                        </span>
+                      )
                     ))}
                   </div>
                 </div>
@@ -2374,8 +2465,13 @@ export default function App() {
               <p>문의: <a href="mailto:psnewspaper01@gmail.com" className="hover:underline break-all">psnewspaper01@gmail.com</a></p>
               <div className="flex gap-3 md:justify-end pt-1">
                 {SNS.map(s=>(
-                  <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label}
-                    className={`${s.color} hover:opacity-70 transition-opacity`}>{s.icon}</a>
+                  s.href ? (
+                    <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label}
+                      className={`${s.color} hover:opacity-70 transition-opacity`}>{s.icon}</a>
+                  ) : (
+                    <span key={s.label} aria-label={`${s.label} (준비 중)`} title="준비 중"
+                      className={`cursor-not-allowed ${dark?"text-gray-600":"text-gray-300"}`}>{s.icon}</span>
+                  )
                 ))}
               </div>
             </div>

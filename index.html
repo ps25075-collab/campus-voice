@@ -37,6 +37,15 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="세계를 알리다" />
+
+    <!-- 다크 모드 초기 깜빡임(FOUC) 방지: React 마운트 전에 배경색 결정 -->
+    <script>
+      try {
+        var d = localStorage.getItem('campus_voice_dark');
+        document.documentElement.style.backgroundColor =
+          d && JSON.parse(d) ? '#030712' : '#f9fafb';
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>
