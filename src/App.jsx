@@ -323,11 +323,12 @@ function FinancePanel({ dark }) {
         <div className="space-y-3">
           <div>
             <p className={`text-[11px] md:text-xs font-bold mb-1.5 md:mb-2 ${sub}`}>📈 주가 지수</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
+            <div className="grid grid-cols-3 md:grid-cols-5 gap-2 md:gap-3">
               {renderCard("코스피",   data.kospi,   data.kospi_change)}
+              {renderCard("코스닥",   data.kosdaq,  data.kosdaq_change)}
               {renderCard("NASDAQ",  data.nasdaq,  data.nasdaq_change)}
               {renderCard("S&P 500", data.sp500,   data.sp500_change)}
-              {renderCard("다우존스", data.dow!=null?"$"+data.dow:null, data.dow_change)}
+              {renderCard("다우존스", data.dow,     data.dow_change)}
             </div>
           </div>
           <div>
@@ -378,12 +379,13 @@ function WeatherPanel({ dark }) {
     { max: Infinity, emoji: "⛈️", label: "폭풍",   color: "text-red-600",    bar: "bg-red-600" },
   ];
 
-  // 미세먼지(PM10) — 환경부 한국 기준
+  // 미세먼지(PM10, ㎍/㎥) — 5단계
   const DUST_LEVELS = [
-    { max: 30,       label: "좋음",     color: "text-green-500"  },
-    { max: 80,       label: "보통",     color: "text-yellow-500" },
-    { max: 150,      label: "나쁨",     color: "text-orange-500" },
-    { max: Infinity, label: "매우나쁨", color: "text-red-600"    },
+    { max: 15,       emoji: "😍", label: "최고",   color: "text-blue-500",   bar: "bg-blue-500" },
+    { max: 30,       emoji: "😊", label: "좋음",   color: "text-green-500",  bar: "bg-green-400" },
+    { max: 80,       emoji: "😐", label: "보통",   color: "text-yellow-500", bar: "bg-yellow-400" },
+    { max: 150,      emoji: "😷", label: "나쁨",   color: "text-orange-500", bar: "bg-orange-500" },
+    { max: Infinity, emoji: "🤢", label: "최악",   color: "text-red-600",    bar: "bg-red-600" },
   ];
 
   const getLevelIdx = (levels, v) => {
@@ -431,7 +433,8 @@ function WeatherPanel({ dark }) {
   const hLevel   = hIdx >= 0 ? HUMIDITY_LEVELS[hIdx] : null;
   const wLevel   = wIdx >= 0 ? WIND_LEVELS[wIdx] : null;
   const pm10     = air?.pm10;
-  const dustLevel= pm10 != null ? DUST_LEVELS[getLevelIdx(DUST_LEVELS, pm10)] : null;
+  const dIdx     = pm10 != null ? getLevelIdx(DUST_LEVELS, pm10) : -1;
+  const dustLevel= dIdx >= 0 ? DUST_LEVELS[dIdx] : null;
   const precip   = weather?.precipitation ?? 0;
 
   return (
@@ -450,19 +453,18 @@ function WeatherPanel({ dark }) {
       {error && <span className="text-sm text-red-400">날씨 데이터 로드 실패</span>}
       {!loading&&!error&&weather&&(
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-4 md:mb-5">
-            <div className={`rounded-xl border px-3 py-2.5 md:px-4 md:py-3 ${card}`}>
+          <div className="grid grid-cols-3 md:grid-cols-5 gap-2 md:gap-3 mb-4 md:mb-5">
+            <div className={`rounded-xl border px-2.5 py-2.5 md:px-3 md:py-3 ${card}`}>
               <p className="text-[11px] md:text-xs font-medium mb-0.5 md:mb-1 text-gray-400">날씨</p>
               <p className="text-2xl md:text-3xl leading-tight">{WMO_ICON[code]??"🌡️"}</p>
               <p className={`text-xs md:text-sm font-semibold mt-0.5 md:mt-1 ${dark?"text-gray-300":"text-gray-600"}`}>{WMO_LABEL[code]??"알 수 없음"}</p>
-              {(dustLevel || precip > 0) && (
-                <div className="flex flex-wrap items-center gap-x-1.5 mt-1 text-[10px] md:text-[11px] font-medium leading-tight">
-                  {dustLevel && <span className={dustLevel.color} title={`미세먼지 PM10 ${Math.round(pm10)}㎍/㎥`}>🌫️ {Math.round(pm10)} {dustLevel.label}</span>}
-                  {precip > 0 && <span className="text-blue-400" title="현재 강수량">☔ {precip}mm</span>}
+              {precip > 0 && (
+                <div className="flex items-center gap-1 mt-1 text-[11px] font-medium text-blue-400 leading-tight" title="현재 강수량">
+                  <span>☔</span><span>{precip}mm</span>
                 </div>
               )}
             </div>
-            <div className={`rounded-xl border px-3 py-2.5 md:px-4 md:py-3 ${card}`}>
+            <div className={`rounded-xl border px-2.5 py-2.5 md:px-3 md:py-3 ${card}`}>
               <p className="text-[11px] md:text-xs font-medium mb-0.5 md:mb-1 text-gray-400">기온</p>
               <p className={`text-lg md:text-2xl font-extrabold leading-tight ${val}`}>{weather.temperature_2m}°C</p>
               {tLevel && (
@@ -478,7 +480,7 @@ function WeatherPanel({ dark }) {
                 </>
               )}
             </div>
-            <div className={`rounded-xl border px-3 py-2.5 md:px-4 md:py-3 ${card}`}>
+            <div className={`rounded-xl border px-2.5 py-2.5 md:px-3 md:py-3 ${card}`}>
               <p className="text-[11px] md:text-xs font-medium mb-0.5 md:mb-1 text-gray-400">습도</p>
               <p className={`text-lg md:text-2xl font-extrabold leading-tight ${val}`}>{weather.relative_humidity_2m}%</p>
               {hLevel && (
@@ -494,7 +496,7 @@ function WeatherPanel({ dark }) {
                 </>
               )}
             </div>
-            <div className={`rounded-xl border px-3 py-2.5 md:px-4 md:py-3 ${card}`}>
+            <div className={`rounded-xl border px-2.5 py-2.5 md:px-3 md:py-3 ${card}`}>
               <p className="text-[11px] md:text-xs font-medium mb-0.5 md:mb-1 text-gray-400">풍속</p>
               <p className={`text-lg md:text-2xl font-extrabold leading-tight ${val}`}>{weather.wind_speed_10m}<span className="text-xs md:text-sm font-medium"> km/h</span></p>
               {wLevel && (
@@ -508,6 +510,24 @@ function WeatherPanel({ dark }) {
                     ))}
                   </div>
                 </>
+              )}
+            </div>
+            <div className={`rounded-xl border px-2.5 py-2.5 md:px-3 md:py-3 ${card}`}>
+              <p className="text-[11px] md:text-xs font-medium mb-0.5 md:mb-1 text-gray-400">미세먼지</p>
+              <p className={`text-lg md:text-2xl font-extrabold leading-tight ${val}`}>{pm10!=null?Math.round(pm10):"–"}<span className="text-xs md:text-sm font-medium"> ㎍</span></p>
+              {dustLevel ? (
+                <>
+                  <div className={`flex items-center gap-1 mt-1 text-xs font-medium ${dustLevel.color}`}>
+                    <span>{dustLevel.emoji}</span><span>{dustLevel.label}</span>
+                  </div>
+                  <div className="flex gap-0.5 mt-1.5">
+                    {DUST_LEVELS.map((l,i)=>(
+                      <div key={i} className={`h-1.5 flex-1 rounded-full ${i<=dIdx ? l.bar : emptyBar}`}/>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className={`text-xs mt-1 ${sub}`}>정보 없음</p>
               )}
             </div>
           </div>
