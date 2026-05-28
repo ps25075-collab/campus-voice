@@ -1484,7 +1484,7 @@ export default function App() {
     setBookmarks([]); setBookmarkedArticles([]);
   };
 
-  const MAX_BODY_CHARS = 20000;
+  const MAX_BODY_CHARS = 50000;
   const submitArticle=async()=>{
     if(!form.title.trim()||!form.body.trim()||!user?.name) return;
     if(form.body.length > MAX_BODY_CHARS){ setSubmitErr(`본문은 ${MAX_BODY_CHARS.toLocaleString()}자 이내여야 합니다. (현재 ${form.body.length.toLocaleString()}자)`); return; }
@@ -1500,7 +1500,7 @@ export default function App() {
       author_id: user?.id != null ? String(user.id) : null,
     };
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000);
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
     try {
       if(eid!==null){
         const { error } = await supabase.from('articles').update(fields).eq('id',eid).abortSignal(controller.signal);
