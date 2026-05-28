@@ -1337,7 +1337,9 @@ export default function App() {
   const loadMemberProfile = async (authUser, termsAccepted=false) => {
     const { data:profile } = await supabase.from('profiles').select('*').eq('id',authUser.id).single();
     if(!profile){
-      if(!termsAccepted){
+      // 이메일 가입 유저는 회원가입 시 이미 약관 동의 — 약관 화면 없이 프로필 자동 생성
+      const isEmailProvider = authUser.app_metadata?.provider === 'email';
+      if(!termsAccepted && !isEmailProvider){
         setPendingAuthUser(authUser);
         setShowTermsAgree(true);
         setShowLogin(false);
@@ -1369,7 +1371,14 @@ export default function App() {
   const handleMemberLogin=async()=>{
     setLoginError("");
     const {data,error}=await supabase.auth.signInWithPassword({email:memberForm.email,password:memberForm.pw});
-    if(error){ setLoginError("이메일 또는 비밀번호가 올바르지 않습니다."); return; }
+    if(error){
+      if(error.message?.toLowerCase().includes('not confirmed')){
+        setLoginError("이메일 인증이 필요합니다. 가입 시 받은 이메일의 인증 링크를 클릭해주세요.");
+      } else {
+        setLoginError("이메일 또는 비밀번호가 올바르지 않습니다.");
+      }
+      return;
+    }
     await loadMemberProfile(data.user);
     setShowLogin(false); setMemberForm({email:"",pw:""});
   };
@@ -1389,7 +1398,8 @@ export default function App() {
     if(error){ setSignupErr(error.message); return; }
     const now = new Date().toISOString();
     if(data.user){
-      await supabase.from('profiles').upsert({id:data.user.id,display_name:signupForm.name,role:'pending',email:signupForm.email,terms_agreed:true,privacy_agreed:true,terms_agreed_at:now});
+      const { error: profileErr } = await supabase.from('profiles').upsert({id:data.user.id,display_name:signupForm.name,role:'pending',email:signupForm.email,terms_agreed:true,privacy_agreed:true,terms_agreed_at:now});
+      if(profileErr){ setSignupErr("회원 정보 저장에 실패했습니다. 잠시 후 다시 시도해주세요."); return; }
     }
     setSignupDone(true);
   };
@@ -1474,8 +1484,10 @@ export default function App() {
     setBookmarks([]); setBookmarkedArticles([]);
   };
 
+  const MAX_BODY_CHARS = 20000;
   const submitArticle=async()=>{
     if(!form.title.trim()||!form.body.trim()||!user?.name) return;
+    if(form.body.length > MAX_BODY_CHARS){ setSubmitErr(`본문은 ${MAX_BODY_CHARS.toLocaleString()}자 이내여야 합니다. (현재 ${form.body.length.toLocaleString()}자)`); return; }
     if(submitting) return;
     setSubmitting(true);
     setSubmitErr("");
@@ -1487,15 +1499,17 @@ export default function App() {
       author: user?.name,
       author_id: user?.id != null ? String(user.id) : null,
     };
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
     try {
       if(eid!==null){
-        const { error } = await supabase.from('articles').update(fields).eq('id',eid);
+        const { error } = await supabase.from('articles').update(fields).eq('id',eid).abortSignal(controller.signal);
         if(error) throw error;
         setArticles(prev=>prev.map(a=>a.id===eid?{...a,...fields}:a));
         setSelected(prev=>prev?.id===eid?{...prev,...fields}:prev);
       } else {
         const newA={...fields, date:today(), views:0, hero:false};
-        const { data, error } = await supabase.from('articles').insert(newA).select().single();
+        const { data, error } = await supabase.from('articles').insert(newA).select().single().abortSignal(controller.signal);
         if(error) throw error;
         if(data) setArticles(prev=>[data,...prev]);
       }
@@ -1503,8 +1517,13 @@ export default function App() {
       setForm({title:"",category:"경제",type:allowedTypes(user?.role)[0]||"기사",body:"",image:""});
       setPage(user?.role==="admin"?"admin":"home");
     } catch(e) {
-      setSubmitErr("전송에 실패했습니다. 다시 시도해주세요.");
+      if(controller.signal.aborted){
+        setSubmitErr("요청 시간이 초과됐습니다. 본문이 너무 길 경우 내용을 줄여보세요.");
+      } else {
+        setSubmitErr("전송에 실패했습니다. 다시 시도해주세요.");
+      }
     } finally {
+      clearTimeout(timeoutId);
       setSubmitting(false);
     }
   };
@@ -2182,7 +2201,8 @@ export default function App() {
                   <button type="button" onClick={()=>applyFormat("list")} title="목록 (각 줄 앞에 - 추가)" className={`p-1.5 rounded transition-colors ${dark?"text-gray-300 hover:bg-gray-700":"text-gray-600 hover:bg-gray-200"}`}><List size={14}/></button>
                   <span className={`ml-auto self-center text-[10px] pr-1 ${dark?"text-gray-500":"text-gray-400"}`}>마크다운: **굵게** _기울임_ - 목록</span>
                 </div>
-                <textarea ref={bodyRef} value={form.body} onChange={e=>setForm({...form,body:e.target.value})} rows={8} placeholder="본문을 입력하세요..." className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 resize-none ${inp}`}/>
+                <textarea ref={bodyRef} value={form.body} onChange={e=>setForm({...form,body:e.target.value})} rows={8} maxLength={MAX_BODY_CHARS} placeholder="본문을 입력하세요..." className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 resize-none ${inp}`}/>
+                <p className={`text-xs text-right mt-0.5 ${form.body.length>MAX_BODY_CHARS*0.9?(dark?"text-red-400":"text-red-500"):dark?"text-gray-500":"text-gray-400"}`}>{form.body.length.toLocaleString()} / {MAX_BODY_CHARS.toLocaleString()}자</p>
               </div>
               {submitErr&&<p className="text-sm text-red-500 text-center">{submitErr}</p>}
               <button onClick={submitArticle} disabled={submitting||uploading} style={{backgroundColor:form.type==="칼럼"?"#d97706":SC}}
