@@ -1272,25 +1272,22 @@ export default function App() {
         setArticles(data && data.length > 0 ? data : DUMMY_ARTICLES);
       }catch{ setArticles(DUMMY_ARTICLES); }
       setArticlesLoading(false);
-      let staffLoaded=false;
       try{
         const saved=localStorage.getItem("cv_user");
         if(saved){
           const u=JSON.parse(saved);
-          setUser(u); staffLoaded=true;
+          setUser(u);
           loadBookmarks(u.id, false);
         }
       }catch{}
-      if(!staffLoaded){
-        try{
-          const { data:{ session } } = await supabase.auth.getSession();
-          if(session?.user) await loadMemberProfile(session.user);
-        }catch{}
-      }
     })();
+    // Supabase v2 권장 패턴: INITIAL_SESSION으로 초기 세션 처리 (getSession 중복 호출 race condition 방지)
     const { data:{ subscription } } = supabase.auth.onAuthStateChange(async(event,session)=>{
-      if(event==="SIGNED_IN"&&session?.user) await loadMemberProfile(session.user);
-      else if(event==="SIGNED_OUT") setUser(null);
+      if((event==="INITIAL_SESSION"||event==="SIGNED_IN")&&session?.user){
+        if(!localStorage.getItem("cv_user")) await loadMemberProfile(session.user);
+      } else if(event==="SIGNED_OUT"){
+        setUser(null);
+      }
     });
     return ()=> subscription.unsubscribe();
   },[]);
@@ -1489,8 +1486,14 @@ export default function App() {
   };
 
   const handleLogout=async()=>{
-    if(user?.isMember) await supabase.auth.signOut();
-    else localStorage.removeItem("cv_user");
+    try{
+      if(user?.isMember){
+        try{ await supabase.from('profiles').update({last_logout_at:new Date().toISOString()}).eq('id',user.id); }catch{}
+        await supabase.auth.signOut();
+      } else {
+        localStorage.removeItem("cv_user");
+      }
+    }catch{}
     setUser(null); setPage("home");
     setBookmarks([]); setBookmarkedArticles([]);
   };
