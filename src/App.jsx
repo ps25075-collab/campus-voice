@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, createContext, useContext } from "react";
-import { supabase } from './lib/supabase';
+import { supabase, supabasePublic } from './lib/supabase';
 import { Search, X, TrendingUp, Instagram, Facebook, Youtube, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle, ChevronLeft, ChevronRight, Share2, Copy, Link, Mail, Bookmark, BookmarkCheck, BookOpen } from "lucide-react";
 
 /* ── 날짜 헬퍼 ── */
@@ -1268,7 +1268,9 @@ export default function App() {
   useEffect(()=>{
     (async()=>{
       try{
-        const { data } = await supabase.from('articles').select('*').order('created_at',{ascending:false});
+        // 공개 클라이언트로 조회 → 로그인 여부/만료 토큰과 무관하게 항상 기사가 로드됨
+        const { data, error } = await supabasePublic.from('articles').select('*').order('created_at',{ascending:false});
+        if(error) throw error;
         setArticles(data && data.length > 0 ? data : DUMMY_ARTICLES);
       }catch{ setArticles(DUMMY_ARTICLES); }
       setArticlesLoading(false);
@@ -2255,7 +2257,7 @@ export default function App() {
                 <div className="flex items-center gap-3 flex-wrap">
                   <span>{selected.date}</span>
                   {selected.author&&<span className="text-amber-600 font-medium flex items-center gap-1"><PenLine size={12}/> {selected.author}</span>}
-                  <span className="flex items-center gap-1"><Eye size={12}/> {selected.views.toLocaleString()}</span>
+                  <span className="flex items-center gap-1"><Eye size={12}/> {(selected.views||0).toLocaleString()}</span>
                   <span className="flex items-center gap-1"><BookOpen size={12}/> 약 {readingTime(selected.body)}분 읽기</span>
                 </div>
                 <button onClick={()=>setShowShare(true)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-colors hover:opacity-80" style={{borderColor:SC,color:SC}}><Share2 size={12}/> 공유</button>
