@@ -1336,20 +1336,31 @@ export default function App() {
 
   const loadMemberProfile = async (authUser, termsAccepted=false) => {
     const { data:profile } = await supabase.from('profiles').select('*').eq('id',authUser.id).single();
+    const isEmailProvider = authUser.app_metadata?.provider === 'email';
+    const name = authUser.user_metadata?.full_name||authUser.user_metadata?.name||authUser.email?.split('@')[0]||'회원';
+    const now  = new Date().toISOString();
     if(!profile){
-      // 이메일 가입 유저는 회원가입 시 이미 약관 동의 — 약관 화면 없이 프로필 자동 생성
-      const isEmailProvider = authUser.app_metadata?.provider === 'email';
       if(!termsAccepted && !isEmailProvider){
+        // 약관 동의 전에 프로필 먼저 생성 → 관리자 탭에서 즉시 노출됨
+        await supabase.from('profiles').upsert({id:authUser.id,display_name:name,role:'pending',email:authUser.email,terms_agreed:false,privacy_agreed:false});
         setPendingAuthUser(authUser);
         setShowTermsAgree(true);
         setShowLogin(false);
         return;
       }
-      const name = authUser.user_metadata?.full_name||authUser.user_metadata?.name||authUser.email?.split('@')[0]||'회원';
-      const now  = new Date().toISOString();
       await supabase.from('profiles').upsert({id:authUser.id,display_name:name,role:'pending',email:authUser.email,terms_agreed:true,privacy_agreed:true,terms_agreed_at:now});
       setUser({id:authUser.id,name,role:'pending',email:authUser.email,isMember:true});
     } else {
+      if(!profile.terms_agreed && !isEmailProvider){
+        if(!termsAccepted){
+          // 이전에 약관 미동의 상태로 프로필만 생성된 경우 → 재로그인 시 약관 재표시
+          setPendingAuthUser(authUser);
+          setShowTermsAgree(true);
+          setShowLogin(false);
+          return;
+        }
+        await supabase.from('profiles').update({terms_agreed:true,privacy_agreed:true,terms_agreed_at:now}).eq('id',authUser.id);
+      }
       setUser({id:authUser.id,name:profile.display_name,role:profile.role,email:profile.email||authUser.email,isMember:true});
     }
     loadBookmarks(authUser.id, true);
