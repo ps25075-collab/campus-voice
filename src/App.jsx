@@ -56,7 +56,11 @@ const stripMarkdown = (s) => (s||"")
 
 const makeSummary = (body) => {
   const clean = stripMarkdown(body);
-  return clean.length > 80 ? clean.slice(0, 80) + "..." : clean;
+  if (clean.length <= 90) return clean;
+  let cut = clean.slice(0, 90);
+  const lastSpace = cut.lastIndexOf(" ");
+  if (lastSpace > 55) cut = cut.slice(0, lastSpace);   // 단어 중간에서 잘리지 않도록
+  return cut.replace(/[\s.,·…]+$/, "") + "…";          // 끝의 공백·구두점 정리 후 말줄임표
 };
 
 const getAnonId = () => {
@@ -157,7 +161,6 @@ function ArticleImage({ image, category, title, priority=false, className="", st
   const [failed, setFailed] = useState(false);
   const show = image && !failed;
   const emoji = CAT_EMOJI[category];
-  const initial = (title||"").trim()[0]||"";
   return (
     <div className={`relative overflow-hidden ${className}`}
       style={{ background: catGradient[category]||"linear-gradient(135deg,#374151,#6b7280)", ...style }}>
@@ -167,10 +170,11 @@ function ArticleImage({ image, category, title, priority=false, className="", st
             fetchpriority={priority?"high":"auto"}
             decoding="async"
             className="w-full h-full object-cover absolute inset-0" onError={()=>setFailed(true)}/>
-        : <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-white/80 select-none">
-            {emoji && <span className="text-4xl md:text-5xl drop-shadow-md leading-none">{emoji}</span>}
-            {initial && <span className="text-white/90 font-bold text-base md:text-lg tracking-wide line-clamp-1 px-3 text-center drop-shadow">{initial}</span>}
-            {!emoji && !initial && <><FileText size={22}/><span className="text-xs">이미지 없음</span></>}
+        : <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-white select-none">
+            {emoji
+              ? <span className="text-4xl md:text-5xl drop-shadow-md leading-none">{emoji}</span>
+              : <FileText size={26} className="drop-shadow-md opacity-90"/>}
+            <span className="text-white/90 font-semibold text-xs md:text-sm tracking-wide drop-shadow">{category||"기사"}</span>
           </div>}
     </div>
   );
@@ -221,7 +225,7 @@ function RelatedArticles({ current, articles, onOpen, dark }) {
 }
 
 /* ── 읽기 진도바 ── */
-function ReadingProgress() {
+function ReadingProgress({ dark }) {
   const SC = useContext(SCContext);
   const [pct, setPct] = useState(0);
   useEffect(()=>{
@@ -2047,7 +2051,7 @@ export default function App() {
                           {a.author&&<span className="text-xs text-amber-600">✒️ {a.author}</span>}
                         </div>
                         <h3 className="font-semibold text-sm line-clamp-1">{a.title}</h3>
-                        <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">{a.summary}</p>
+                        <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">{a.summary||makeSummary(a.body)}</p>
                       </div>
                     </div>
                     <div className="flex gap-2 mt-3 flex-wrap">
@@ -2156,7 +2160,7 @@ export default function App() {
                           <span className={`text-xs ${dark?"text-gray-400":"text-gray-400"}`}>{a.date}</span>
                         </div>
                         <p className="font-semibold text-sm leading-snug mb-1">{a.title}</p>
-                        {a.summary&&<p className="text-xs text-gray-500 line-clamp-2">{a.summary}</p>}
+                        {(a.summary||a.body)&&<p className="text-xs text-gray-500 line-clamp-2">{a.summary||makeSummary(a.body)}</p>}
                       </div>
                       <div className="mt-2 pt-2 border-t border-dashed border-gray-200 flex justify-end">
                         <button onClick={(e)=>{e.stopPropagation();toggleBookmark(a.id,false);}} className="text-xs text-amber-600 hover:text-amber-700 flex items-center gap-1"><Trash2 size={11}/> 저장 해제</button>
@@ -2265,7 +2269,7 @@ export default function App() {
         {/* DETAIL */}
         {page==="home"&&selected&&(
           <div className="flex flex-col md:flex-row gap-6 lg:gap-10">
-            <ReadingProgress/>
+            <ReadingProgress dark={dark}/>
             <article className="flex-1 min-w-0 md:max-w-3xl">
               <button onClick={()=>{ setSelected(null); document.title="세계를 알리다 — 표선고등학교 학생 언론사"; if(window.location.pathname.startsWith('/article/')){ window.history.pushState({}, '', '/'); } window.location.hash=""; if(user?.role==="admin"&&selected.status!=="published") setPage("admin"); }}
                 className="flex items-center gap-1 text-sm hover:underline mb-4" style={{color:accentText}}>
@@ -2399,7 +2403,7 @@ export default function App() {
                     <span className={`text-xs text-white px-2.5 py-0.5 rounded-full ${catColor[hero.category]}`}>{hero.category}</span>
                   </div>
                   <h2 className="text-white text-lg md:text-3xl lg:text-4xl font-bold mb-2 md:mb-3 leading-tight line-clamp-2 max-w-3xl tracking-tight">{hero.title}</h2>
-                  <p className="text-gray-200 text-sm md:text-base line-clamp-2 hidden md:block max-w-2xl">{hero.summary}</p>
+                  <p className="text-gray-200 text-sm md:text-base line-clamp-2 hidden md:block max-w-2xl">{hero.summary||makeSummary(hero.body)}</p>
                   <div className="flex items-center gap-3 mt-2 md:mt-3 text-gray-300 text-xs md:text-sm">
                     <span>{hero.date}</span>
                     <span className="opacity-50">·</span>
@@ -2467,7 +2471,7 @@ export default function App() {
                         </div>
                         <h3 className="font-semibold text-[15px] md:text-base leading-snug mb-1 line-clamp-2 group-hover:opacity-80 transition-opacity">{a.title}</h3>
                         {a.author&&<p className="text-xs text-amber-600 mb-0.5">✒️ {a.author}</p>}
-                        <p className="text-xs text-gray-500 line-clamp-2">{a.summary}</p>
+                        <p className="text-xs text-gray-500 line-clamp-2">{a.summary||makeSummary(a.body)}</p>
                       </div>
                     </div>
                   ))}
