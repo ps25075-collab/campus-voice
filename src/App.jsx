@@ -858,7 +858,7 @@ function SuggestionBox({ user, dark }) {
         {canReadBox(user?.role)&&(
           <button onClick={()=>setViewOpen(true)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-full text-white text-xs font-medium shadow-lg hover:scale-105 transition-transform"
-            style={{backgroundColor:SC}}>
+            style={{backgroundColor:HEADER_GREEN}}>
             <Inbox size={14}/> <span className="hidden sm:inline">건의함 열람</span><span className="sm:hidden">열람</span>
           </button>
         )}
@@ -2352,7 +2352,7 @@ export default function App() {
               {CATEGORIES.map(c=>(
                 <button key={c} onClick={()=>setActiveCat(c)}
                   className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all hover:-translate-y-0.5 ${activeCategory===c?"shadow-md":"hover:shadow-sm"}`}
-                  style={activeCategory===c?{backgroundColor:SC,color:"white",borderColor:SC}:{}}>
+                  style={activeCategory===c?{backgroundColor:HEADER_GREEN,color:"white",borderColor:HEADER_GREEN}:{}}>
                   <span className={activeCategory!==c?(dark?"text-gray-300":"text-gray-600"):""}>{c}</span>
                 </button>
               ))}
