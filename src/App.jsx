@@ -1647,9 +1647,12 @@ export default function App() {
         if (compressed && compressed.size < file.size) { blob = compressed; ext = 'webp'; }
       } catch { /* 압축 실패(미지원 형식 등) 시 원본 그대로 업로드 */ }
       const path = `articles/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from('article-images')
-        .upload(path, blob, { upsert: true, contentType: blob.type || file.type });
-      if (error) { alert('이미지 업로드에 실패했습니다.'); return; }
+      // 네트워크/세션 문제로 업로드가 멈추는 경우를 대비한 타임아웃(무한 로딩 방지)
+      const { error } = await Promise.race([
+        supabase.storage.from('article-images').upload(path, blob, { upsert: true, contentType: blob.type || file.type }),
+        new Promise((resolve) => setTimeout(() => resolve({ error: { message: 'timeout' } }), 30000)),
+      ]);
+      if (error) { alert(error.message==='timeout' ? '이미지 업로드 시간이 초과됐습니다. 다시 시도해주세요.' : '이미지 업로드에 실패했습니다.'); return; }
       const { data } = supabase.storage.from('article-images').getPublicUrl(path);
       setForm(fm => ({ ...fm, image: data.publicUrl }));
     } finally {
