@@ -1628,6 +1628,17 @@ export default function App() {
       setUploading(false);
     }
   };
+  // 클립보드 붙여넣기(Ctrl+V)로 이미지 추가. 이미지가 없으면 기본 동작(텍스트 붙여넣기) 유지.
+  const handleImagePaste = (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const it of items) {
+      if (it.type && it.type.startsWith('image/')) {
+        const file = it.getAsFile();
+        if (file) { e.preventDefault(); uploadImage(file); return; }
+      }
+    }
+  };
   const startEdit=a=>{ setForm({title:a.title,category:a.category,type:a.type||"기사",body:a.body,image:a.image||""}); setEditId(a.id); setSelected(null); setPage("write"); };
   const openArticle=async(article)=>{
     if(!article) return;
@@ -2262,7 +2273,7 @@ export default function App() {
               </div>
             )}
             <p className="text-xs text-yellow-600 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 mb-4 flex items-center gap-1"><Clock size={12}/> 작성한 글은 관리자 승인 후 게재됩니다.</p>
-            <div className={`rounded-xl border p-6 space-y-4 ${card}`}>
+            <div className={`rounded-xl border p-6 space-y-4 ${card}`} onPaste={handleImagePaste}>
               <div>
                 <label className="text-sm font-medium mb-2 block">글 종류 *</label>
                 <div className="flex gap-2">
@@ -2293,12 +2304,12 @@ export default function App() {
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">이미지 업로드 (선택, 최대 {MAX_IMAGE_MB}MB · 업로드 시 자동 최적화)</label>
-                <label className={`flex items-center gap-2 border rounded-lg px-3 py-2 text-sm ${inp} ${uploading?"opacity-60 cursor-not-allowed":"cursor-pointer"}`} style={{borderStyle:"dashed"}}>
+                <label className="text-sm font-medium mb-1 block">이미지 (선택, 최대 {MAX_IMAGE_MB}MB · 클릭 업로드 또는 Ctrl+V 붙여넣기 · 자동 최적화)</label>
+                <label tabIndex={0} onPaste={handleImagePaste} className={`flex items-center gap-2 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp} ${uploading?"opacity-60 cursor-not-allowed":"cursor-pointer"}`} style={{borderStyle:"dashed"}}>
                   {uploading
                     ? <RefreshCw size={16} className="animate-spin text-gray-400"/>
                     : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>}
-                  <span className="text-gray-400">{uploading?"업로드 중...":(form.image?"✅ 이미지 업로드됨":"클릭해서 이미지 파일 선택")}</span>
+                  <span className="text-gray-400">{uploading?"업로드 중...":(form.image?"✅ 이미지 추가됨 — 다시 선택/붙여넣기로 교체":"클릭해서 파일 선택하거나 이미지를 붙여넣기(Ctrl+V)")}</span>
                   <input type="file" accept="image/*" disabled={uploading} className="hidden" onChange={e=>{
                     const f=e.target.files?.[0]; if(!f) return;
                     uploadImage(f);
