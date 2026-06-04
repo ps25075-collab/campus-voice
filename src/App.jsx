@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { supabase, supabasePublic } from './lib/supabase';
-import { Search, X, TrendingUp, Instagram, Facebook, Youtube, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle, ChevronLeft, ChevronRight, Share2, Copy, Link, Mail, Bookmark, BookmarkCheck, BookOpen } from "lucide-react";
+import { Search, X, TrendingUp, Instagram, Facebook, Youtube, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle, ChevronLeft, ChevronRight, Share2, Copy, Link, Mail, Bookmark, BookmarkCheck, BookOpen, Download } from "lucide-react";
 
 /* ── 날짜 헬퍼 ── */
 const today = () => {
@@ -1267,6 +1267,7 @@ export default function App() {
   const [uploading,setUploading]   = useState(false);
   const [showShare,setShowShare]   = useState(false);
   const [members,setMembers]         = useState([]);
+  const [subscribers,setSubscribers] = useState([]);
   const [myArticles,setMyArticles]   = useState([]);
   const [mypageTab,setMypageTab]     = useState("written");
 
@@ -1434,6 +1435,29 @@ export default function App() {
   const rejectMember=async(id)=>{
     await supabase.from('profiles').update({role:'rejected'}).eq('id',id);
     setMembers(prev=>prev.map(m=>m.id===id?{...m,role:'rejected'}:m));
+  };
+
+  const loadSubscribers=async()=>{
+    const {data}=await supabase.from('subscribers').select('*').order('created_at',{ascending:false});
+    setSubscribers(data||[]);
+  };
+  const deleteSubscriber=async(id)=>{
+    await supabase.from('subscribers').delete().eq('id',id);
+    setSubscribers(prev=>prev.filter(s=>s.id!==id));
+  };
+  const copySubscriberEmails=async()=>{
+    const text=subscribers.map(s=>s.email).join(', ');
+    try{ await navigator.clipboard.writeText(text); alert(`구독자 이메일 ${subscribers.length}개를 클립보드에 복사했습니다.`); }
+    catch{ alert('복사에 실패했습니다.'); }
+  };
+  const exportSubscribersCsv=()=>{
+    const rows=[['email','subscribed_at'], ...subscribers.map(s=>[s.email, s.created_at||''])];
+    const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});  // BOM: 엑셀 한글 깨짐 방지
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=`subscribers_${today()}.csv`; a.click();
+    URL.revokeObjectURL(url);
   };
 
   // 이름(author) 대신 안정적인 author_id로 조회. 구(舊) 기사는 이름으로 폴백.
@@ -1636,6 +1660,9 @@ export default function App() {
   };
 
   useEffect(()=>{ setVisibleCount(20); },[activeCategory,activeType,search]);
+
+  // 관리자 메뉴 진입 시 구독자 목록 로드 (탭 배지 카운트 즉시 표시)
+  useEffect(()=>{ if(page==="admin"&&user?.role==="admin") loadSubscribers(); },[page,user?.role]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(()=>{
     if(!showDrop) return;
@@ -1980,6 +2007,7 @@ export default function App() {
                 {key:"published",label:"게재된 글",icon:<CheckCircle size={13}/>,cnt:articles.filter(a=>a.status==="published").length,urgent:false},
                 {key:"rejected",label:"반려된 글",icon:<XCircle size={13}/>,cnt:articles.filter(a=>a.status==="rejected").length,urgent:false},
                 {key:"members",label:"회원 관리",icon:<ShieldCheck size={13}/>,cnt:pendingMemberCount,urgent:true},
+                {key:"subscribers",label:"구독자",icon:<Mail size={13}/>,cnt:subscribers.length,urgent:false},
               ].map(t=>(
                 <button key={t.key} onClick={()=>setAdminTab(t.key)}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border transition-colors"
@@ -2035,7 +2063,36 @@ export default function App() {
               </div>
             )}
 
-            {adminTab!=="members"&&(articles.filter(a=>a.status===adminTab).length===0
+            {/* 구독자 관리 탭 */}
+            {adminTab==="subscribers"&&(
+              <div className="space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <p className="text-sm text-gray-500">뉴스레터 구독자 <span className="font-semibold" style={{color:accentText}}>{subscribers.length}</span>명</p>
+                  {subscribers.length>0&&(
+                    <div className="flex gap-2">
+                      <button onClick={copySubscriberEmails} className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border ${dark?"border-gray-700 text-gray-300 hover:bg-gray-800":"border-gray-300 text-gray-600 hover:bg-gray-50"}`}><Copy size={12}/> 이메일 전체 복사</button>
+                      <button onClick={exportSubscribersCsv} className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border ${dark?"border-gray-700 text-gray-300 hover:bg-gray-800":"border-gray-300 text-gray-600 hover:bg-gray-50"}`}><Download size={12}/> CSV 내보내기</button>
+                    </div>
+                  )}
+                </div>
+                {subscribers.length===0
+                  ?<div className={`rounded-xl border p-10 text-center text-gray-400 text-sm ${card}`}>아직 구독자가 없습니다.</div>
+                  :<div className={`rounded-xl border overflow-hidden divide-y ${card} ${dark?"divide-gray-800":"divide-gray-100"}`}>
+                    {subscribers.map(s=>(
+                      <div key={s.id} className="flex items-center justify-between gap-3 p-3 md:p-4">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate flex items-center gap-1.5"><Mail size={13} className="text-gray-400 flex-shrink-0"/> {s.email}</p>
+                          {s.created_at&&<p className="text-xs text-gray-400 mt-0.5">{new Date(s.created_at).toLocaleDateString('ko-KR')} 구독</p>}
+                        </div>
+                        <button onClick={()=>deleteSubscriber(s.id)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white flex-shrink-0"><Trash2 size={12}/> 삭제</button>
+                      </div>
+                    ))}
+                  </div>
+                }
+              </div>
+            )}
+
+            {adminTab!=="members"&&adminTab!=="subscribers"&&(articles.filter(a=>a.status===adminTab).length===0
               ?<div className={`rounded-xl border p-10 text-center text-gray-400 text-sm ${card}`}>해당 글이 없습니다.</div>
               :<div className="space-y-3">
                 {articles.filter(a=>a.status===adminTab).map(a=>(
