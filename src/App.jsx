@@ -1543,7 +1543,33 @@ export default function App() {
       setSubmitting(false);
     }
   };
-  const MAX_IMAGE_MB = 5;
+  const MAX_IMAGE_MB = 15;          // 원본 허용치 (업로드 전 자동 압축됨)
+  const IMAGE_MAX_DIM = 1600;       // 압축 후 최대 가로/세로 px
+  const IMAGE_QUALITY = 0.82;       // WebP 인코딩 품질
+  // 업로드 전 캔버스로 리사이즈+재인코딩해 용량을 크게 줄인다. (5MB 사진 → 보통 수백 KB)
+  const compressImage = (file) => new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > IMAGE_MAX_DIM || height > IMAGE_MAX_DIM) {
+        const scale = Math.min(IMAGE_MAX_DIM / width, IMAGE_MAX_DIM / height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => blob ? resolve(blob) : reject(new Error('encode failed')),
+        'image/webp', IMAGE_QUALITY
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('load failed')); };
+    img.src = url;
+  });
   const uploadImage = async (file) => {
     if (uploading) return;
     if (!file.type.startsWith('image/')) { alert('이미지 파일만 업로드할 수 있습니다.'); return; }
@@ -1553,9 +1579,15 @@ export default function App() {
     }
     setUploading(true);
     try {
-      const ext = file.name.split('.').pop();
+      let blob = file;
+      let ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      try {
+        const compressed = await compressImage(file);
+        if (compressed && compressed.size < file.size) { blob = compressed; ext = 'webp'; }
+      } catch { /* 압축 실패(미지원 형식 등) 시 원본 그대로 업로드 */ }
       const path = `articles/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from('article-images').upload(path, file, { upsert: true });
+      const { error } = await supabase.storage.from('article-images')
+        .upload(path, blob, { upsert: true, contentType: blob.type || file.type });
       if (error) { alert('이미지 업로드에 실패했습니다.'); return; }
       const { data } = supabase.storage.from('article-images').getPublicUrl(path);
       setForm(fm => ({ ...fm, image: data.publicUrl }));
@@ -2195,7 +2227,7 @@ export default function App() {
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">이미지 업로드 (선택, 최대 {MAX_IMAGE_MB}MB)</label>
+                <label className="text-sm font-medium mb-1 block">이미지 업로드 (선택, 최대 {MAX_IMAGE_MB}MB · 업로드 시 자동 최적화)</label>
                 <label className={`flex items-center gap-2 border rounded-lg px-3 py-2 text-sm ${inp} ${uploading?"opacity-60 cursor-not-allowed":"cursor-pointer"}`} style={{borderStyle:"dashed"}}>
                   {uploading
                     ? <RefreshCw size={16} className="animate-spin text-gray-400"/>
