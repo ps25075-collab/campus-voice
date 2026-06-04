@@ -2,8 +2,10 @@ import { createClient } from '@supabase/supabase-js'
 import nodemailer from 'nodemailer'
 
 export default async function handler(req, res) {
+  // 인증 필수(fail-closed): CRON_SECRET 미설정 시에도 외부에서 임의 발송하지 못하도록 차단.
+  // Vercel Cron은 CRON_SECRET 설정 시 자동으로 'Authorization: Bearer <CRON_SECRET>' 헤더를 보냄.
   const secret = process.env.CRON_SECRET
-  if (secret && req.headers.authorization !== `Bearer ${secret}`)
+  if (!secret || req.headers.authorization !== `Bearer ${secret}`)
     return res.status(401).json({ error: 'unauthorized' })
 
   const supabase = createClient(
