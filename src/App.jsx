@@ -200,7 +200,7 @@ function RelatedArticles({ current, articles, onOpen, dark }) {
   if (related.length === 0) return null;
   return (
     <div className="mt-10 md:mt-12">
-      <h3 className="font-bold text-base md:text-lg mb-4 flex items-center gap-2"><FileText size={17} style={{color:SC}}/> 이 기사와 관련된 글</h3>
+      <h3 className="font-bold text-base md:text-lg mb-4 flex items-center gap-2"><FileText size={17} style={{color:dark?SC_DARK:SC}}/> 이 기사와 관련된 글</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
         {related.map(a => (
           <div key={a.id} onClick={()=>onOpen(a)}
@@ -237,7 +237,7 @@ function ReadingProgress() {
   },[]);
   return (
     <div className="fixed top-0 left-0 right-0 z-50 h-1 pointer-events-none">
-      <div className="h-full transition-[width] duration-150 ease-out" style={{width:`${pct}%`, backgroundColor:SC, boxShadow:`0 0 8px ${SC}80`}}/>
+      <div className="h-full transition-[width] duration-150 ease-out" style={{width:`${pct}%`, backgroundColor:dark?SC_DARK:SC, boxShadow:`0 0 8px ${dark?SC_DARK:SC}80`}}/>
     </div>
   );
 }
@@ -607,7 +607,7 @@ function InfoCarousel({ dark }) {
           {Array.from({length:TOTAL}).map((_,i)=>(
             <button key={i} onClick={()=>handleGoTo(i)}
               className={`rounded-full transition-all duration-300 ${slide===i?"w-5 h-2":"w-2 h-2"}`}
-              style={{backgroundColor: slide===i?SC: dark?"#374151":"#d1d5db"}}/>
+              style={{backgroundColor: slide===i?(dark?SC_DARK:SC): dark?"#374151":"#d1d5db"}}/>
           ))}
         </div>
       </div>
@@ -768,7 +768,7 @@ function CommentSection({ articleId, user, dark }) {
   return (
     <div className="mt-8">
       <h3 className="font-bold text-base mb-4 flex items-center gap-2">
-        <MessageCircle size={17} style={{color:SC}}/> 댓글
+        <MessageCircle size={17} style={{color:dark?SC_DARK:SC}}/> 댓글
         <span className="text-sm font-normal text-gray-400">({comments.length})</span>
       </h3>
       <div className={"rounded-xl border p-4 mb-4 space-y-2 " + (dark?"bg-gray-900 border-gray-800":"bg-white border-gray-200")}>
@@ -908,7 +908,7 @@ function SuggestionBox({ user, dark }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={()=>setViewOpen(false)}>
           <div className={`rounded-2xl shadow-2xl p-6 w-full max-w-lg max-h-[80vh] flex flex-col ${card}`} onClick={e=>e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4 flex-shrink-0">
-              <h3 className="font-bold text-base flex items-center gap-2"><Inbox size={18} style={{color:SC}}/> 기사 건의함</h3>
+              <h3 className="font-bold text-base flex items-center gap-2"><Inbox size={18} style={{color:dark?SC_DARK:SC}}/> 기사 건의함</h3>
               <button onClick={()=>setViewOpen(false)}><X size={18}/></button>
             </div>
             {suggestions.length===0
@@ -1190,7 +1190,8 @@ function ShareModal({ article, onClose, dark }) {
 
 export default function App() {
   const [dark,setDark]               = useState(()=>{ try{ const d=localStorage.getItem(DARK_KEY); return d?JSON.parse(d):false; }catch{ return false; } });
-  const SC = dark ? SC_DARK : "#1a6b3c";
+  const SC = "#1a6b3c";                    // 강조색: 헤더와 동일한 짙은 녹색으로 통일 (흰 글자 올라가는 채워진 버튼·탭·아바타)
+  const accentText = dark ? SC_DARK : SC;  // 텍스트·아이콘·테두리·인디케이터용: 다크 배경 가독성 위해 밝은 녹색 유지
   const [activeCategory,setActiveCat]= useState("전체");
   const [activeType,setActiveType]   = useState("전체");
   const [selected,setSelected]       = useState(null);
@@ -1680,7 +1681,7 @@ export default function App() {
         </button>
         {user?(
           <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
-            <span style={{color:SC}} className="font-medium truncate max-w-[110px] sm:max-w-none">{roleLabel[user.role]} {user.name}</span>
+            <span style={{color:accentText}} className="font-medium truncate max-w-[110px] sm:max-w-none">{roleLabel[user.role]} {user.name}</span>
             {user&&(
               <button onClick={()=>{setPage("mypage");loadMyArticles(user.id, user.name);loadBookmarks(user.id, !!user.isMember);}} className="flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 rounded-lg border border-green-700 text-green-700 hover:bg-green-700 hover:text-white transition-colors text-xs md:text-sm font-medium whitespace-nowrap">
                 <span className="hidden sm:inline">마이페이지</span><span className="sm:hidden">MY</span>
@@ -1967,8 +1968,8 @@ export default function App() {
         {page==="admin"&&user?.role==="admin"&&(
           <div>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold flex items-center gap-2"><ShieldCheck size={20} style={{color:SC}}/> 관리자 메뉴</h2>
-              <button onClick={()=>setPage("home")} className="text-sm hover:underline flex items-center gap-1" style={{color:SC}}><ArrowLeft size={14}/> 홈으로</button>
+              <h2 className="text-xl font-bold flex items-center gap-2"><ShieldCheck size={20} style={{color:accentText}}/> 관리자 메뉴</h2>
+              <button onClick={()=>setPage("home")} className="text-sm hover:underline flex items-center gap-1" style={{color:accentText}}><ArrowLeft size={14}/> 홈으로</button>
             </div>
             <div className="flex gap-2 mb-5 flex-wrap">
               {[{key:"pending",label:"승인 대기",icon:<Clock size={13}/>,cnt:articles.filter(a=>a.status==="pending").length,urgent:true},
@@ -2067,7 +2068,7 @@ export default function App() {
         {/* MYPAGE */}
         {page==="mypage"&&user&&(
           <div className="max-w-2xl mx-auto">
-            <button onClick={()=>setPage("home")} className="flex items-center gap-1 text-sm hover:underline mb-4" style={{color:SC}}>
+            <button onClick={()=>setPage("home")} className="flex items-center gap-1 text-sm hover:underline mb-4" style={{color:accentText}}>
               <ArrowLeft size={15}/> 홈으로
             </button>
             <h2 className="text-2xl font-bold mb-5">마이페이지</h2>
@@ -2185,7 +2186,7 @@ export default function App() {
         {/* WRITE */}
         {page==="write"&&user&&canWrite(user.role)&&(
           <div className="max-w-2xl mx-auto">
-            <button onClick={()=>{setPage(user.role==="admin"?"admin":"home");setEditId(null);}} className="flex items-center gap-1 text-sm hover:underline mb-4" style={{color:SC}}>
+            <button onClick={()=>{setPage(user.role==="admin"?"admin":"home");setEditId(null);}} className="flex items-center gap-1 text-sm hover:underline mb-4" style={{color:accentText}}>
               <ArrowLeft size={15}/> {user.role==="admin"?"관리자 메뉴로":"홈으로"}
             </button>
             <h2 className="text-2xl font-bold mb-1">{editId!==null?"✏️ 글 수정":"✏️ 새 글 작성"}</h2>
@@ -2267,7 +2268,7 @@ export default function App() {
             <ReadingProgress/>
             <article className="flex-1 min-w-0 md:max-w-3xl">
               <button onClick={()=>{ setSelected(null); document.title="세계를 알리다 — 표선고등학교 학생 언론사"; if(window.location.pathname.startsWith('/article/')){ window.history.pushState({}, '', '/'); } window.location.hash=""; if(user?.role==="admin"&&selected.status!=="published") setPage("admin"); }}
-                className="flex items-center gap-1 text-sm hover:underline mb-4" style={{color:SC}}>
+                className="flex items-center gap-1 text-sm hover:underline mb-4" style={{color:accentText}}>
                 <ArrowLeft size={15}/> {user?.role==="admin"&&selected.status!=="published"?"관리자 메뉴로":"목록으로"}
               </button>
               {selected.status!=="published"&&<div className={`text-xs px-3 py-2 rounded-lg mb-3 flex items-center gap-1 ${statusStyle[selected.status]}`}>{selected.status==="pending"?<Clock size={12}/>:<XCircle size={12}/>} 미리보기 — {statusLabel[selected.status]} 상태입니다.</div>}
@@ -2292,7 +2293,7 @@ export default function App() {
                   <span className="flex items-center gap-1"><Eye size={12}/> {(selected.views||0).toLocaleString()}</span>
                   <span className="flex items-center gap-1"><BookOpen size={12}/> 약 {readingTime(selected.body)}분 읽기</span>
                 </div>
-                <button onClick={()=>setShowShare(true)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-colors hover:opacity-80" style={{borderColor:SC,color:SC}}><Share2 size={12}/> 공유</button>
+                <button onClick={()=>setShowShare(true)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-colors hover:opacity-80" style={{borderColor:accentText,color:accentText}}><Share2 size={12}/> 공유</button>
               </div>
               <ArticleImage image={selected.image} category={selected.category} title={selected.title} priority className="w-full rounded-xl mb-6 md:mb-7 h-48 sm:h-64 md:h-80 lg:h-[420px]"/>
               {selected.author&&<div className="border-l-4 border-amber-400 pl-4 mb-5 py-1.5"><p className="text-xs md:text-sm text-amber-600 font-medium">{selected.type==="칼럼" ? `✒️ 칼럼 — ${selected.author} 기고` : `✍️ 기사 — ${selected.author} 작성`}</p></div>}
@@ -2301,7 +2302,7 @@ export default function App() {
               <LikeButton articleId={selected.id} user={user} dark={dark}/>
 
               <div className="flex justify-center -mt-2 mb-6">
-                <button onClick={()=>setShowShare(true)} style={{borderColor:SC,color:SC}}
+                <button onClick={()=>setShowShare(true)} style={{borderColor:accentText,color:accentText}}
                   className="flex items-center gap-2 px-5 py-2 rounded-full border-2 text-sm font-medium hover:opacity-80 transition-opacity">
                   <Share2 size={14}/> 이 기사 공유하기
                 </button>
@@ -2473,7 +2474,7 @@ export default function App() {
                 </div>
                 {filtered.length>visibleCount&&(
                   <div className="mt-6 text-center">
-                    <button onClick={()=>setVisibleCount(n=>n+20)} style={{borderColor:SC,color:SC}}
+                    <button onClick={()=>setVisibleCount(n=>n+20)} style={{borderColor:accentText,color:accentText}}
                       className="px-6 py-2.5 rounded-full border-2 text-sm font-medium hover:opacity-80 transition-opacity">
                       더 보기 ({filtered.length-visibleCount}개 남음)
                     </button>
@@ -2546,7 +2547,7 @@ export default function App() {
         <div className="max-w-6xl mx-auto px-4 py-6 md:py-10">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             <div>
-              <p className="font-bold text-base md:text-lg mb-1" style={{color:SC}}>📰 세계를 알리다</p>
+              <p className="font-bold text-base md:text-lg mb-1" style={{color:accentText}}>📰 세계를 알리다</p>
               <p className="text-xs md:text-sm text-gray-500">표선고등학교 학생 언론사</p>
             </div>
             <div className="text-xs md:text-sm text-gray-500 space-y-1 md:text-right">
