@@ -1557,17 +1557,17 @@ export default function App() {
       author: user?.name,
       author_id: user?.id != null ? String(user.id) : null,
     };
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 45000);
+    // 어디서 멈추든(토큰 갱신 포함) 20초 후 반드시 스피너 해제 + 원인 표시
+    const timeoutGuard = new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 20000));
     try {
       if(eid!==null){
-        const { error } = await supabase.from('articles').update(fields).eq('id',eid).abortSignal(controller.signal);
+        const { error } = await Promise.race([ supabase.from('articles').update(fields).eq('id',eid), timeoutGuard ]);
         if(error) throw error;
         setArticles(prev=>prev.map(a=>a.id===eid?{...a,...fields}:a));
         setSelected(prev=>prev?.id===eid?{...prev,...fields}:prev);
       } else {
         const newA={...fields, date:today(), views:0, hero:false};
-        const { data, error } = await supabase.from('articles').insert(newA).select().single().abortSignal(controller.signal);
+        const { data, error } = await Promise.race([ supabase.from('articles').insert(newA).select().single(), timeoutGuard ]);
         if(error) throw error;
         if(data) setArticles(prev=>[data,...prev]);
       }
@@ -1575,13 +1575,14 @@ export default function App() {
       setForm({title:"",category:"경제",type:allowedTypes(user?.role)[0]||"기사",body:"",image:""});
       setPage(user?.role==="admin"?"admin":"home");
     } catch(e) {
-      if(controller.signal.aborted){
-        setSubmitErr("요청 시간이 초과됐습니다. 본문이 너무 길 경우 내용을 줄여보세요.");
+      if(e?.message==='TIMEOUT'){
+        setSubmitErr("요청 시간이 초과됐습니다(서버 응답 없음). 로그아웃 후 다시 로그인하거나 네트워크를 확인해 주세요.");
       } else {
-        setSubmitErr("전송에 실패했습니다. 다시 시도해주세요.");
+        // 실제 오류 코드/메시지를 노출해 원인 파악을 돕는다.
+        const detail = e?.message || e?.code || e?.error_description || (typeof e==='string'?e:'') || '알 수 없는 오류';
+        setSubmitErr(`전송 실패: ${detail}`);
       }
     } finally {
-      clearTimeout(timeoutId);
       setSubmitting(false);
     }
   };
