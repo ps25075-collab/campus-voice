@@ -1,3 +1,5 @@
+import { signStaffToken } from './_lib/staffToken.js';
+
 const USERS = [
   { id: 'admin',      pw: process.env.ADMIN_PW,      name: '관리자',  role: 'admin'     },
   { id: 'editor1',    pw: process.env.EDITOR1_PW,    name: '김편집',  role: 'editor'    },
@@ -37,5 +39,11 @@ export default function handler(req, res) {
   }
 
   attempts.delete(ip);
-  res.status(200).json({ id: found.id, name: found.name, role: found.role });
+
+  // 서버 API 권한 검증용 서명 토큰 발급 (STAFF_TOKEN_SECRET 미설정 시 토큰 없이 반환 → 기존 동작 유지)
+  let token;
+  try { token = signStaffToken({ id: found.id, name: found.name, role: found.role }); }
+  catch { token = undefined; }
+
+  res.status(200).json({ id: found.id, name: found.name, role: found.role, token });
 }

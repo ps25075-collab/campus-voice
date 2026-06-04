@@ -1441,13 +1441,22 @@ export default function App() {
     setMembers(prev=>prev.map(m=>m.id===id?{...m,role:'rejected'}:m));
   };
 
+  // 스태프 서버 API 인증 헤더 (자체 로그인 토큰)
+  const staffAuthHeaders=()=> user?.token ? { Authorization:`Bearer ${user.token}` } : {};
   const loadSubscribers=async()=>{
-    const {data}=await supabase.from('subscribers').select('*').order('created_at',{ascending:false});
-    setSubscribers(data||[]);
+    try{
+      const res=await fetch('/api/admin/subscribers',{ headers: staffAuthHeaders() });
+      if(!res.ok){ setSubscribers([]); return; }
+      const { subscribers:list }=await res.json();
+      setSubscribers(list||[]);
+    }catch{ setSubscribers([]); }
   };
   const deleteSubscriber=async(id)=>{
-    await supabase.from('subscribers').delete().eq('id',id);
-    setSubscribers(prev=>prev.filter(s=>s.id!==id));
+    try{
+      const res=await fetch(`/api/admin/subscribers?id=${encodeURIComponent(id)}`,{ method:'DELETE', headers: staffAuthHeaders() });
+      if(res.ok){ setSubscribers(prev=>prev.filter(s=>s.id!==id)); }
+      else { alert('삭제에 실패했습니다. 로그아웃 후 다시 로그인해 주세요.'); }
+    }catch{ alert('삭제 중 오류가 발생했습니다.'); }
   };
   const copySubscriberEmails=async()=>{
     const text=subscribers.map(s=>s.email).join(', ');
