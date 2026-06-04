@@ -1579,30 +1579,49 @@ export default function App() {
   const MAX_IMAGE_MB = 15;          // 원본 허용치 (업로드 전 자동 압축됨)
   const IMAGE_MAX_DIM = 1600;       // 압축 후 최대 가로/세로 px
   const IMAGE_QUALITY = 0.82;       // WebP 인코딩 품질
-  // 업로드 전 캔버스로 리사이즈+재인코딩해 용량을 크게 줄인다. (5MB 사진 → 보통 수백 KB)
-  const compressImage = (file) => new Promise((resolve, reject) => {
+  // 업로드 전 리사이즈+재인코딩으로 용량을 크게 줄인다. (5MB 사진/스크린샷 → 보통 수백 KB)
+  const encodeCanvasToWebp = (canvas) => new Promise((resolve, reject) =>
+    canvas.toBlob((b)=> b ? resolve(b) : reject(new Error('encode failed')), 'image/webp', IMAGE_QUALITY)
+  );
+  const drawToScaledCanvas = (source, w, h) => {
+    let width = w, height = h;
+    if (width > IMAGE_MAX_DIM || height > IMAGE_MAX_DIM) {
+      const scale = Math.min(IMAGE_MAX_DIM / width, IMAGE_MAX_DIM / height);
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = width; canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(source, 0, 0, width, height);
+    return canvas;
+  };
+  // 폴백: 구형 브라우저용 <img> 디코드 경로
+  const compressViaImg = (file) => new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
-    img.onload = () => {
+    img.onload = async () => {
       URL.revokeObjectURL(url);
-      let { width, height } = img;
-      if (width > IMAGE_MAX_DIM || height > IMAGE_MAX_DIM) {
-        const scale = Math.min(IMAGE_MAX_DIM / width, IMAGE_MAX_DIM / height);
-        width = Math.round(width * scale);
-        height = Math.round(height * scale);
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = width; canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
-      canvas.toBlob(
-        (blob) => blob ? resolve(blob) : reject(new Error('encode failed')),
-        'image/webp', IMAGE_QUALITY
-      );
+      try { resolve(await encodeCanvasToWebp(drawToScaledCanvas(img, img.width, img.height))); }
+      catch(e){ reject(e); }
     };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('load failed')); };
     img.src = url;
   });
+  // 기본: createImageBitmap으로 네이티브 고속 디코드 — 대용량 PNG(붙여넣은 스크린샷)에서
+  // <img>+canvas보다 훨씬 빠르고 메인 스레드를 멈추지 않는다.
+  const compressImage = async (file) => {
+    if (typeof createImageBitmap === 'function') {
+      try {
+        const bitmap = await createImageBitmap(file);
+        const canvas = drawToScaledCanvas(bitmap, bitmap.width, bitmap.height);
+        bitmap.close?.();
+        return await encodeCanvasToWebp(canvas);
+      } catch { /* createImageBitmap 미지원/실패 시 폴백 */ }
+    }
+    return compressViaImg(file);
+  };
   const uploadImage = async (file) => {
     if (uploading) return;
     if (!file.type.startsWith('image/')) { alert('이미지 파일만 업로드할 수 있습니다.'); return; }
