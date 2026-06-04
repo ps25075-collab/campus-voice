@@ -828,12 +828,12 @@ function CommentSection({ articleId, user, dark }) {
 }
 
 /* ── 건의함 ── */
-function SuggestionBox({ user, dark }) {
+function SuggestionBox({ user, dark, onRequireLogin }) {
   const SC = useContext(SCContext);
   const [open, setOpen]         = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
-  const [form, setForm]         = useState({ name:"", content:"" });
+  const [form, setForm]         = useState({ content:"" });
   const [sent, setSent]         = useState(false);
   const card = dark?"bg-gray-900 border-gray-800 text-gray-100":"bg-white border-gray-200 text-gray-900";
   const inp  = dark?"bg-gray-800 border-gray-700 text-white placeholder-gray-500":"bg-white border-gray-300 placeholder-gray-400";
@@ -848,11 +848,12 @@ function SuggestionBox({ user, dark }) {
   useEffect(()=>{ if(viewOpen) loadSuggestions(); },[viewOpen]);
 
   const submit = async () => {
+    if(!user){ onRequireLogin?.(); return; }   // 로그인 후에만 건의 가능
     if(!form.content.trim()) return;
-    const newItem = { name: form.name.trim()||"익명", content: form.content.trim(), date: today() };
+    const newItem = { name: user.name, content: form.content.trim(), date: today() };   // 로그인 실명으로 고정
     const { data } = await supabase.from('suggestions').insert(newItem).select().single();
     if(data) setSuggestions(prev => [data, ...prev]);
-    setForm({name:"",content:""});
+    setForm({content:""});
     setSent(true); setTimeout(()=>{ setSent(false); setOpen(false); },2000);
   };
 
@@ -866,7 +867,7 @@ function SuggestionBox({ user, dark }) {
             <Inbox size={14}/> <span className="hidden sm:inline">건의함 열람</span><span className="sm:hidden">열람</span>
           </button>
         )}
-        <button onClick={()=>setOpen(true)}
+        <button onClick={()=>{ if(!user){ alert('기사 건의는 로그인 후 이용할 수 있습니다.'); onRequireLogin?.(); return; } setOpen(true); }}
           aria-label="기사 건의하기"
           className="flex items-center gap-2 px-3.5 py-2.5 md:px-4 rounded-full text-white text-sm font-medium shadow-lg hover:scale-105 transition-transform bg-amber-500 hover:bg-amber-600">
           <MessageSquarePlus size={16}/> <span className="hidden sm:inline">기사 건의하기</span><span className="sm:hidden">건의</span>
@@ -888,9 +889,12 @@ function SuggestionBox({ user, dark }) {
             ):(
               <div className="space-y-3">
                 <div>
-                  <label className="text-xs font-medium mb-1 block text-gray-500">이름 (선택)</label>
-                  <input value={form.name} onChange={e=>setForm({...form,name:e.target.value})}
-                    placeholder="홍길동" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 ${inp}`}/>
+                  <label className="text-xs font-medium mb-1 block text-gray-500">건의자</label>
+                  <div className={`w-full border rounded-lg px-3 py-2 text-sm flex items-center gap-1.5 ${inp}`}>
+                    <PenLine size={13} className="text-amber-500 flex-shrink-0"/>
+                    <span className="font-medium truncate">{user?.name}</span>
+                    <span className="text-xs text-gray-400 ml-auto flex-shrink-0">실명으로 등록</span>
+                  </div>
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block text-gray-500">건의 내용 *</label>
@@ -2632,7 +2636,7 @@ export default function App() {
         </div>
       </footer>
 
-      <SuggestionBox user={user} dark={dark}/>
+      <SuggestionBox user={user} dark={dark} onRequireLogin={()=>setShowLogin(true)}/>
     </div>
     </SCContext.Provider>
   );
