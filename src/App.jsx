@@ -838,11 +838,14 @@ function SuggestionBox({ user, dark, onRequireLogin }) {
   const card = dark?"bg-gray-900 border-gray-800 text-gray-100":"bg-white border-gray-200 text-gray-900";
   const inp  = dark?"bg-gray-800 border-gray-700 text-white placeholder-gray-500":"bg-white border-gray-300 placeholder-gray-400";
 
+  // 건의 내용은 PII라 anon 직접 조회를 RLS로 차단 → 편집부 열람은 service_role 서버 API 경유.
   const loadSuggestions = async () => {
     try{
-      const { data } = await supabase.from('suggestions').select('*').order('created_at', {ascending:false});
-      setSuggestions(data || []);
-    }catch{}
+      const res = await fetch('/api/admin/suggestions', { headers: user?.token ? { Authorization:`Bearer ${user.token}` } : {} });
+      if(!res.ok){ setSuggestions([]); return; }
+      const { suggestions:list } = await res.json();
+      setSuggestions(list || []);
+    }catch{ setSuggestions([]); }
   };
 
   useEffect(()=>{ if(viewOpen) loadSuggestions(); },[viewOpen]);
@@ -851,8 +854,9 @@ function SuggestionBox({ user, dark, onRequireLogin }) {
     if(!user){ onRequireLogin?.(); return; }   // 로그인 후에만 건의 가능
     if(!form.content.trim()) return;
     const newItem = { name: user.name, content: form.content.trim(), date: today() };   // 로그인 실명으로 고정
-    const { data } = await supabase.from('suggestions').insert(newItem).select().single();
-    if(data) setSuggestions(prev => [data, ...prev]);
+    // SELECT는 RLS로 막혀 있으므로 .select() 없이 INSERT만 (반환 불필요)
+    const { error } = await supabase.from('suggestions').insert(newItem);
+    if(error){ alert('건의 전송에 실패했습니다. 다시 시도해주세요.'); return; }
     setForm({content:""});
     setSent(true); setTimeout(()=>{ setSent(false); setOpen(false); },2000);
   };
