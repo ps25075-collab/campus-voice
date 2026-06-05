@@ -1418,12 +1418,13 @@ export default function App() {
     if(signupForm.pw!==signupForm.pwConfirm){ setSignupErr("비밀번호가 일치하지 않습니다."); return; }
     if(!termsCheck.service){ setSignupErr("서비스 이용약관에 동의해주세요."); return; }
     if(!termsCheck.privacy){ setSignupErr("개인정보 처리방침에 동의해주세요."); return; }
-    const {data,error}=await supabase.auth.signUp({email:signupForm.email,password:signupForm.pw});
+    // 이름을 auth user_metadata로 전달 → 이메일 인증 후 첫 로그인 시 프로필이 이 이름으로 생성됨.
+    const {data,error}=await supabase.auth.signUp({email:signupForm.email,password:signupForm.pw,options:{data:{full_name:signupForm.name}}});
     if(error){ setSignupErr(error.message); return; }
     const now = new Date().toISOString();
     if(data.user){
-      const { error: profileErr } = await supabase.from('profiles').upsert({id:data.user.id,display_name:signupForm.name,role:'pending',email:signupForm.email,terms_agreed:true,privacy_agreed:true,terms_agreed_at:now},{onConflict:'id',ignoreDuplicates:true});
-      if(profileErr){ setSignupErr("회원 정보 저장에 실패했습니다. 잠시 후 다시 시도해주세요."); return; }
+      // 이메일 인증 대기 중엔 세션이 없어 RLS로 INSERT가 막힘(정상). 세션이 있으면 즉시 생성, 없으면 첫 로그인 시 생성 → best-effort.
+      await supabase.from('profiles').upsert({id:data.user.id,display_name:signupForm.name,role:'pending',email:signupForm.email,terms_agreed:true,privacy_agreed:true,terms_agreed_at:now},{onConflict:'id',ignoreDuplicates:true});
     }
     setSignupDone(true);
   };
