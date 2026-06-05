@@ -1355,13 +1355,13 @@ export default function App() {
     if(!profile){
       if(!termsAccepted && !isEmailProvider){
         // 약관 동의 전에 프로필 먼저 생성 → 관리자 탭에서 즉시 노출됨
-        await supabase.from('profiles').upsert({id:authUser.id,display_name:name,role:'pending',email:authUser.email,terms_agreed:false,privacy_agreed:false});
+        await supabase.from('profiles').upsert({id:authUser.id,display_name:name,role:'pending',email:authUser.email,terms_agreed:false,privacy_agreed:false},{onConflict:'id',ignoreDuplicates:true});
         setPendingAuthUser(authUser);
         setShowTermsAgree(true);
         setShowLogin(false);
         return;
       }
-      await supabase.from('profiles').upsert({id:authUser.id,display_name:name,role:'pending',email:authUser.email,terms_agreed:true,privacy_agreed:true,terms_agreed_at:now});
+      await supabase.from('profiles').upsert({id:authUser.id,display_name:name,role:'pending',email:authUser.email,terms_agreed:true,privacy_agreed:true,terms_agreed_at:now},{onConflict:'id',ignoreDuplicates:true});
       setUser({id:authUser.id,name,role:'pending',email:authUser.email,isMember:true});
     } else {
       if(!profile.terms_agreed && !isEmailProvider){
@@ -1422,31 +1422,41 @@ export default function App() {
     if(error){ setSignupErr(error.message); return; }
     const now = new Date().toISOString();
     if(data.user){
-      const { error: profileErr } = await supabase.from('profiles').upsert({id:data.user.id,display_name:signupForm.name,role:'pending',email:signupForm.email,terms_agreed:true,privacy_agreed:true,terms_agreed_at:now});
+      const { error: profileErr } = await supabase.from('profiles').upsert({id:data.user.id,display_name:signupForm.name,role:'pending',email:signupForm.email,terms_agreed:true,privacy_agreed:true,terms_agreed_at:now},{onConflict:'id',ignoreDuplicates:true});
       if(profileErr){ setSignupErr("회원 정보 저장에 실패했습니다. 잠시 후 다시 시도해주세요."); return; }
     }
     setSignupDone(true);
   };
 
 
-  const loadMembers=async()=>{
-    const {data}=await supabase.from('profiles').select('*')
-      .not('role','in','(admin,editor)');
-    setMembers(data||[]);
-  };
-
-  const approveMember=async(id,role)=>{
-    await supabase.from('profiles').update({role}).eq('id',id);
-    setMembers(prev=>prev.map(m=>m.id===id?{...m,role}:m));
-  };
-
-  const rejectMember=async(id)=>{
-    await supabase.from('profiles').update({role:'rejected'}).eq('id',id);
-    setMembers(prev=>prev.map(m=>m.id===id?{...m,role:'rejected'}:m));
-  };
-
   // 스태프 서버 API 인증 헤더 (자체 로그인 토큰)
   const staffAuthHeaders=()=> user?.token ? { Authorization:`Bearer ${user.token}` } : {};
+
+  // 회원 실명·이메일은 PII라 anon 직접 조회를 RLS로 차단 → 관리자 열람·승인은 service_role 서버 API 경유.
+  const loadMembers=async()=>{
+    try{
+      const res=await fetch('/api/admin/members',{ headers: staffAuthHeaders() });
+      if(!res.ok){ setMembers([]); return; }
+      const { members:list }=await res.json();
+      setMembers(list||[]);
+    }catch{ setMembers([]); }
+  };
+
+  const updateMemberRole=async(id,role)=>{
+    try{
+      const res=await fetch('/api/admin/members',{
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', ...staffAuthHeaders() },
+        body: JSON.stringify({ id, role }),
+      });
+      if(res.ok){ setMembers(prev=>prev.map(m=>m.id===id?{...m,role}:m)); return true; }
+      alert('회원 상태 변경에 실패했습니다. 로그아웃 후 다시 로그인해 주세요.');
+    }catch{ alert('회원 상태 변경 중 오류가 발생했습니다.'); }
+    return false;
+  };
+
+  const approveMember=(id,role)=>updateMemberRole(id,role);
+  const rejectMember=(id)=>updateMemberRole(id,'rejected');
   const loadSubscribers=async()=>{
     try{
       const res=await fetch('/api/admin/subscribers',{ headers: staffAuthHeaders() });
@@ -1529,7 +1539,9 @@ export default function App() {
   };
 
   const requestReApproval=async()=>{
-    await supabase.from('profiles').update({role:'pending'}).eq('id',user.id);
+    // role 자가 변경은 차단됨(권한 상승 방지) → 거절→대기 전환만 허용하는 SECURITY DEFINER RPC 경유.
+    const { error }=await supabase.rpc('request_reapproval');
+    if(error){ alert('재승인 요청에 실패했습니다. 잠시 후 다시 시도해주세요.'); return; }
     setUser(prev=>({...prev,role:'pending'}));
   };
 
