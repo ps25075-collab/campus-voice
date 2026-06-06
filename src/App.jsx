@@ -726,7 +726,11 @@ function CommentSection({ articleId, user, dark }) {
   };
 
   const del = async (id) => {
-    await supabase.from("comments").delete().eq("id", id);
+    // 댓글 삭제는 RLS로 직접 차단됨 → admin/editor 서버 API 경유.
+    try{
+      const res = await fetch('/api/comments', { method:'POST', headers:{ 'Content-Type':'application/json', ...(user?.token?{Authorization:`Bearer ${user.token}`}:{}) }, body: JSON.stringify({ action:'delete', id }) });
+      if(!res.ok) throw new Error();
+    }catch{ alert('댓글 삭제에 실패했습니다.'); return; }
     setComments(prev => prev.filter(c => c.id!==id && c.parent_id!==id));
   };
 
@@ -1293,6 +1297,7 @@ export default function App() {
         if(saved){
           const u=JSON.parse(saved);
           setUser(u);
+          loadStaffArticles(u);
           loadBookmarks(u.id, false);
         }
       }catch{}
@@ -1387,6 +1392,7 @@ export default function App() {
       const userObj=await res.json();
       setUser(userObj);
       localStorage.setItem("cv_user",JSON.stringify(userObj));
+      loadStaffArticles(userObj);
       loadBookmarks(userObj.id, false);
       setShowLogin(false); setLoginForm({id:"",pw:""});
     }catch{ setLoginError("로그인 중 오류가 발생했습니다."); }
@@ -1502,9 +1508,24 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
+  // 스태프(세션 없는 anon)는 RLS상 게재글만 보이므로, 대기/반려 포함 전체 목록을
+  // 서버(service_role)에서 받아 articles 상태에 반영한다. (관리자 검토 화면용)
+  const loadStaffArticles=async(u)=>{
+    const tok=u?.token; if(!tok) return;
+    try{
+      const res=await fetch('/api/admin/articles',{ headers:{ Authorization:`Bearer ${tok}` } });
+      if(res.ok){ const j=await res.json(); if(Array.isArray(j.articles)&&j.articles.length) setArticles(j.articles); }
+    }catch{}
+  };
+
   // 이름(author) 대신 안정적인 author_id로 조회. 구(舊) 기사는 이름으로 폴백.
   const loadMyArticles=async(uid, name)=>{
     const id = uid != null ? String(uid) : null;
+    // 스태프(anon)는 본인 초안이 RLS상 직접 조회 안 되므로, 서버에서 받아둔 전체 목록에서 필터.
+    if(user?.token){
+      setMyArticles(articles.filter(a=> (id&&String(a.author_id)===id) || (name&&a.author===name)));
+      return;
+    }
     let query = supabase.from('articles').select('*');
     if(id && name)      query = query.or(`author_id.eq.${id},author.eq."${name}"`);
     else if(id)         query = query.eq('author_id', id);
