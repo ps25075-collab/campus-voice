@@ -1433,6 +1433,20 @@ export default function App() {
   // 스태프 서버 API 인증 헤더 (자체 로그인 토큰)
   const staffAuthHeaders=()=> user?.token ? { Authorization:`Bearer ${user.token}` } : {};
 
+  // 기사 변경 API 인증 헤더: 스태프는 staffToken, 회원은 Supabase 세션 JWT.
+  // articles 직접 쓰기는 RLS로 차단되므로 생성/수정/승인/삭제/헤드라인은 /api/articles 경유.
+  const articleAuthHeaders=async()=>{
+    if(user?.token) return { Authorization:`Bearer ${user.token}` };
+    try{ const { data } = await supabase.auth.getSession(); const t=data?.session?.access_token; if(t) return { Authorization:`Bearer ${t}` }; }catch{}
+    return {};
+  };
+  const articleApi=async(payload)=>{
+    const res=await fetch('/api/articles',{ method:'POST', headers:{ 'Content-Type':'application/json', ...(await articleAuthHeaders()) }, body:JSON.stringify(payload) });
+    let json={}; try{ json=await res.json(); }catch{}
+    if(!res.ok) throw new Error(json.error || `요청 실패 (HTTP ${res.status})`);
+    return json;
+  };
+
   // 회원 실명·이메일은 PII라 anon 직접 조회를 RLS로 차단 → 관리자 열람·승인은 service_role 서버 API 경유.
   const loadMembers=async()=>{
     try{
@@ -1578,15 +1592,16 @@ export default function App() {
     const timeoutGuard = new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 20000));
     try {
       if(eid!==null){
-        const { error } = await Promise.race([ supabase.from('articles').update(fields).eq('id',eid), timeoutGuard ]);
-        if(error) throw error;
-        setArticles(prev=>prev.map(a=>a.id===eid?{...a,...fields}:a));
-        setSelected(prev=>prev?.id===eid?{...prev,...fields}:prev);
+        // 내용 수정 — 서버가 status/hero/author는 변경하지 않음(권한 상승 차단). 반환 행으로 동기화.
+        const { article } = await Promise.race([ articleApi({ action:'update', id:eid, ...fields }), timeoutGuard ]);
+        if(article){
+          setArticles(prev=>prev.map(a=>a.id===eid?{...a,...article}:a));
+          setSelected(prev=>prev?.id===eid?{...prev,...article}:prev);
+        }
       } else {
-        const newA={...fields, date:today(), views:0, hero:false};
-        const { data, error } = await Promise.race([ supabase.from('articles').insert(newA).select().single(), timeoutGuard ]);
-        if(error) throw error;
-        if(data) setArticles(prev=>[data,...prev]);
+        // 생성 — 서버가 status='pending'으로 강제.
+        const { article } = await Promise.race([ articleApi({ action:'create', ...fields, date:today() }), timeoutGuard ]);
+        if(article) setArticles(prev=>[article,...prev]);
       }
       setEditId(null);
       setForm({title:"",category:"경제",type:allowedTypes(user?.role)[0]||"기사",body:"",image:""});
@@ -1709,17 +1724,19 @@ export default function App() {
     }
   };
   const doDelete=async()=>{
-    await supabase.from('articles').delete().eq('id',confirmDel);
+    try{ await articleApi({ action:'delete', id:confirmDel }); }
+    catch(e){ alert(`삭제 실패: ${e.message}`); return; }
     setArticles(prev=>prev.filter(a=>a.id!==confirmDel));
     setConfirmDel(null); setSelected(null); setPage("home");
   };
   const updateStatus=async(id,status)=>{
-    await supabase.from('articles').update({status}).eq('id',id);
+    try{ await articleApi({ action:'setStatus', id, status }); }
+    catch(e){ alert(`상태 변경 실패: ${e.message}`); return; }
     setArticles(prev=>prev.map(a=>a.id===id?{...a,status}:a));
   };
   const toggleHero=async(id,value)=>{
-    if(value) await supabase.from('articles').update({hero:false}).eq('status','published');
-    await supabase.from('articles').update({hero:value}).eq('id',id);
+    try{ await articleApi({ action:'setHero', id, value }); }
+    catch(e){ alert(`헤드라인 설정 실패: ${e.message}`); return; }
     setArticles(prev=>prev.map(a=>({...a,hero:value?a.id===id:(a.id===id?false:a.hero)})));
   };
 
