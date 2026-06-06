@@ -2690,16 +2690,20 @@ export default function App() {
             <h3 className="text-white text-lg md:text-2xl lg:text-3xl font-bold mb-1.5 md:mb-2 tracking-tight">📬 세계를 알리다 뉴스레터 구독</h3>
             <p className="text-green-200 text-xs md:text-base mb-4 md:mb-6 px-2">매주 목요일 아침 주요 소식을 이메일로 받아보세요.</p>
             {subscribed
-              ?<p className="text-green-300 font-medium text-sm md:text-base">✅ 구독이 완료되었습니다!</p>
+              ?<p className="text-green-300 font-medium text-sm md:text-base">✅ 확인 메일을 보냈습니다! 메일의 링크를 누르면 구독이 완료됩니다.</p>
               :<div className="max-w-sm md:max-w-md mx-auto">
                 <div className="flex flex-col sm:flex-row justify-center gap-2">
                   <input value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="이메일 주소를 입력하세요" className="flex-1 px-4 py-2.5 md:py-3 rounded-lg text-sm md:text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-400 shadow-sm"/>
+                  {/* 허니팟: 사람에겐 안 보이고 봇만 채움 → 서버가 차단 */}
+                  <input id="cv_hp" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" style={{position:'absolute',left:'-9999px',width:'1px',height:'1px',opacity:0}}/>
                   <button onClick={async()=>{
                     if(!email){ setSubscribeErr("이메일을 입력해주세요."); return; }
                     setSubscribeErr("");
                     try{
-                      const r=await fetch("/api/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})});
+                      const hp=(typeof document!=='undefined'&&document.getElementById('cv_hp')?.value)||"";
+                      const r=await fetch("/api/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,hp})});
                       if(r.ok){ setSubscribed(true); }
+                      else if(r.status===429){ setSubscribeErr("요청이 너무 많습니다. 잠시 후 다시 시도해주세요."); }
                       else { setSubscribeErr("구독 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."); }
                     }catch{ setSubscribeErr("네트워크 오류로 구독에 실패했습니다."); }
                   }} style={{backgroundColor:SC}} className="px-5 md:px-6 py-2.5 md:py-3 text-white rounded-lg text-sm md:text-base font-medium hover:opacity-90 border border-green-400 transition-opacity whitespace-nowrap">구독하기</button>

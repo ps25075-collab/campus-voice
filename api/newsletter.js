@@ -16,7 +16,7 @@ export default async function handler(req, res) {
 
   const [{ data: articles }, { data: subscribers }] = await Promise.all([
     supabase.from('articles').select('*').eq('status','published').order('created_at',{ascending:false}).limit(5),
-    supabase.from('subscribers').select('email'),
+    supabase.from('subscribers').select('email').eq('confirmed', true),
   ])
 
   if (!subscribers?.length) return res.status(200).json({ sent: 0, message: '구독자 없음' })
