@@ -1,49 +1,66 @@
+import { getAdminClient } from '../lib/supabaseAdmin.js';
+import { verifyPassword } from '../lib/password.js';
 import { signStaffToken } from './_lib/staffToken.js';
 
-const USERS = [
-  { id: 'admin',      pw: process.env.ADMIN_PW,      name: '관리자',  role: 'admin'     },
-  { id: 'editor1',    pw: process.env.EDITOR1_PW,    name: '김편집',  role: 'editor'    },
-  { id: 'editor2',    pw: process.env.EDITOR2_PW,    name: '이기자',  role: 'editor'    },
-  { id: 'columnist1', pw: process.env.COLUMNIST1_PW, name: '박칼럼',  role: 'columnist' },
-  { id: 'columnist2', pw: process.env.COLUMNIST2_PW, name: '최기고',  role: 'columnist' },
-];
-
-const attempts = new Map();
 const MAX_ATTEMPTS = 10;
-const WINDOW_MS = 15 * 60 * 1000;
+const WINDOW_SECONDS = 15 * 60; // 15분
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const ip = req.headers['x-forwarded-for']?.split(',')[0] || 'unknown';
-  const now = Date.now();
-  const record = attempts.get(ip) || { count: 0, resetAt: now + WINDOW_MS };
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
 
-  if (now > record.resetAt) {
-    record.count = 0;
-    record.resetAt = now + WINDOW_MS;
+  let supabase;
+  try {
+    supabase = getAdminClient();
+  } catch (err) {
+    console.error('[login] supabase init 실패:', err.message);
+    return res.status(500).json({ error: '서버 설정 오류' });
   }
 
-  if (record.count >= MAX_ATTEMPTS) {
+  // 1) 레이트리밋 사전 점검 (영속 저장소 — 서버리스 인스턴스 간 공유)
+  const { data: rl } = await supabase
+    .from('login_attempts')
+    .select('count, reset_at')
+    .eq('ip', ip)
+    .maybeSingle();
+
+  const now = Date.now();
+  const windowActive = rl?.reset_at && new Date(rl.reset_at).getTime() > now;
+  const currentCount = windowActive ? rl.count : 0;
+  if (currentCount >= MAX_ATTEMPTS) {
     return res.status(429).json({ error: '너무 많은 로그인 시도입니다. 잠시 후 다시 시도해주세요.' });
   }
 
   const { username, password } = req.body || {};
   if (!username || !password) return res.status(400).json({ error: 'invalid' });
 
-  const found = USERS.find(u => u.id === username && u.pw === password);
-  if (!found) {
-    record.count++;
-    attempts.set(ip, record);
+  // 2) 계정 조회 (비밀번호 해시는 service_role 로만 접근 가능 — anon 노출 차단)
+  const { data: user } = await supabase
+    .from('staff_users')
+    .select('id, name, role, password_hash')
+    .eq('id', username)
+    .maybeSingle();
+
+  // 3) 상수시간 비교. 사용자가 없어도 더미 해시로 검증해 타이밍 누출 방지.
+  const ok = verifyPassword(password, user?.password_hash);
+
+  if (!user || !ok) {
+    // 실패 시 원자적으로 카운트 증가 (윈도우 만료 시 리셋 포함)
+    await supabase.rpc('register_failed_login', {
+      p_ip: ip,
+      p_window_seconds: WINDOW_SECONDS,
+    });
     return res.status(401).json({ error: '아이디 또는 비밀번호가 올바르지 않습니다.' });
   }
 
-  attempts.delete(ip);
+  // 4) 성공 — 해당 IP의 시도 기록 제거
+  await supabase.from('login_attempts').delete().eq('ip', ip);
 
   // 서버 API 권한 검증용 서명 토큰 발급 (STAFF_TOKEN_SECRET 미설정 시 토큰 없이 반환 → 기존 동작 유지)
   let token;
-  try { token = signStaffToken({ id: found.id, name: found.name, role: found.role }); }
+  try { token = signStaffToken({ id: user.id, name: user.name, role: user.role }); }
   catch { token = undefined; }
 
-  res.status(200).json({ id: found.id, name: found.name, role: found.role, token });
+  return res.status(200).json({ id: user.id, name: user.name, role: user.role, token });
 }
