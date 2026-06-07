@@ -1,37 +1,32 @@
 import { createClient } from '@supabase/supabase-js';
+import {
+  BASE,
+  escapeHtml,
+  summarize,
+  renderBodyToHtml,
+  fetchTemplate,
+  injectIntoRoot,
+  SSR_STYLE,
+} from '../_lib/ssr.js';
 
-const BASE = 'https://campus-voice-green-gamma.vercel.app';
-
-function escape(str) {
-  return String(str || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-function summarize(s, max = 180) {
-  const clean = String(s || '').replace(/\s+/g, ' ').trim();
-  if (clean.length <= max) return clean;
-  return clean.slice(0, max - 1) + '…';
-}
-
+// 기사 상세 페이지의 서버 사이드 렌더링.
+//  - <head> 메타태그(title/description/canonical/OG/Twitter)를 기사에 맞게 교체
+//  - JSON-LD(NewsArticle) 주입
+//  - #root에 기사 본문 HTML 주입  ← 네이버·빙 같은 비(非)JS 크롤러가 본문을 읽게 함
+// 매 요청 시 Supabase에서 최신 데이터를 읽으므로 항상 최신 상태가 색인된다.
 export default async function handler(req, res) {
   const id = (req.query && req.query.id) || (req.url || '').split('/').filter(Boolean).pop();
 
-  // 1) Fetch the built index.html template from our own origin
+  // 1) 깨끗한 정적 템플릿 로드
   let html;
   try {
-    const origin = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : BASE;
-    const r = await fetch(origin + '/');
-    html = await r.text();
+    html = await fetchTemplate();
   } catch (e) {
     res.status(500).send('Failed to load template');
     return;
   }
 
-  // 2) Look up the article
+  // 2) 기사 조회 (게재된 글만)
   let article = null;
   try {
     const supabase = createClient(
@@ -55,48 +50,24 @@ export default async function handler(req, res) {
         ? article.image
         : `${BASE}/icon-512.png`;
     const url = `${BASE}/article/${id}`;
-    const T = escape(title);
-    const D = escape(desc);
-    const U = escape(url);
-    const I = escape(image);
+    const T = escapeHtml(title);
+    const D = escapeHtml(desc);
+    const U = escapeHtml(url);
+    const I = escapeHtml(image);
 
-    // Replace existing meta tags
+    // ── <head> 메타태그 교체 ──
     html = html
       .replace(/<title>[^<]*<\/title>/, `<title>${T}</title>`)
-      .replace(
-        /<meta name="description"[^>]*>/,
-        `<meta name="description" content="${D}" />`
-      )
-      .replace(
-        /<link rel="canonical"[^>]*>/,
-        `<link rel="canonical" href="${U}" />`
-      )
-      .replace(
-        /<meta property="og:title"[^>]*>/,
-        `<meta property="og:title" content="${T}" />`
-      )
-      .replace(
-        /<meta property="og:description"[^>]*>/,
-        `<meta property="og:description" content="${D}" />`
-      )
-      .replace(
-        /<meta property="og:url"[^>]*>/,
-        `<meta property="og:url" content="${U}" />`
-      )
-      .replace(
-        /<meta property="og:type"[^>]*>/,
-        `<meta property="og:type" content="article" />`
-      )
-      .replace(
-        /<meta name="twitter:title"[^>]*>/,
-        `<meta name="twitter:title" content="${T}" />`
-      )
-      .replace(
-        /<meta name="twitter:description"[^>]*>/,
-        `<meta name="twitter:description" content="${D}" />`
-      );
+      .replace(/<meta name="description"[^>]*>/, `<meta name="description" content="${D}" />`)
+      .replace(/<link rel="canonical"[^>]*>/, `<link rel="canonical" href="${U}" />`)
+      .replace(/<meta property="og:title"[^>]*>/, `<meta property="og:title" content="${T}" />`)
+      .replace(/<meta property="og:description"[^>]*>/, `<meta property="og:description" content="${D}" />`)
+      .replace(/<meta property="og:url"[^>]*>/, `<meta property="og:url" content="${U}" />`)
+      .replace(/<meta property="og:type"[^>]*>/, `<meta property="og:type" content="article" />`)
+      .replace(/<meta name="twitter:title"[^>]*>/, `<meta name="twitter:title" content="${T}" />`)
+      .replace(/<meta name="twitter:description"[^>]*>/, `<meta name="twitter:description" content="${D}" />`);
 
-    // Inject extra tags + JSON-LD before </head>
+    // ── JSON-LD(NewsArticle) + og:image 주입 ──
     const jsonLd = {
       '@context': 'https://schema.org',
       '@type': 'NewsArticle',
@@ -111,12 +82,7 @@ export default async function handler(req, res) {
       publisher: {
         '@type': 'Organization',
         name: '세계를 알리다',
-        logo: {
-          '@type': 'ImageObject',
-          url: `${BASE}/icon-512.png`,
-          width: 512,
-          height: 512,
-        },
+        logo: { '@type': 'ImageObject', url: `${BASE}/icon-512.png`, width: 512, height: 512 },
       },
       image: [image],
       mainEntityOfPage: { '@type': 'WebPage', '@id': url },
@@ -128,8 +94,27 @@ export default async function handler(req, res) {
       `<meta name="twitter:card" content="${image.endsWith('/icon-512.png') ? 'summary' : 'summary_large_image'}" />\n` +
       `<meta name="twitter:image" content="${I}" />\n` +
       `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>\n`;
-
     html = html.replace('</head>', extras + '</head>');
+
+    // ── #root에 기사 본문 HTML 주입 (크롤러용 실제 콘텐츠) ──
+    const meta = [article.category, article.type, article.date]
+      .filter(Boolean)
+      .map(escapeHtml)
+      .join(' · ');
+    const imgTag =
+      article.image && /^https?:/.test(article.image)
+        ? `<img src="${escapeHtml(article.image)}" alt="${escapeHtml(article.title)}" style="width:100%;border-radius:12px;margin:16px 0" />`
+        : '';
+    const content =
+      `<article id="ssr" style="${SSR_STYLE}">` +
+      `<p style="margin-bottom:8px"><a href="/" style="color:#1a6b3c;text-decoration:none;font-weight:600">← 세계를 알리다</a></p>` +
+      (meta ? `<p style="font-size:13px;color:#6b7280;margin-bottom:8px">${meta}</p>` : '') +
+      `<h1 style="font-size:28px;font-weight:800;line-height:1.3;margin-bottom:12px">${escapeHtml(article.title)}</h1>` +
+      (article.summary ? `<p style="font-size:18px;color:#374151;margin-bottom:16px">${escapeHtml(article.summary)}</p>` : '') +
+      imgTag +
+      `<div>${renderBodyToHtml(article.body)}</div>` +
+      `</article>`;
+    html = injectIntoRoot(html, content);
   }
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
