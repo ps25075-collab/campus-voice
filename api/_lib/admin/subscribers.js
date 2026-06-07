@@ -1,6 +1,6 @@
 // 구독자 관리(관리자 전용) — service_role로 RLS 우회, 스태프 토큰으로 인가 검증.
 import { createClient } from '@supabase/supabase-js';
-import { requireStaff } from '../_lib/staffToken.js';
+import { requireStaff } from '../staffToken.js';
 
 export default async function handler(req, res) {
   const staff = requireStaff(req, ['admin']); // 구독자 관리는 관리자만

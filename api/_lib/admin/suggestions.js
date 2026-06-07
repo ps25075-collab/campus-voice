@@ -1,6 +1,6 @@
 // 건의함 열람(편집부 전용) — service_role로 RLS 우회, 스태프 토큰(admin/editor) 검증.
 import { createClient } from '@supabase/supabase-js';
-import { requireStaff } from '../_lib/staffToken.js';
+import { requireStaff } from '../staffToken.js';
 
 export default async function handler(req, res) {
   const staff = requireStaff(req, ['admin', 'editor']); // 건의함 열람은 편집부(admin/editor)

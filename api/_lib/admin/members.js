@@ -1,6 +1,6 @@
 // 회원 관리(관리자 전용) — service_role로 RLS 우회, 스태프 토큰(admin) 검증.
 import { createClient } from '@supabase/supabase-js';
-import { requireStaff } from '../_lib/staffToken.js';
+import { requireStaff } from '../staffToken.js';
 
 const ALLOWED_ROLES = ['reporter', 'columnist', 'rejected', 'pending'];
 

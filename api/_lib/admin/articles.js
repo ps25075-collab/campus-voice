@@ -1,7 +1,7 @@
 // 스태프 전체 기사 목록 — 세션 없는 스태프(anon)는 RLS상 게재글만 보이므로,
 // 대기/반려 포함 검토용 목록을 service_role로 받아온다. (staffToken 검증)
 import { createClient } from '@supabase/supabase-js';
-import { requireStaff } from '../_lib/staffToken.js';
+import { requireStaff } from '../staffToken.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end();
