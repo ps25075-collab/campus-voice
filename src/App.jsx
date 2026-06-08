@@ -1528,12 +1528,18 @@ export default function App() {
       setMyArticles(articles.filter(a=> (id&&String(a.author_id)===id) || (name&&a.author===name)));
       return;
     }
-    let query = supabase.from('articles').select('*');
-    if(id && name)      query = query.or(`author_id.eq.${id},author.eq."${name}"`);
-    else if(id)         query = query.eq('author_id', id);
-    else if(name)       query = query.eq('author', name);
-    const {data}=await query.order('created_at',{ascending:false});
-    setMyArticles(data||[]);
+    // 필터 인젝션 방지: .or() 원시 문자열 보간 대신 .eq()(파라미터 바인딩) 쿼리를 합친다.
+    const fetchBy=async(col,val)=>{
+      const {data}=await supabase.from('articles').select('*').eq(col,val).order('created_at',{ascending:false});
+      return data||[];
+    };
+    let rows=[];
+    if(id)   rows=rows.concat(await fetchBy('author_id',id));
+    if(name) rows=rows.concat(await fetchBy('author',name));
+    const seen=new Set();
+    const merged=rows.filter(a=>seen.has(a.id)?false:(seen.add(a.id),true))
+      .sort((x,y)=>new Date(y.created_at||0)-new Date(x.created_at||0));
+    setMyArticles(merged);
   };
 
   // user_id 포맷: 회원은 auth.uid, 직원은 'staff:' + login id

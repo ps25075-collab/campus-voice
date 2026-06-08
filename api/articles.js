@@ -18,6 +18,7 @@ import { createClient } from '@supabase/supabase-js';
 import { verifyStaffToken } from './_lib/staffToken.js';
 import { writeAudit } from './_lib/audit.js';
 import { reauthStaff } from './_lib/reauth.js';
+import { V } from './_lib/validate.js';
 
 const CAN_WRITE = ['admin', 'editor', 'columnist', 'reporter'];
 const MAX_BODY_CHARS = 50000;
@@ -62,25 +63,45 @@ export default async function handler(req, res) {
   const canWrite = CAN_WRITE.includes(principal.role);
 
   const body = req.body || {};
-  const { action } = body;
+  // 액션은 허용 목록으로만(임의 문자열·객체 차단).
+  const av = V.oneOf(body.action, ['create', 'update', 'setStatus', 'delete', 'listTrash', 'restore', 'purge', 'setHero'], 'action');
+  if (!av.ok) return res.status(400).json({ error: 'unknown action' });
+  const action = av.value;
+
+  // id가 필요한 액션은 양의 정수로 강제(타입 혼동·필터 오용 차단). 나머지(create/listTrash)는 null.
+  let id = null;
+  if (['update', 'setStatus', 'delete', 'restore', 'purge', 'setHero'].includes(action)) {
+    const idv = V.intId(body.id);
+    if (!idv.ok) return res.status(400).json({ error: 'invalid id' });
+    id = idv.value;
+  }
 
   try {
     // ── 생성 ─────────────────────────────────────────────
     if (action === 'create') {
       if (!canWrite) return res.status(403).json({ error: 'forbidden' });
-      const title = (body.title || '').trim();
-      const content = body.body || '';
-      if (!title || !content.trim()) return res.status(400).json({ error: '제목과 본문은 필수입니다.' });
-      if (content.length > MAX_BODY_CHARS) return res.status(400).json({ error: '본문이 너무 깁니다.' });
+      const tv = V.str(body.title, { min: 1, max: 300, field: '제목' });
+      const bv = V.str(body.body, { min: 1, max: MAX_BODY_CHARS, trim: false, field: '본문' });
+      if (!tv.ok) return res.status(400).json({ error: tv.error });
+      if (!bv.ok) return res.status(400).json({ error: bv.error });
+      const title = tv.value;
+      const content = bv.value;
+      if (!content.trim()) return res.status(400).json({ error: '본문은 필수입니다.' });
+      // 선택 필드: 문자열만 허용, 아니면 기본값. (객체/배열 주입 차단)
+      const optStr = (v, def, max) => {
+        if (v === undefined || v === null) return def;
+        const r = V.str(v, { max });
+        return r.ok ? r.value : def;
+      };
 
       const row = {
         title,
-        category: body.category || '경제',
-        type: body.type || '기사',
+        category: optStr(body.category, '경제', 40),
+        type: optStr(body.type, '기사', 40),
         body: content,
-        image: body.image || '',
-        summary: body.summary || '',
-        date: body.date || new Date().toISOString().slice(0, 10),
+        image: optStr(body.image, '', 2000),
+        summary: optStr(body.summary, '', 2000),
+        date: optStr(body.date, new Date().toISOString().slice(0, 10), 30),
         // 서버가 강제하는 값 — 클라이언트 입력 무시
         status: 'pending',
         hero: false,
@@ -97,8 +118,6 @@ export default async function handler(req, res) {
     // ── 수정(내용만) ─────────────────────────────────────
     if (action === 'update') {
       if (!canWrite) return res.status(403).json({ error: 'forbidden' });
-      const id = body.id;
-      if (id == null) return res.status(400).json({ error: 'id required' });
 
       const { data: existing, error: e1 } = await svc.from('articles').select('author_id, deleted_at').eq('id', id).single();
       if (e1 || !existing) return res.status(404).json({ error: 'not found' });
@@ -107,14 +126,15 @@ export default async function handler(req, res) {
       const owns = existing.author_id != null && String(existing.author_id) === principal.id;
       if (!owns && !isEditor) return res.status(403).json({ error: 'forbidden' });
 
-      const content = body.body;
-      if (content != null && content.length > MAX_BODY_CHARS)
-        return res.status(400).json({ error: '본문이 너무 깁니다.' });
-
-      // 내용 필드만 화이트리스트로 반영. status/hero/author/views는 절대 변경하지 않음.
+      // 내용 필드만 화이트리스트로 반영하되, 각 값을 문자열·길이로 검증.
+      // status/hero/author/views는 절대 변경하지 않음.
+      const LIMITS = { title: 300, category: 40, type: 40, body: MAX_BODY_CHARS, image: 2000, summary: 2000 };
       const patch = {};
-      for (const k of ['title', 'category', 'type', 'body', 'image', 'summary']) {
-        if (body[k] !== undefined) patch[k] = k === 'title' ? String(body[k]).trim() : body[k];
+      for (const k of Object.keys(LIMITS)) {
+        if (body[k] === undefined) continue;
+        const fv = V.str(body[k], { max: LIMITS[k], trim: k === 'title', field: k });
+        if (!fv.ok) return res.status(400).json({ error: fv.error });
+        patch[k] = fv.value;
       }
       if (Object.keys(patch).length === 0) return res.status(400).json({ error: 'nothing to update' });
 
@@ -127,8 +147,9 @@ export default async function handler(req, res) {
     // ── 상태 변경(승인/반려) — admin 전용 ─────────────────
     if (action === 'setStatus') {
       if (!isAdmin) return res.status(403).json({ error: 'forbidden' });
-      const { id, status } = body;
-      if (id == null || !VALID_STATUS.includes(status)) return res.status(400).json({ error: 'invalid' });
+      const sv = V.oneOf(body.status, VALID_STATUS, 'status');
+      if (!sv.ok) return res.status(400).json({ error: 'invalid' });
+      const status = sv.value;
       const { data, error } = await svc.from('articles').update({ status }).eq('id', id).is('deleted_at', null).select().single();
       if (error) throw error;
       if (!data) return res.status(404).json({ error: 'not found' });
@@ -140,10 +161,8 @@ export default async function handler(req, res) {
     // hard delete 대신 deleted_at 표시(soft delete). 공격자/실수로 인한 영구 소실 방지.
     if (action === 'delete') {
       if (!isAdmin) return res.status(403).json({ error: 'forbidden' });
-      const { id, confirmPassword } = body;
-      if (id == null) return res.status(400).json({ error: 'id required' });
       // 민감 작업 재인증(2단계): 현재 비밀번호 재확인
-      if (!(await reauthStaff(svc, principal, confirmPassword)))
+      if (!(await reauthStaff(svc, principal, body.confirmPassword)))
         return res.status(401).json({ error: 'reauth_required', message: '삭제하려면 비밀번호를 다시 입력하세요.' });
       const { data: row, error } = await svc.from('articles')
         .update({ deleted_at: new Date().toISOString(), deleted_by: principal.id })
@@ -166,8 +185,6 @@ export default async function handler(req, res) {
     // ── 복구(휴지통 → 복원) — admin 전용 ─────────────────
     if (action === 'restore') {
       if (!isAdmin) return res.status(403).json({ error: 'forbidden' });
-      const { id } = body;
-      if (id == null) return res.status(400).json({ error: 'id required' });
       const { data: row, error } = await svc.from('articles')
         .update({ deleted_at: null, deleted_by: null })
         .eq('id', id).not('deleted_at', 'is', null).select().single();
@@ -180,9 +197,7 @@ export default async function handler(req, res) {
     // ── 영구 삭제 — admin 전용 + 재인증. 휴지통에 있는 글만 ──
     if (action === 'purge') {
       if (!isAdmin) return res.status(403).json({ error: 'forbidden' });
-      const { id, confirmPassword } = body;
-      if (id == null) return res.status(400).json({ error: 'id required' });
-      if (!(await reauthStaff(svc, principal, confirmPassword)))
+      if (!(await reauthStaff(svc, principal, body.confirmPassword)))
         return res.status(401).json({ error: 'reauth_required', message: '영구 삭제하려면 비밀번호를 다시 입력하세요.' });
       const { data: existing } = await svc.from('articles').select('title, deleted_at').eq('id', id).single();
       if (!existing) return res.status(404).json({ error: 'not found' });
@@ -196,8 +211,7 @@ export default async function handler(req, res) {
     // ── 헤드라인 지정 — admin 전용 ───────────────────────
     if (action === 'setHero') {
       if (!isAdmin) return res.status(403).json({ error: 'forbidden' });
-      const { id, value } = body;
-      if (id == null) return res.status(400).json({ error: 'id required' });
+      const value = !!body.value;
       if (value) {
         // 헤드라인은 게재글 중 하나만 — 기존 헤드라인 해제 후 지정 (휴지통 글 제외)
         await svc.from('articles').update({ hero: false }).eq('status', 'published').is('deleted_at', null);

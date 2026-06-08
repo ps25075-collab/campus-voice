@@ -2,6 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { requireStaff } from '../staffToken.js';
 import { writeAudit } from '../audit.js';
+import { V } from '../validate.js';
 
 const ALLOWED_ROLES = ['reporter', 'columnist', 'rejected', 'pending'];
 
@@ -22,11 +23,13 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     const { id, role } = req.body || {};
-    if (!id || !ALLOWED_ROLES.includes(role)) return res.status(400).json({ error: 'invalid' });
-    const { data: before } = await supabase.from('profiles').select('role').eq('id', id).maybeSingle();
-    const { error } = await supabase.from('profiles').update({ role }).eq('id', id);
+    const idv = V.uuid(id);                                  // 회원 id는 반드시 uuid 형식
+    const rv = V.oneOf(role, ALLOWED_ROLES, 'role');         // 역할은 허용 목록만
+    if (!idv.ok || !rv.ok) return res.status(400).json({ error: 'invalid' });
+    const { data: before } = await supabase.from('profiles').select('role').eq('id', idv.value).maybeSingle();
+    const { error } = await supabase.from('profiles').update({ role: rv.value }).eq('id', idv.value);
     if (error) return res.status(500).json({ error: 'update failed' });
-    await writeAudit(supabase, { actor: staff, action: 'member.role', targetTable: 'profiles', targetId: id, detail: { from: before?.role ?? null, to: role }, req });
+    await writeAudit(supabase, { actor: staff, action: 'member.role', targetTable: 'profiles', targetId: idv.value, detail: { from: before?.role ?? null, to: rv.value }, req });
     return res.status(200).json({ ok: true });
   }
 
