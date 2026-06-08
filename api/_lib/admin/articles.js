@@ -14,7 +14,8 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'server not configured' });
   const svc = createClient(process.env.SUPABASE_URL, serviceKey, { auth: { persistSession: false } });
 
-  let q = svc.from('articles').select('*').order('created_at', { ascending: false });
+  // 휴지통(soft-deleted) 글은 일반 검토 목록에서 제외. (복구는 /api/articles listTrash/restore)
+  let q = svc.from('articles').select('*').is('deleted_at', null).order('created_at', { ascending: false });
   // 칼럼니스트는 본인 글 + 게재글만, admin/editor는 전체.
   if (staff.role === 'columnist') q = q.or(`author_id.eq.${staff.id},status.eq.published`);
 

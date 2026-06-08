@@ -1258,6 +1258,8 @@ export default function App() {
   };
   const [editId,setEditId]           = useState(null);
   const [confirmDel,setConfirmDel]   = useState(null);
+  const [delPw,setDelPw]             = useState('');     // 삭제 재인증(비밀번호)
+  const [delBusy,setDelBusy]         = useState(false);
   const [user,setUser]               = useState(null);
   const [showLogin,setShowLogin]     = useState(false);
   const [loginForm,setLoginForm]     = useState({id:"",pw:""});
@@ -1750,10 +1752,12 @@ export default function App() {
     }
   };
   const doDelete=async()=>{
-    try{ await articleApi({ action:'delete', id:confirmDel }); }
-    catch(e){ alert(`삭제 실패: ${e.message}`); return; }
+    if(!delPw){ alert('삭제하려면 비밀번호를 입력하세요.'); return; }
+    setDelBusy(true);
+    try{ await articleApi({ action:'delete', id:confirmDel, confirmPassword:delPw }); }
+    catch(e){ setDelBusy(false); alert(`삭제 실패: ${e.message}`); return; }
     setArticles(prev=>prev.filter(a=>a.id!==confirmDel));
-    setConfirmDel(null); setSelected(null); setPage("home");
+    setDelBusy(false); setDelPw(''); setConfirmDel(null); setSelected(null); setPage("home");
   };
   const updateStatus=async(id,status)=>{
     try{ await articleApi({ action:'setStatus', id, status }); }
@@ -2013,13 +2017,19 @@ export default function App() {
       {/* DELETE CONFIRM */}
       {confirmDel!==null&&(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className={`rounded-2xl shadow-2xl p-7 w-72 text-center ${dark?"bg-gray-900 text-gray-100":"bg-white text-gray-900"}`}>
+          <div className={`rounded-2xl shadow-2xl p-7 w-80 text-center ${dark?"bg-gray-900 text-gray-100":"bg-white text-gray-900"}`}>
             <AlertTriangle size={36} className="text-red-500 mx-auto mb-3"/>
             <h3 className="font-bold mb-1">기사를 삭제할까요?</h3>
-            <p className="text-xs text-gray-400 mb-5">삭제한 기사는 복구할 수 없습니다.</p>
+            <p className="text-xs text-gray-400 mb-4">삭제한 기사는 휴지통으로 이동합니다. 보안을 위해 비밀번호를 다시 입력하세요.</p>
+            <input
+              type="password" value={delPw} onChange={e=>setDelPw(e.target.value)}
+              onKeyDown={e=>{ if(e.key==='Enter'&&!delBusy) doDelete(); }}
+              placeholder="비밀번호 재입력" autoFocus autoComplete="current-password"
+              className={`w-full mb-4 px-3 py-2 rounded-lg text-sm border outline-none ${dark?"bg-gray-800 border-gray-700 text-gray-100":"bg-white border-gray-300 text-gray-900"}`}
+            />
             <div className="flex gap-3">
-              <button onClick={()=>setConfirmDel(null)} className={`flex-1 py-2 rounded-lg text-sm border ${dark?"border-gray-700 text-gray-300":"border-gray-300 text-gray-600"}`}>취소</button>
-              <button onClick={doDelete} className="flex-1 py-2 rounded-lg text-sm bg-red-500 hover:bg-red-600 text-white font-medium">삭제</button>
+              <button onClick={()=>{ setConfirmDel(null); setDelPw(''); }} disabled={delBusy} className={`flex-1 py-2 rounded-lg text-sm border disabled:opacity-50 ${dark?"border-gray-700 text-gray-300":"border-gray-300 text-gray-600"}`}>취소</button>
+              <button onClick={doDelete} disabled={delBusy||!delPw} className="flex-1 py-2 rounded-lg text-sm bg-red-500 hover:bg-red-600 text-white font-medium disabled:opacity-50">{delBusy?"삭제 중…":"삭제"}</button>
             </div>
           </div>
         </div>

@@ -9,10 +9,15 @@
 //   create  : 작성 권한 보유자(아래 CAN_WRITE). status는 서버가 'pending'으로 강제.
 //   update  : 본인 글(author_id 일치) 또는 admin/editor. 내용 필드만. status/hero 변경 불가.
 //   setStatus: admin 전용. (pending|published|rejected)
-//   delete  : admin 전용.
+//   delete  : admin 전용. soft delete(휴지통) + 재인증 + 감사 로그.
+//   restore : admin 전용. 휴지통에서 복구.
+//   purge   : admin 전용. 휴지통의 글을 영구 삭제 + 재인증 + 감사 로그.
+//   listTrash: admin 전용. 휴지통 목록.
 //   setHero : admin 전용.
 import { createClient } from '@supabase/supabase-js';
 import { verifyStaffToken } from './_lib/staffToken.js';
+import { writeAudit } from './_lib/audit.js';
+import { reauthStaff } from './_lib/reauth.js';
 
 const CAN_WRITE = ['admin', 'editor', 'columnist', 'reporter'];
 const MAX_BODY_CHARS = 50000;
@@ -85,6 +90,7 @@ export default async function handler(req, res) {
       };
       const { data, error } = await svc.from('articles').insert(row).select().single();
       if (error) throw error;
+      await writeAudit(svc, { actor: principal, action: 'article.create', targetTable: 'articles', targetId: data.id, detail: { title: data.title }, req });
       return res.status(200).json({ article: data });
     }
 
@@ -94,8 +100,9 @@ export default async function handler(req, res) {
       const id = body.id;
       if (id == null) return res.status(400).json({ error: 'id required' });
 
-      const { data: existing, error: e1 } = await svc.from('articles').select('author_id').eq('id', id).single();
+      const { data: existing, error: e1 } = await svc.from('articles').select('author_id, deleted_at').eq('id', id).single();
       if (e1 || !existing) return res.status(404).json({ error: 'not found' });
+      if (existing.deleted_at) return res.status(404).json({ error: 'not found' }); // 휴지통 글은 수정 불가
 
       const owns = existing.author_id != null && String(existing.author_id) === principal.id;
       if (!owns && !isEditor) return res.status(403).json({ error: 'forbidden' });
@@ -113,6 +120,7 @@ export default async function handler(req, res) {
 
       const { data, error } = await svc.from('articles').update(patch).eq('id', id).select().single();
       if (error) throw error;
+      await writeAudit(svc, { actor: principal, action: 'article.update', targetTable: 'articles', targetId: id, detail: { fields: Object.keys(patch) }, req });
       return res.status(200).json({ article: data });
     }
 
@@ -121,19 +129,68 @@ export default async function handler(req, res) {
       if (!isAdmin) return res.status(403).json({ error: 'forbidden' });
       const { id, status } = body;
       if (id == null || !VALID_STATUS.includes(status)) return res.status(400).json({ error: 'invalid' });
-      const { data, error } = await svc.from('articles').update({ status }).eq('id', id).select().single();
+      const { data, error } = await svc.from('articles').update({ status }).eq('id', id).is('deleted_at', null).select().single();
       if (error) throw error;
+      if (!data) return res.status(404).json({ error: 'not found' });
+      await writeAudit(svc, { actor: principal, action: 'article.setStatus', targetTable: 'articles', targetId: id, detail: { status }, req });
       return res.status(200).json({ article: data });
     }
 
-    // ── 삭제 — admin 전용 ────────────────────────────────
+    // ── 삭제(휴지통으로 이동) — admin 전용 + 재인증 ───────
+    // hard delete 대신 deleted_at 표시(soft delete). 공격자/실수로 인한 영구 소실 방지.
     if (action === 'delete') {
+      if (!isAdmin) return res.status(403).json({ error: 'forbidden' });
+      const { id, confirmPassword } = body;
+      if (id == null) return res.status(400).json({ error: 'id required' });
+      // 민감 작업 재인증(2단계): 현재 비밀번호 재확인
+      if (!(await reauthStaff(svc, principal, confirmPassword)))
+        return res.status(401).json({ error: 'reauth_required', message: '삭제하려면 비밀번호를 다시 입력하세요.' });
+      const { data: row, error } = await svc.from('articles')
+        .update({ deleted_at: new Date().toISOString(), deleted_by: principal.id })
+        .eq('id', id).is('deleted_at', null).select().single();
+      if (error) throw error;
+      if (!row) return res.status(404).json({ error: 'not found' });
+      await writeAudit(svc, { actor: principal, action: 'article.delete', targetTable: 'articles', targetId: id, detail: { title: row.title }, req });
+      return res.status(200).json({ ok: true, softDeleted: true });
+    }
+
+    // ── 휴지통 목록 — admin 전용 ─────────────────────────
+    if (action === 'listTrash') {
+      if (!isAdmin) return res.status(403).json({ error: 'forbidden' });
+      const { data, error } = await svc.from('articles').select('*')
+        .not('deleted_at', 'is', null).order('deleted_at', { ascending: false });
+      if (error) throw error;
+      return res.status(200).json({ articles: data || [] });
+    }
+
+    // ── 복구(휴지통 → 복원) — admin 전용 ─────────────────
+    if (action === 'restore') {
       if (!isAdmin) return res.status(403).json({ error: 'forbidden' });
       const { id } = body;
       if (id == null) return res.status(400).json({ error: 'id required' });
+      const { data: row, error } = await svc.from('articles')
+        .update({ deleted_at: null, deleted_by: null })
+        .eq('id', id).not('deleted_at', 'is', null).select().single();
+      if (error) throw error;
+      if (!row) return res.status(404).json({ error: 'not found' });
+      await writeAudit(svc, { actor: principal, action: 'article.restore', targetTable: 'articles', targetId: id, detail: { title: row.title }, req });
+      return res.status(200).json({ ok: true, article: row });
+    }
+
+    // ── 영구 삭제 — admin 전용 + 재인증. 휴지통에 있는 글만 ──
+    if (action === 'purge') {
+      if (!isAdmin) return res.status(403).json({ error: 'forbidden' });
+      const { id, confirmPassword } = body;
+      if (id == null) return res.status(400).json({ error: 'id required' });
+      if (!(await reauthStaff(svc, principal, confirmPassword)))
+        return res.status(401).json({ error: 'reauth_required', message: '영구 삭제하려면 비밀번호를 다시 입력하세요.' });
+      const { data: existing } = await svc.from('articles').select('title, deleted_at').eq('id', id).single();
+      if (!existing) return res.status(404).json({ error: 'not found' });
+      if (!existing.deleted_at) return res.status(400).json({ error: '먼저 휴지통으로 이동해야 영구 삭제할 수 있습니다.' });
       const { error } = await svc.from('articles').delete().eq('id', id);
       if (error) throw error;
-      return res.status(200).json({ ok: true });
+      await writeAudit(svc, { actor: principal, action: 'article.purge', targetTable: 'articles', targetId: id, detail: { title: existing.title }, req });
+      return res.status(200).json({ ok: true, purged: true });
     }
 
     // ── 헤드라인 지정 — admin 전용 ───────────────────────
@@ -142,12 +199,13 @@ export default async function handler(req, res) {
       const { id, value } = body;
       if (id == null) return res.status(400).json({ error: 'id required' });
       if (value) {
-        // 헤드라인은 게재글 중 하나만 — 기존 헤드라인 해제 후 지정
-        await svc.from('articles').update({ hero: false }).eq('status', 'published');
-        await svc.from('articles').update({ hero: true }).eq('id', id);
+        // 헤드라인은 게재글 중 하나만 — 기존 헤드라인 해제 후 지정 (휴지통 글 제외)
+        await svc.from('articles').update({ hero: false }).eq('status', 'published').is('deleted_at', null);
+        await svc.from('articles').update({ hero: true }).eq('id', id).is('deleted_at', null);
       } else {
         await svc.from('articles').update({ hero: false }).eq('id', id);
       }
+      await writeAudit(svc, { actor: principal, action: 'article.setHero', targetTable: 'articles', targetId: id, detail: { value: !!value }, req });
       return res.status(200).json({ ok: true });
     }
 

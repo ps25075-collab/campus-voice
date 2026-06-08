@@ -2,6 +2,7 @@
 // anon/회원의 직접 삭제는 RLS로 차단되므로 삭제는 이 엔드포인트로만 수행된다.
 import { createClient } from '@supabase/supabase-js';
 import { requireStaff } from './_lib/staffToken.js';
+import { writeAudit } from './_lib/audit.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
@@ -22,6 +23,7 @@ export default async function handler(req, res) {
     // 해당 댓글과 그 답글(parent_id)을 함께 삭제
     const { error } = await svc.from('comments').delete().or(`id.eq.${cid},parent_id.eq.${cid}`);
     if (error) return res.status(500).json({ error: error.message });
+    await writeAudit(svc, { actor: staff, action: 'comment.delete', targetTable: 'comments', targetId: cid, req });
     return res.status(200).json({ ok: true });
   }
 
