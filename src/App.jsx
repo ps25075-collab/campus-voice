@@ -623,15 +623,19 @@ function LikeButton({ articleId, user, dark }) {
   const [count, setCount]   = useState(0);
   const [bounce, setBounce] = useState(false);
   const userKey = user ? (user.isMember ? user.id : `staff:${user.id}`) : getAnonId();
+  // 회원만 세션 클라이언트(JWT)로 본인 좋아요 행(auth.uid)을 조회/기록한다(RLS al_member_*).
+  // 익명·스태프(및 로그아웃 후 localStorage에 만료 JWT가 남은 경우)는 supabasePublic(anon 키)로 →
+  // 만료 JWT가 요청에 붙어 401이 나던 문제를 차단. (supabase.js의 supabasePublic 도입 취지와 동일)
+  const db = user?.isMember ? supabase : supabasePublic;
 
   useEffect(()=>{
     (async()=>{
       try{
-        const { data } = await supabase.from('articles').select('like_count').eq('id', articleId).single();
+        const { data } = await db.from('articles').select('like_count').eq('id', articleId).single();
         if(data) setCount(data.like_count || 0);
       }catch{}
       try{
-        const { data } = await supabase.from('article_likes')
+        const { data } = await db.from('article_likes')
           .select('article_id').eq('user_id', userKey).eq('article_id', articleId).maybeSingle();
         setLiked(!!data);
       }catch{}
@@ -639,15 +643,26 @@ function LikeButton({ articleId, user, dark }) {
   },[articleId, userKey]);
 
   const toggle = async () => {
+    const prevLiked = liked, prevCount = count;
     const newLiked = !liked;
     const newCount = newLiked ? count+1 : Math.max(0, count-1);
     setLiked(newLiked); setCount(newCount);
     if(newLiked){ setBounce(true); setTimeout(()=>setBounce(false),400); }
-    try{ await supabase.from('articles').update({ like_count: newCount }).eq('id', articleId); }catch{}
+    // 좋아요 본체(article_likes)를 먼저 기록 — 실패하면 화면을 원복하고 알린다(조용히 삼키지 않음).
+    let err = null;
     try{
-      if(newLiked) await supabase.from('article_likes').insert({ user_id:userKey, article_id:articleId });
-      else await supabase.from('article_likes').delete().eq('user_id', userKey).eq('article_id', articleId);
-    }catch{}
+      const r = newLiked
+        ? await db.from('article_likes').insert({ user_id:userKey, article_id:articleId })
+        : await db.from('article_likes').delete().eq('user_id', userKey).eq('article_id', articleId);
+      err = r?.error || null;
+    }catch(e){ err = e; }
+    if(err){
+      setLiked(prevLiked); setCount(prevCount);
+      alert('좋아요 저장에 실패했어요. 로그인이 만료됐을 수 있으니 새로고침 후 다시 시도해주세요.');
+      return;
+    }
+    // 표시용 카운터 동기화(부가) — 실패해도 본인 좋아요는 이미 저장됨.
+    try{ await db.from('articles').update({ like_count: newCount }).eq('id', articleId); }catch{}
   };
 
   return (
@@ -682,12 +697,14 @@ function CommentSection({ articleId, user, dark }) {
   const card = dark ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200";
   const inp  = dark ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" : "bg-white border-gray-300 placeholder-gray-400";
   const sub  = dark ? "text-gray-400" : "text-gray-500";
+  // 비회원/스태프(및 로그아웃 후 만료 JWT 잔존)는 anon 키로 → 만료 JWT 첨부 401 방지. (LikeButton과 동일 방침)
+  const db = user?.isMember ? supabase : supabasePublic;
 
   useEffect(()=>{
     (async()=>{
       setLoading(true);
       try{
-        const { data } = await supabase.from("comments").select("*")
+        const { data } = await db.from("comments").select("*")
           .eq("article_id", articleId).order("created_at",{ascending:true});
         setComments(data||[]);
       }catch{ setComments([]); }
@@ -706,13 +723,13 @@ function CommentSection({ articleId, user, dark }) {
     const newIds   = already ? likedIds.filter(i=>i!==cmt.id) : [...likedIds, cmt.id];
     setComments(prev => prev.map(c => c.id===cmt.id ? {...c, likes:newLikes} : c));
     saveLikes(newIds);
-    try{ await supabase.from("comments").update({likes:newLikes}).eq("id",cmt.id); }catch{}
+    try{ await db.from("comments").update({likes:newLikes}).eq("id",cmt.id); }catch{}
   };
 
   const submitComment = async () => {
     if(!text.trim()) return;
     const newC = { article_id:articleId, name:(user?.name||name.trim()||"익명"), text:text.trim(), date:today(), parent_id:null, likes:0 };
-    const { data } = await supabase.from("comments").insert(newC).select().single();
+    const { data } = await db.from("comments").insert(newC).select().single();
     if(data) setComments(prev=>[...prev, data]);
     setName(""); setText("");
   };
@@ -720,7 +737,7 @@ function CommentSection({ articleId, user, dark }) {
   const submitReply = async () => {
     if(!replyText.trim()||!replyTo) return;
     const newC = { article_id:articleId, name:(user?.name||replyName.trim()||"익명"), text:replyText.trim(), date:today(), parent_id:replyTo.id, likes:0 };
-    const { data } = await supabase.from("comments").insert(newC).select().single();
+    const { data } = await db.from("comments").insert(newC).select().single();
     if(data) setComments(prev=>[...prev, data]);
     setReplyTo(null); setReplyText(""); setReplyName("");
   };
@@ -832,7 +849,7 @@ function CommentSection({ articleId, user, dark }) {
 }
 
 /* ── 건의함 ── */
-function SuggestionBox({ user, dark, onRequireLogin }) {
+function SuggestionBox({ user, dark, onRequireLogin, onSessionExpired }) {
   const SC = useContext(SCContext);
   const [open, setOpen]         = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
@@ -846,6 +863,8 @@ function SuggestionBox({ user, dark, onRequireLogin }) {
   const loadSuggestions = async () => {
     try{
       const res = await fetch('/api/admin/suggestions', { headers: user?.token ? { Authorization:`Bearer ${user.token}` } : {} });
+      // 스태프 토큰(12시간) 만료 → 401. 빈 목록으로 오인하지 않도록 만료 처리(재로그인 유도).
+      if(res.status === 401){ setSuggestions([]); setViewOpen(false); onSessionExpired?.(); return; }
       if(!res.ok){ setSuggestions([]); return; }
       const { suggestions:list } = await res.json();
       setSuggestions(list || []);
@@ -859,7 +878,8 @@ function SuggestionBox({ user, dark, onRequireLogin }) {
     if(!form.content.trim()) return;
     const newItem = { name: user.name, content: form.content.trim(), date: today() };   // 로그인 실명으로 고정
     // SELECT는 RLS로 막혀 있으므로 .select() 없이 INSERT만 (반환 불필요)
-    const { error } = await supabase.from('suggestions').insert(newItem);
+    // 건의는 익명 INSERT가 허용된 테이블 → 항상 supabasePublic(anon)로 전송해 만료 JWT 첨부 401을 차단.
+    const { error } = await supabasePublic.from('suggestions').insert(newItem);
     if(error){ alert('건의 전송에 실패했습니다. 다시 시도해주세요.'); return; }
     setForm({content:""});
     setSent(true); setTimeout(()=>{ setSent(false); setOpen(false); },2000);
@@ -2759,7 +2779,8 @@ export default function App() {
         </div>
       </footer>
 
-      <SuggestionBox user={user} dark={dark} onRequireLogin={()=>setShowLogin(true)}/>
+      <SuggestionBox user={user} dark={dark} onRequireLogin={()=>setShowLogin(true)}
+        onSessionExpired={()=>{ try{ localStorage.removeItem("cv_user"); }catch{} setUser(null); alert('로그인 세션이 만료되었습니다. 다시 로그인해주세요.'); setShowLogin(true); }}/>
     </div>
     </SCContext.Provider>
   );
