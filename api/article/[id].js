@@ -8,6 +8,7 @@ import {
   injectIntoRoot,
   SSR_STYLE,
 } from '../_lib/ssr.js';
+import { V } from '../_lib/validate.js';
 
 // 기사 상세 페이지의 서버 사이드 렌더링.
 //  - <head> 메타태그(title/description/canonical/OG/Twitter)를 기사에 맞게 교체
@@ -15,7 +16,9 @@ import {
 //  - #root에 기사 본문 HTML 주입  ← 네이버·빙 같은 비(非)JS 크롤러가 본문을 읽게 함
 // 매 요청 시 Supabase에서 최신 데이터를 읽으므로 항상 최신 상태가 색인된다.
 export default async function handler(req, res) {
-  const id = (req.query && req.query.id) || (req.url || '').split('/').filter(Boolean).pop();
+  const rawId = (req.query && req.query.id) || (req.url || '').split('/').filter(Boolean).pop();
+  // id는 반드시 양의 정수 — 잘못된 입력(객체/문자열 등)이 쿼리 계층으로 흐르지 않게 한다.
+  const idv = V.intId(rawId);
 
   // 1) 깨끗한 정적 템플릿 로드
   let html;
@@ -26,9 +29,9 @@ export default async function handler(req, res) {
     return;
   }
 
-  // 2) 기사 조회 (게재된 글만)
+  // 2) 기사 조회 (게재된 글만) — 유효한 정수 id일 때만 조회
   let article = null;
-  try {
+  if (idv.ok) try {
     const supabase = createClient(
       process.env.VITE_SUPABASE_URL,
       process.env.VITE_SUPABASE_ANON_KEY
@@ -36,7 +39,7 @@ export default async function handler(req, res) {
     const { data } = await supabase
       .from('articles')
       .select('*')
-      .eq('id', id)
+      .eq('id', idv.value)
       .eq('status', 'published')
       .single();
     article = data;
@@ -49,7 +52,7 @@ export default async function handler(req, res) {
       article.image && /^https?:/.test(article.image)
         ? article.image
         : `${BASE}/icon-512.png`;
-    const url = `${BASE}/article/${id}`;
+    const url = `${BASE}/article/${article.id}`;
     const T = escapeHtml(title);
     const D = escapeHtml(desc);
     const U = escapeHtml(url);

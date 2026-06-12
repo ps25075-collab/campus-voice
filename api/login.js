@@ -1,6 +1,7 @@
 import { getAdminClient } from '../lib/supabaseAdmin.js';
 import { verifyPassword } from '../lib/password.js';
 import { signStaffToken } from './_lib/staffToken.js';
+import { V } from './_lib/validate.js';
 
 const MAX_ATTEMPTS = 10;
 const WINDOW_SECONDS = 15 * 60; // 15분
@@ -32,8 +33,11 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: '너무 많은 로그인 시도입니다. 잠시 후 다시 시도해주세요.' });
   }
 
-  const { username, password } = req.body || {};
-  if (!username || !password) return res.status(400).json({ error: 'invalid' });
+  // 타입·형식 강제: 문자열이 아니면(객체/배열/연산자 주입 시도) 즉시 거부 → 쿼리 계층 보호.
+  const uv = V.str((req.body || {}).username, { min: 1, max: 64, field: 'username' });
+  const pv = V.str((req.body || {}).password, { min: 1, max: 200, trim: false, field: 'password' });
+  if (!uv.ok || !pv.ok) return res.status(400).json({ error: 'invalid' });
+  const username = uv.value, password = pv.value;
 
   // 2) 계정 조회 (비밀번호 해시는 service_role 로만 접근 가능 — anon 노출 차단)
   const { data: user } = await supabase

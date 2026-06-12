@@ -2,6 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { requireStaff } from '../staffToken.js';
 import { writeAudit } from '../audit.js';
+import { V } from '../validate.js';
 
 export default async function handler(req, res) {
   const staff = requireStaff(req, ['admin']); // 구독자 관리는 관리자만
@@ -19,11 +20,12 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'DELETE') {
-    const id = (req.query && req.query.id) || (req.body && req.body.id);
-    if (!id) return res.status(400).json({ error: 'id required' });
-    const { error } = await supabase.from('subscribers').delete().eq('id', id);
+    // id는 반드시 양의 정수 — 객체/배열/연산자 등 비정상 타입을 쿼리에 넘기지 않는다.
+    const idv = V.intId((req.query && req.query.id) ?? (req.body && req.body.id));
+    if (!idv.ok) return res.status(400).json({ error: 'invalid id' });
+    const { error } = await supabase.from('subscribers').delete().eq('id', idv.value);
     if (error) return res.status(500).json({ error: 'delete failed' });
-    await writeAudit(supabase, { actor: staff, action: 'subscriber.delete', targetTable: 'subscribers', targetId: id, req });
+    await writeAudit(supabase, { actor: staff, action: 'subscriber.delete', targetTable: 'subscribers', targetId: idv.value, req });
     return res.status(200).json({ ok: true });
   }
 
