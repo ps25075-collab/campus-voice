@@ -8,13 +8,14 @@ const today = () => {
   return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;
 };
 
-const CATEGORIES  = ["전체","긴급","경제","문화","기술"];
-const catColor    = { 긴급:"bg-red-600", 경제:"bg-blue-600", 문화:"bg-pink-500", 기술:"bg-emerald-600" };
+const CATEGORIES  = ["전체","긴급","경제","문화","기술","선거"];
+const catColor    = { 긴급:"bg-red-600", 경제:"bg-blue-600", 문화:"bg-pink-500", 기술:"bg-emerald-600", 선거:"bg-purple-600" };
 const typeColor   = { 기사:"bg-slate-600", 칼럼:"bg-amber-500" };
 const catGradient = {
   경제:"linear-gradient(135deg,#1e3a8a,#3b82f6)",
   문화:"linear-gradient(135deg,#831843,#ec4899)",
   기술:"linear-gradient(135deg,#064e3b,#10b981)",
+  선거:"linear-gradient(135deg,#581c87,#a855f7)",
   긴급:"linear-gradient(135deg,#7f1d1d,#ef4444)",
 };
 const SC  = "#1a6b3c";
@@ -156,7 +157,7 @@ const memberRoleLabel = { pending:"승인 대기", reporter:"기자 승인됨", 
 const memberRoleStyle = { pending:"bg-yellow-100 text-yellow-700", reporter:"bg-blue-100 text-blue-700", columnist:"bg-green-100 text-green-700", rejected:"bg-red-100 text-red-600" };
 
 /* ── 이미지 컴포넌트 ── */
-const CAT_EMOJI = { 긴급:"⚠️", 경제:"💰", 문화:"🎨", 기술:"💡" };
+const CAT_EMOJI = { 긴급:"⚠️", 경제:"💰", 문화:"🎨", 기술:"💡", 선거:"🗳️" };
 function ArticleImage({ image, category, title, priority=false, className="", style={} }) {
   const [failed, setFailed] = useState(false);
   const show = image && !failed;
@@ -1097,7 +1098,7 @@ function SearchDropdown({ results, query, onSelect, onViewAll, dark }) {
   const itm = dark ? "hover:bg-gray-800" : "hover:bg-gray-50";
   const sub = dark ? "text-gray-400" : "text-gray-500";
 
-  const catColor = { 긴급:"bg-red-600", 경제:"bg-blue-600", 문화:"bg-pink-500", 기술:"bg-emerald-600" };
+  const catColor = { 긴급:"bg-red-600", 경제:"bg-blue-600", 문화:"bg-pink-500", 기술:"bg-emerald-600", 선거:"bg-purple-600" };
 
   return (
     <div className={"absolute top-full left-0 right-0 z-50 border-b shadow-xl " + bg}>
@@ -2572,7 +2573,7 @@ export default function App() {
               ))}
             </div>
 
-            {urgent.length>0&&activeCategory!=="경제"&&activeCategory!=="문화"&&activeCategory!=="기술"&&!search&&(
+            {urgent.length>0&&activeCategory!=="경제"&&activeCategory!=="문화"&&activeCategory!=="기술"&&activeCategory!=="선거"&&!search&&(
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="animate-pulse inline-block w-2 h-2 rounded-full bg-red-500"></span>
