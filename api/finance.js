@@ -2,6 +2,9 @@ const ALLOWED_ORIGIN = process.env.SITE_URL || 'https://campus-voice-green-gamma
 
 const YF_HEADERS = { headers: { 'User-Agent': 'Mozilla/5.0' } };
 
+// 야후 차트 API 호스트. 한쪽이 429·차단될 때 다른 쪽이 응답하는 경우가 많아 순차로 시도한다.
+const YF_HOSTS = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com'];
+
 // 기준금리 API(한국은행 ECOS) 미설정 시 사용할 최후 폴백값
 const RATE_FALLBACK = '2.75%';
 
@@ -12,15 +15,22 @@ function calcChange(closes) {
   return { cur, change: (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%' };
 }
 
-// 야후 비공식 API는 한국 IP에서 간헐적으로 차단되므로, 하나가 실패해도
-// 나머지 지표는 응답하도록 지표별로 개별 파싱한다.
-async function fetchIndex(url) {
-  const res = await fetch(url, YF_HEADERS);
-  if (!res.ok) throw new Error('bad status');
-  const json = await res.json();
-  const closes = json.chart.result[0].indicators.quote[0].close.filter(Boolean);
-  if (closes.length < 2) throw new Error('not enough data');
-  return calcChange(closes);
+// 야후 비공식 API는 한국/특정 IP에서 간헐적으로 차단(429 등)되므로,
+// query1·query2 두 호스트를 순차로 시도해 한 지표가 통째로 사라지는 일을 줄인다.
+// (지표별 개별 파싱은 유지 — 하나가 끝내 실패해도 나머지는 응답)
+async function fetchIndex(symbol) {
+  let lastErr;
+  for (const host of YF_HOSTS) {
+    try {
+      const res = await fetch(`https://${host}/v8/finance/chart/${symbol}?interval=1d&range=2d`, YF_HEADERS);
+      if (!res.ok) throw new Error('bad status ' + res.status);
+      const json = await res.json();
+      const closes = json.chart.result[0].indicators.quote[0].close.filter(Boolean);
+      if (closes.length < 2) throw new Error('not enough data');
+      return calcChange(closes);
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr;
 }
 
 async function fetchUsdKrw() {
@@ -61,12 +71,12 @@ export default async function handler(req, res) {
 
   const [usdkrw, kospi, kosdaq, nasdaq, sp500, dow, oil, rate] = await Promise.allSettled([
     fetchUsdKrw(),
-    fetchIndex('https://query1.finance.yahoo.com/v8/finance/chart/%5EKS11?interval=1d&range=2d'),
-    fetchIndex('https://query1.finance.yahoo.com/v8/finance/chart/%5EKQ11?interval=1d&range=2d'),
-    fetchIndex('https://query1.finance.yahoo.com/v8/finance/chart/%5EIXIC?interval=1d&range=2d'),
-    fetchIndex('https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&range=2d'),
-    fetchIndex('https://query1.finance.yahoo.com/v8/finance/chart/%5EDJI?interval=1d&range=2d'),
-    fetchIndex('https://query1.finance.yahoo.com/v8/finance/chart/CL%3DF?interval=1d&range=2d'),
+    fetchIndex('%5EKS11'),  // 코스피
+    fetchIndex('%5EKQ11'),  // 코스닥
+    fetchIndex('%5EIXIC'),  // 나스닥
+    fetchIndex('%5EGSPC'),  // S&P 500
+    fetchIndex('%5EDJI'),   // 다우존스
+    fetchIndex('CL%3DF'),   // WTI 원유
     fetchBaseRate(),
   ]);
 
@@ -88,7 +98,11 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Vercel 엣지 캐시: 야후 일시 차단 시에도 직전 데이터를 제공(stale-while-revalidate)
-  res.setHeader('Cache-Control', 's-maxage=120, stale-while-revalidate=600');
+  // 부분 응답(일부 지표 누락)이 엣지에 오래 고정돼 빈 칸이 지속되는 것을 막는다.
+  // 완전한 응답만 길게 캐시하고, 누락이 있으면 짧게만 캐시해 곧 다시 채운다.
+  const gotAll = ['usdkrw', 'kospi', 'kosdaq', 'nasdaq', 'sp500', 'dow', 'oil'].every(k => out[k] != null);
+  res.setHeader('Cache-Control', gotAll
+    ? 's-maxage=120, stale-while-revalidate=600'   // 완전: 직전 데이터 stale 제공
+    : 's-maxage=15, stale-while-revalidate=30');    // 불완전: 짧게만 — 빠르게 자가 회복
   res.status(200).json(out);
 }

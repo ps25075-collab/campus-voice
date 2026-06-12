@@ -277,16 +277,23 @@ function FinancePanel({ dark }) {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(false);
 
-  const fetchData = async () => {
-    setLoading(true); setError(false);
+  const fetchData = async (attempt=0) => {
+    if (attempt===0){ setLoading(true); setError(false); }
     try {
-      const res = await fetch('/api/finance');
+      // 재시도는 쿼리스트링으로 엣지 캐시를 우회해 '신선한' 응답을 받는다(부분 응답 고정 방지).
+      const url = attempt===0 ? '/api/finance' : `/api/finance?r=${attempt}&t=${Date.now()}`;
+      const res = await fetch(url);
       if (!res.ok) throw new Error();
       const json = await res.json();
       if (json.error) throw new Error();
-      setData(json);
-    } catch { setError(true); }
-    setLoading(false);
+      setData(json); setLoading(false);
+      // 주가 지수 중 누락이 있으면(야후 일시 차단) 백그라운드로 한 번 더 시도(최대 2회).
+      const missing = ['kospi','kosdaq','nasdaq','sp500','dow'].some(k => json[k]==null);
+      if (missing && attempt < 2) setTimeout(()=>fetchData(attempt+1), 4000);
+    } catch {
+      if (attempt===0) setError(true);
+      setLoading(false);
+    }
   };
 
   useEffect(()=>{ fetchData(); },[]);
@@ -314,7 +321,7 @@ function FinancePanel({ dark }) {
         <span className={`text-xs md:text-sm font-bold flex items-center gap-1.5 ${sub}`}>
           <RefreshCw size={13}/> 실시간 금융 지표
         </span>
-        <button onClick={fetchData} className={`transition-colors ${dark?"text-gray-600 hover:text-gray-300":"text-gray-300 hover:text-gray-600"}`} title="새로고침">
+        <button onClick={()=>fetchData()} className={`transition-colors ${dark?"text-gray-600 hover:text-gray-300":"text-gray-300 hover:text-gray-600"}`} title="새로고침">
           <RefreshCw size={15}/>
         </button>
       </div>
