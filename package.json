@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/inject-home.mjs",
+    "build": "vite build && node scripts/inject-home.mjs && node scripts/check-bundle-secrets.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
