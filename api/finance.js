@@ -1,4 +1,16 @@
+import { createClient } from '@supabase/supabase-js';
+
 const ALLOWED_ORIGIN = process.env.SITE_URL || 'https://campus-voice-green-gamma.vercel.app';
+
+// 지표가 모두 채워졌는지 판정하는 데 쓰는 키(원자재·환율 포함). _change 는 부속 필드.
+const INDEX_KEYS = ['usdkrw', 'kospi', 'kosdaq', 'nasdaq', 'sp500', 'dow', 'oil'];
+
+// last-known-good 캐시용 service_role 클라이언트. 환경변수 미설정 시 null → 폴백 없이 기존 동작 유지.
+function getServiceClient() {
+  const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key, { auth: { persistSession: false } });
+}
 
 const YF_HEADERS = { headers: { 'User-Agent': 'Mozilla/5.0' } };
 
@@ -91,18 +103,35 @@ export default async function handler(req, res) {
   if (ok(oil))    { out.oil    = oil.value.cur.toFixed(2);    out.oil_change    = oil.value.change; }
   out.rate = ok(rate) ? rate.value : RATE_FALLBACK;
 
-  // 지표를 하나도 못 받은 경우에만 실패 처리
-  const gotAny = Object.keys(out).some(k => k !== 'rate');
-  if (!gotAny) {
+  const freshComplete = INDEX_KEYS.every(k => out[k] != null);
+  const gotAnyFresh   = INDEX_KEYS.some(k => out[k] != null);
+
+  // last-known-good 병합: 신선값이 누락된 지표는 DB의 직전 정상값으로 채운다.
+  // (market_cache 테이블이 없거나 DB가 실패해도 무시하고 기존 동작 유지)
+  let merged = out;
+  try {
+    const sb = getServiceClient();
+    if (sb) {
+      if (!freshComplete) {
+        const { data: snap } = await sb.from('market_cache').select('data').eq('id', 'latest').maybeSingle();
+        if (snap?.data) merged = { ...snap.data, ...out };  // 신선값 우선, 빈 곳만 직전값으로 보충
+      }
+      // 새로 받은 지표가 있을 때만 스냅샷 갱신 — 빈 응답으로 직전 정상값을 덮어쓰지 않는다.
+      if (gotAnyFresh) {
+        await sb.from('market_cache').upsert({ id: 'latest', data: merged, updated_at: new Date().toISOString() });
+      }
+    }
+  } catch { /* DB 미구성/일시 실패 → 폴백 없이 진행 */ }
+
+  // 신선값도 없고 직전 정상값도 없을 때만 진짜 실패 처리
+  if (!INDEX_KEYS.some(k => merged[k] != null)) {
     res.status(500).json({ error: 'fetch failed' });
     return;
   }
 
-  // 부분 응답(일부 지표 누락)이 엣지에 오래 고정돼 빈 칸이 지속되는 것을 막는다.
-  // 완전한 응답만 길게 캐시하고, 누락이 있으면 짧게만 캐시해 곧 다시 채운다.
-  const gotAll = ['usdkrw', 'kospi', 'kosdaq', 'nasdaq', 'sp500', 'dow', 'oil'].every(k => out[k] != null);
-  res.setHeader('Cache-Control', gotAll
-    ? 's-maxage=120, stale-while-revalidate=600'   // 완전: 직전 데이터 stale 제공
-    : 's-maxage=15, stale-while-revalidate=30');    // 불완전: 짧게만 — 빠르게 자가 회복
-  res.status(200).json(out);
+  // 완전한 신선 응답만 길게 캐시, 일부라도 폴백/누락이면 짧게 캐시해 곧 다시 채운다.
+  res.setHeader('Cache-Control', freshComplete
+    ? 's-maxage=120, stale-while-revalidate=600'
+    : 's-maxage=15, stale-while-revalidate=600');
+  res.status(200).json(merged);
 }
