@@ -1,0 +1,39 @@
+name: ci
+
+# 공급망/무결성 게이트: 푸시·PR마다
+#  1) npm ci 로 package-lock.json 무결성(integrity 해시) 강제 — 잠긴 버전만 설치
+#  2) npm audit 로 런타임(prod) 고위험 취약점이 있으면 실패
+#  3) 빌드가 깨지지 않는지 확인 + 번들에 서버 시크릿이 섞이지 않았는지 스캔
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # lockfile과 정확히 일치하는 의존성만 설치(무결성 검증). 불일치 시 실패.
+      - name: Install (locked)
+        run: npm ci
+
+      # 런타임(prod) 의존성의 high 이상 취약점이 있으면 CI 실패.
+      # dev 의존성(vite/esbuild dev 서버 등 배포물에 포함 안 됨)은 제외.
+      - name: Audit (production deps)
+        run: npm audit --omit=dev --audit-level=high
+
+      # 빌드 컴파일 확인(SSR 주입 단계는 Supabase 시크릿이 필요하므로 vite build만 수행)
+      - name: Build
+        run: npx vite build
+
+      # 빌드 산출물에 service_role 키 등 서버 시크릿이 들어갔는지 스캔
+      - name: Scan bundle for secrets
+        run: node scripts/check-bundle-secrets.mjs

@@ -20,6 +20,7 @@ import { writeAudit } from './_lib/audit.js';
 import { reauthStaff } from './_lib/reauth.js';
 import { V } from './_lib/validate.js';
 import { guardMutation } from './_lib/csrf.js';
+import { checkMassDeletion } from './_lib/alert.js';
 
 const CAN_WRITE = ['admin', 'editor', 'columnist', 'reporter'];
 const MAX_BODY_CHARS = 50000;
@@ -172,6 +173,7 @@ export default async function handler(req, res) {
       if (error) throw error;
       if (!row) return res.status(404).json({ error: 'not found' });
       await writeAudit(svc, { actor: principal, action: 'article.delete', targetTable: 'articles', targetId: id, detail: { title: row.title }, req });
+      await checkMassDeletion(svc, { actor: principal, action: 'article.delete', req });
       return res.status(200).json({ ok: true, softDeleted: true });
     }
 
@@ -207,6 +209,7 @@ export default async function handler(req, res) {
       const { error } = await svc.from('articles').delete().eq('id', id);
       if (error) throw error;
       await writeAudit(svc, { actor: principal, action: 'article.purge', targetTable: 'articles', targetId: id, detail: { title: existing.title }, req });
+      await checkMassDeletion(svc, { actor: principal, action: 'article.purge', req });
       return res.status(200).json({ ok: true, purged: true });
     }
 

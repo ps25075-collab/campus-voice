@@ -6,6 +6,7 @@ import { writeAudit } from './_lib/audit.js';
 import { V } from './_lib/validate.js';
 import { pgValue } from './_lib/pgrest.js';
 import { guardMutation } from './_lib/csrf.js';
+import { checkMassDeletion } from './_lib/alert.js';
 
 export default async function handler(req, res) {
   if (guardMutation(req, res)) return; // CSRF: preflight 처리 + 교차 출처 차단
@@ -30,6 +31,7 @@ export default async function handler(req, res) {
     const { error } = await svc.from('comments').delete().or(`id.eq.${pgValue(cid)},parent_id.eq.${pgValue(cid)}`);
     if (error) { console.error('[comments] delete error:', error.message); return res.status(500).json({ error: 'delete failed' }); }
     await writeAudit(svc, { actor: staff, action: 'comment.delete', targetTable: 'comments', targetId: cid, req });
+    await checkMassDeletion(svc, { actor: staff, action: 'comment.delete', req });
     return res.status(200).json({ ok: true });
   }
 

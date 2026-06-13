@@ -1,0 +1,26 @@
+# 의존성 자동 업데이트 + 취약점 패치 PR(공급망 공격 방어).
+# npm(런타임/빌드 의존성)과 GitHub Actions(워크플로 핀)를 주기적으로 점검한다.
+version: 2
+updates:
+  # npm 패키지 — 매주 보안/버전 업데이트 PR 생성
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      # 마이너/패치는 한 PR로 묶어 리뷰 부담을 줄인다(메이저는 개별 PR).
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+    commit-message:
+      prefix: "deps"
+
+  # GitHub Actions 워크플로에서 쓰는 액션 버전도 최신/보안 패치 유지
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "ci"

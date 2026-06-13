@@ -2,6 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { requireStaff } from '../staffToken.js';
 import { writeAudit } from '../audit.js';
+import { checkMassDeletion } from '../alert.js';
 import { V } from '../validate.js';
 
 export default async function handler(req, res) {
@@ -26,6 +27,7 @@ export default async function handler(req, res) {
     const { error } = await supabase.from('subscribers').delete().eq('id', idv.value);
     if (error) return res.status(500).json({ error: 'delete failed' });
     await writeAudit(supabase, { actor: staff, action: 'subscriber.delete', targetTable: 'subscribers', targetId: idv.value, req });
+    await checkMassDeletion(supabase, { actor: staff, action: 'subscriber.delete', req });
     return res.status(200).json({ ok: true });
   }
 
