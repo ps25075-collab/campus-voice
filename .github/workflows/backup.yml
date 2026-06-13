@@ -19,7 +19,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 22   # @supabase/supabase-js는 native WebSocket 필요(Node 20엔 없음)
           cache: npm
 
       - name: Install (locked)

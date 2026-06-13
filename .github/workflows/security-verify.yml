@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22   # @supabase/supabase-js는 native WebSocket 필요(Node 20엔 없음)
           cache: npm
       - run: npm ci
       - name: Verify live DB security posture
