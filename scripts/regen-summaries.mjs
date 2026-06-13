@@ -3,9 +3,13 @@
 // RLS 비활성 상태라 anon 키로 read/write 가능. (변경 전/후를 콘솔에 출력)
 import { createClient } from '@supabase/supabase-js';
 
-const url = process.env.VITE_SUPABASE_URL || 'https://fayxycakxbkglcywhyei.supabase.co';
-const key = process.env.VITE_SUPABASE_ANON_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZheXh5Y2FreGJrZ2xjeXdoeWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyODM3MzYsImV4cCI6MjA5NDg1OTczNn0.03Mqbid979nlXB-IhuuDu1F3OCSO_Rus2zXCbVIxUGY';
+// 하드코딩 폴백 제거 — env 필수(VITE_ 또는 비-VITE 이름 허용).
+const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const key = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+if (!url || !key) {
+  console.error('[regen-summaries] SUPABASE_URL / SUPABASE_ANON_KEY 환경변수가 필요합니다.');
+  process.exit(1);
+}
 
 const supabase = createClient(url, key, { auth: { persistSession: false } });
 
