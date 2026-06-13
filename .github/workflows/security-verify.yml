@@ -1,0 +1,29 @@
+name: security-verify
+
+# DB 보안 드리프트 감지(우려 #1) — RLS/권한 마이그레이션이 실제 라이브 DB에 적용돼 있는지
+# anon 키(공개용)로 매일 점검한다. 닫혀야 할 경로가 열려 있으면(마이그레이션 미적용) 실패로 알림.
+#
+# 필요 변수(저장소 Settings → Secrets and variables → Actions):
+#   SUPABASE_URL, SUPABASE_ANON_KEY  (anon 키는 클라이언트 번들에 이미 공개되는 값이라 안전)
+#
+# push에는 묶지 않는다(배포를 막지 않기 위해). 스케줄+수동 실행으로 드리프트만 감시.
+on:
+  schedule:
+    - cron: "30 18 * * *"   # 매일 UTC 18:30 (KST 03:30) — 백업 직후
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Verify live DB security posture
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: npm run verify:security

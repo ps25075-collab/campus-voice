@@ -669,8 +669,9 @@ function LikeButton({ articleId, user, dark }) {
       alert('좋아요 저장에 실패했어요. 로그인이 만료됐을 수 있으니 새로고침 후 다시 시도해주세요.');
       return;
     }
-    // 표시용 카운터 동기화(부가) — 실패해도 본인 좋아요는 이미 저장됨.
-    try{ await db.from('articles').update({ like_count: newCount }).eq('id', articleId); }catch{}
+    // 표시용 카운터 동기화(부가) — 임의값 변조 차단 위해 +1/-1 증감 RPC 사용.
+    // RPC 미적용(마이그레이션 전) 환경에선 직접 갱신으로 폴백.
+    try{ const { error } = await db.rpc('bump_article_like', { p_id: articleId, p_delta: newLiked?1:-1 }); if(error) await db.from('articles').update({ like_count: newCount }).eq('id', articleId); }catch{}
   };
 
   return (
@@ -731,7 +732,7 @@ function CommentSection({ articleId, user, dark }) {
     const newIds   = already ? likedIds.filter(i=>i!==cmt.id) : [...likedIds, cmt.id];
     setComments(prev => prev.map(c => c.id===cmt.id ? {...c, likes:newLikes} : c));
     saveLikes(newIds);
-    try{ await db.from("comments").update({likes:newLikes}).eq("id",cmt.id); }catch{}
+    try{ const { error } = await db.rpc('bump_comment_like', { p_id: cmt.id, p_delta: already?-1:1 }); if(error) await db.from("comments").update({likes:newLikes}).eq("id",cmt.id); }catch{}
   };
 
   const submitComment = async () => {
@@ -1778,7 +1779,7 @@ export default function App() {
     if(!alreadyCounted){
       setArticles(prev=>prev.map(a=>a.id===article.id?{...a,views:newViews}:a));
       try{ sessionStorage.setItem(sessionKey,'1'); }catch{}
-      try{ await supabase.from('articles').update({views:newViews}).eq('id',article.id); }catch{}
+      try{ const { error } = await supabase.rpc('bump_article_views', { p_id: article.id }); if(error) await supabase.from('articles').update({views:newViews}).eq('id',article.id); }catch{}
     }
     const targetPath=`/article/${article.id}`;
     if(window.location.pathname!==targetPath){

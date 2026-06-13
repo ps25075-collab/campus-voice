@@ -8,10 +8,8 @@ import { guardMutation } from './_lib/csrf.js'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-// 간이 IP rate limit (login.js와 동일 패턴; 서버리스 인스턴스별 메모리)
-const attempts = new Map()
 const MAX_ATTEMPTS = 5
-const WINDOW_MS = 15 * 60 * 1000
+const WINDOW_SECONDS = 15 * 60 // 15분
 const RESEND_COOLDOWN_MS = 60 * 60 * 1000 // 동일 미확인 주소 확인메일 재발송 최소 간격(메일폭탄 방지)
 
 export default async function handler(req, res) {
@@ -26,19 +24,24 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: '유효하지 않은 이메일입니다.' })
   const addr = email.trim().toLowerCase()
 
-  // IP rate limit
-  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown'
-  const now = Date.now()
-  const rec = attempts.get(ip) || { count: 0, resetAt: now + WINDOW_MS }
-  if (now > rec.resetAt) { rec.count = 0; rec.resetAt = now + WINDOW_MS }
-  if (rec.count >= MAX_ATTEMPTS)
-    return res.status(429).json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' })
-  rec.count++; attempts.set(ip, rec)
-
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!serviceKey || !process.env.SUPABASE_URL)
     return res.status(500).json({ error: 'server not configured' })
   const supabase = createClient(process.env.SUPABASE_URL, serviceKey, { auth: { persistSession: false } })
+
+  // IP rate limit — login.js와 동일한 '영속(DB)' 방식으로 통일(서버리스 인스턴스 간 공유).
+  // login_attempts 테이블을 'subscribe:<ip>' 네임스페이스 키로 재사용(신규 마이그레이션 불필요).
+  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown'
+  const rlKey = `subscribe:${ip}`
+  const { data: rl } = await supabase
+    .from('login_attempts').select('count, reset_at').eq('ip', rlKey).maybeSingle()
+  const windowActive = rl?.reset_at && new Date(rl.reset_at).getTime() > Date.now()
+  if (windowActive && rl.count >= MAX_ATTEMPTS)
+    return res.status(429).json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' })
+  // 이번 요청을 원자적으로 카운트(윈도우 만료 시 리셋 포함)
+  await supabase.rpc('register_failed_login', { p_ip: rlKey, p_window_seconds: WINDOW_SECONDS })
+
+  const now = Date.now()
 
   // 기존 상태 확인
   const { data: existing } = await supabase

@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && node scripts/inject-home.mjs && node scripts/check-bundle-secrets.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "verify:security": "node scripts/verify-security.mjs",
+    "backup": "node scripts/backup-db.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.1",
