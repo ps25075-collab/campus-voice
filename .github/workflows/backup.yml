@@ -40,7 +40,7 @@ jobs:
 
       # 오프사이트 보관: GitHub 아티팩트로 업로드(기본 retention, 여기선 90일).
       - name: Upload backup artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: db-backup-${{ github.run_id }}
           path: backup.json
