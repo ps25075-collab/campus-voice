@@ -4,6 +4,7 @@
 import { createClient } from '@supabase/supabase-js'
 import nodemailer from 'nodemailer'
 import crypto from 'crypto'
+import { guardMutation } from './_lib/csrf.js'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -14,6 +15,7 @@ const WINDOW_MS = 15 * 60 * 1000
 const RESEND_COOLDOWN_MS = 60 * 60 * 1000 // 동일 미확인 주소 확인메일 재발송 최소 간격(메일폭탄 방지)
 
 export default async function handler(req, res) {
+  if (guardMutation(req, res)) return // CSRF: preflight 처리 + 교차 출처 차단
   if (req.method !== 'POST') return res.status(405).end()
 
   // 허니팟: 사람에게 안 보이는 필드(hp)가 채워져 오면 봇 → 조용히 성공 처리(아무 동작 안 함)

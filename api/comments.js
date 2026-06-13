@@ -5,8 +5,10 @@ import { requireStaff } from './_lib/staffToken.js';
 import { writeAudit } from './_lib/audit.js';
 import { V } from './_lib/validate.js';
 import { pgValue } from './_lib/pgrest.js';
+import { guardMutation } from './_lib/csrf.js';
 
 export default async function handler(req, res) {
+  if (guardMutation(req, res)) return; // CSRF: preflight 처리 + 교차 출처 차단
   if (req.method !== 'POST') return res.status(405).end();
 
   const staff = requireStaff(req, ['admin', 'editor']);

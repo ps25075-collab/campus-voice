@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-
-const ALLOWED_ORIGIN = process.env.SITE_URL || 'https://campus-voice-green-gamma.vercel.app';
+import { applyCors } from './_lib/csrf.js';
 
 // 지표가 모두 채워졌는지 판정하는 데 쓰는 키(원자재·환율 포함). _change 는 부속 필드.
 const INDEX_KEYS = ['usdkrw', 'kospi', 'kosdaq', 'nasdaq', 'sp500', 'dow', 'oil'];
@@ -78,8 +77,8 @@ async function fetchBaseRate() {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
-  res.setHeader('Access-Control-Allow-Methods', 'GET');
+  // 읽기 전용 GET — 화이트리스트 출처에만 CORS 허용(와일드카드 금지), preflight 처리.
+  if (applyCors(req, res, { methods: 'GET,OPTIONS' })) return;
 
   const [usdkrw, kospi, kosdaq, nasdaq, sp500, dow, oil, rate] = await Promise.allSettled([
     fetchUsdKrw(),

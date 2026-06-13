@@ -19,6 +19,7 @@ import { verifyStaffToken } from './_lib/staffToken.js';
 import { writeAudit } from './_lib/audit.js';
 import { reauthStaff } from './_lib/reauth.js';
 import { V } from './_lib/validate.js';
+import { guardMutation } from './_lib/csrf.js';
 
 const CAN_WRITE = ['admin', 'editor', 'columnist', 'reporter'];
 const MAX_BODY_CHARS = 50000;
@@ -48,6 +49,7 @@ async function resolvePrincipal(req, svc) {
 }
 
 export default async function handler(req, res) {
+  if (guardMutation(req, res)) return; // CSRF: preflight 처리 + 교차 출처 차단
   if (req.method !== 'POST') return res.status(405).end();
 
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

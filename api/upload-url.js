@@ -3,12 +3,14 @@
 // 클라이언트 → Storage(서명 URL)로 직접 이뤄지고, 버킷의 용량/MIME 제한이 서버에서 적용된다.
 import { createClient } from '@supabase/supabase-js';
 import { resolvePrincipal, CAN_WRITE } from './_lib/principal.js';
+import { guardMutation } from './_lib/csrf.js';
 import crypto from 'crypto';
 
 const BUCKET = 'article-images';
 const ALLOWED_EXT = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
 
 export default async function handler(req, res) {
+  if (guardMutation(req, res)) return; // CSRF: preflight 처리 + 교차 출처 차단
   if (req.method !== 'POST') return res.status(405).end();
 
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

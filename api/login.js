@@ -2,11 +2,13 @@ import { getAdminClient } from '../lib/supabaseAdmin.js';
 import { verifyPassword } from '../lib/password.js';
 import { signStaffToken } from './_lib/staffToken.js';
 import { V } from './_lib/validate.js';
+import { guardMutation } from './_lib/csrf.js';
 
 const MAX_ATTEMPTS = 10;
 const WINDOW_SECONDS = 15 * 60; // 15분
 
 export default async function handler(req, res) {
+  if (guardMutation(req, res)) return; // CSRF: preflight 처리 + 교차 출처 차단
   if (req.method !== 'POST') return res.status(405).end();
 
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';

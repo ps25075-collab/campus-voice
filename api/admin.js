@@ -8,10 +8,14 @@ import articles from './_lib/admin/articles.js';
 import members from './_lib/admin/members.js';
 import subscribers from './_lib/admin/subscribers.js';
 import suggestions from './_lib/admin/suggestions.js';
+import { guardMutation } from './_lib/csrf.js';
 
 const handlers = { articles, members, subscribers, suggestions };
 
 export default async function handler(req, res) {
+  // CSRF/교차 출처 방어: preflight 처리 + 변경 요청 Origin 검증(모든 admin 리소스 공통).
+  if (guardMutation(req, res)) return;
+
   const resource = req.query && req.query.resource;
   const fn = handlers[resource];
   if (!fn) return res.status(404).json({ error: 'unknown admin resource' });
