@@ -50,7 +50,13 @@ if (anonKey) {
   else ok('anon 키로 staff_users 접근 차단됨 (RLS 정상)');
 } else console.log('ℹ️  ANON 키 미설정 — RLS 노출 테스트 생략');
 
-// 5) (선택) 실제 비밀번호 검증
+// 5) STAFF_TOKEN_SECRET 강도(우려 #8) — 약하면 관리자 토큰 위조 위험.
+const staffSecret = process.env.STAFF_TOKEN_SECRET;
+if (!staffSecret) bad('STAFF_TOKEN_SECRET 미설정 — 스태프 토큰 발급 불가');
+else if (staffSecret.length < 32) bad(`STAFF_TOKEN_SECRET이 너무 짧음(${staffSecret.length}자 < 32) — 32바이트+ 무작위 권장`);
+else ok(`STAFF_TOKEN_SECRET 강도 OK (${staffSecret.length}자)`);
+
+// 6) (선택) 실제 비밀번호 검증
 if (process.env.VERIFY_USER && process.env.VERIFY_PW) {
   const u = staff?.find(s => s.id === process.env.VERIFY_USER);
   if (!u) bad(`VERIFY_USER(${process.env.VERIFY_USER}) 계정 없음`);

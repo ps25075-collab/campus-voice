@@ -43,6 +43,30 @@ const PATTERNS = [
   { re: /CV_(Admin|Editor\d|Column\d)#?20\d\d/g,   label: '평문 스태프 비밀번호' },
 ];
 
+// 4) 빌드 env에 실제 서버 시크릿 값이 있으면, 그 '값'이 번들에 박혔는지까지 검사(가장 강력).
+//    Vercel 빌드에는 서버 환경변수가 주입되므로, VITE_ 접두 오용·실수 하드코딩으로 값이
+//    번들에 새는 경우를 직접 잡는다. (CI엔 시크릿이 없어 자동 스킵 — 길이≥12 값만 대상)
+const SECRET_VALUE_VARS = [
+  'SUPABASE_SERVICE_ROLE_KEY', 'STAFF_TOKEN_SECRET', 'STAFF_TOKEN_SECRET_PREVIOUS',
+  'GMAIL_APP_PASSWORD', 'CRON_SECRET', 'ECOS_API_KEY', 'ADMIN_PW',
+];
+const secretValues = SECRET_VALUE_VARS
+  .flatMap((name) => (process.env[name] || '').split(',').map((v) => [name, v.trim()]))
+  .filter(([, v]) => v && v.length >= 12);
+
+// 5) VITE_ 접두 환경변수에 서버 시크릿 값이 들어갔는지(클라 번들로 새는 직접 원인) 검사 —
+//    빌드 전에 env만으로 판정 가능. service_role JWT가 VITE_로 노출되는 경우도 차단.
+for (const [k, v] of Object.entries(process.env)) {
+  if (!k.startsWith('VITE_') || !v) continue;
+  for (const [name, secret] of secretValues) {
+    if (v === secret) findings.push(`env ${k}: 서버 시크릿(${name}) 값이 VITE_ 변수에 설정됨 → 번들 노출`);
+  }
+  const seg = (v.match(/eyJ[A-Za-z0-9_-]{10,}\.(eyJ[A-Za-z0-9_-]{10,})\./) || [])[1];
+  const payload = seg ? decodeJwtPayload(seg) : null;
+  if (payload && payload.role && payload.role !== 'anon')
+    findings.push(`env ${k}: 비-anon JWT(role=${payload.role})가 VITE_ 변수에 설정됨 → 번들 노출`);
+}
+
 let files;
 try { files = walk(DIST); }
 catch { console.error(`[check-bundle-secrets] '${DIST}' 디렉터리가 없습니다. 먼저 빌드하세요.`); process.exit(1); }
@@ -55,7 +79,12 @@ for (const file of files) {
     if (m) findings.push(`${file}: ${label} → ${m[0].slice(0, 24)}…`);
   }
 
-  // 4) JWT(eyJ…​.eyJ…​.…) 를 찾아 payload.role 이 service_role 이면 차단. anon 은 허용.
+  // 6) 서버 시크릿의 '실제 값'이 번들 텍스트에 그대로 들어있는지(이름이 아니라 값) 검사.
+  for (const [name, secret] of secretValues) {
+    if (text.includes(secret)) findings.push(`${file}: 서버 시크릿 값 노출(${name})`);
+  }
+
+  // 7) JWT(eyJ…​.eyJ…​.…) 를 찾아 payload.role 이 service_role 이면 차단. anon 은 허용.
   for (const tok of text.match(/eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g) || []) {
     const payload = decodeJwtPayload(tok.split('.')[1]);
     if (payload && payload.role && payload.role !== 'anon') {
