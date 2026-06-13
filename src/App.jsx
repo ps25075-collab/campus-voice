@@ -754,7 +754,7 @@ function CommentSection({ articleId, user, dark }) {
   const del = async (id) => {
     // 댓글 삭제는 RLS로 직접 차단됨 → admin/editor 서버 API 경유.
     try{
-      const res = await fetch('/api/comments', { method:'POST', headers:{ 'Content-Type':'application/json', ...(user?.token?{Authorization:`Bearer ${user.token}`}:{}) }, body: JSON.stringify({ action:'delete', id }) });
+      const res = await fetch('/api/comments', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ action:'delete', id }) });
       if(!res.ok) throw new Error();
     }catch{ alert('댓글 삭제에 실패했습니다.'); return; }
     setComments(prev => prev.filter(c => c.id!==id && c.parent_id!==id));
@@ -871,7 +871,7 @@ function SuggestionBox({ user, dark, onRequireLogin, onSessionExpired }) {
   // 건의 내용은 PII라 anon 직접 조회를 RLS로 차단 → 편집부 열람은 service_role 서버 API 경유.
   const loadSuggestions = async () => {
     try{
-      const res = await fetch('/api/admin/suggestions', { headers: user?.token ? { Authorization:`Bearer ${user.token}` } : {} });
+      const res = await fetch('/api/admin/suggestions');  // 스태프 인증은 HttpOnly 쿠키 자동 전송
       // 스태프 토큰(12시간) 만료 → 401. 빈 목록으로 오인하지 않도록 만료 처리(재로그인 유도).
       if(res.status === 401){ setSuggestions([]); setViewOpen(false); onSessionExpired?.(); return; }
       if(!res.ok){ setSuggestions([]); return; }
@@ -1327,9 +1327,14 @@ export default function App() {
         const saved=localStorage.getItem("cv_user");
         if(saved){
           const u=JSON.parse(saved);
-          setUser(u);
-          loadStaffArticles(u);
-          loadBookmarks(u.id, false);
+          // 스태프 쿠키(12시간)는 만료되면 API가 401을 주지만, 만료를 미리 알아 UI를 깨끗이 정리.
+          if(u.exp && Date.now() > u.exp){
+            localStorage.removeItem("cv_user");
+          } else {
+            setUser(u);
+            loadStaffArticles(u);
+            loadBookmarks(u.id, false);
+          }
         }
       }catch{}
     })();
@@ -1467,13 +1472,14 @@ export default function App() {
   };
 
 
-  // 스태프 서버 API 인증 헤더 (자체 로그인 토큰)
-  const staffAuthHeaders=()=> user?.token ? { Authorization:`Bearer ${user.token}` } : {};
+  // 스태프 서버 API 인증은 HttpOnly 쿠키(cv_staff)로 자동 전송 → 추가 헤더 불필요.
+  // (헬퍼는 기존 호출부 호환을 위해 빈 객체를 반환)
+  const staffAuthHeaders=()=> ({});
 
-  // 기사 변경 API 인증 헤더: 스태프는 staffToken, 회원은 Supabase 세션 JWT.
+  // 기사 변경 API 인증 헤더: 스태프는 HttpOnly 쿠키(자동 전송), 회원은 Supabase 세션 JWT 헤더.
   // articles 직접 쓰기는 RLS로 차단되므로 생성/수정/승인/삭제/헤드라인은 /api/articles 경유.
   const articleAuthHeaders=async()=>{
-    if(user?.token) return { Authorization:`Bearer ${user.token}` };
+    if(user && !user.isMember) return {};   // 스태프: 쿠키 자동 전송
     try{ const { data } = await supabase.auth.getSession(); const t=data?.session?.access_token; if(t) return { Authorization:`Bearer ${t}` }; }catch{}
     return {};
   };
@@ -1542,9 +1548,9 @@ export default function App() {
   // 스태프(세션 없는 anon)는 RLS상 게재글만 보이므로, 대기/반려 포함 전체 목록을
   // 서버(service_role)에서 받아 articles 상태에 반영한다. (관리자 검토 화면용)
   const loadStaffArticles=async(u)=>{
-    const tok=u?.token; if(!tok) return;
+    if(!u || u.isMember) return;  // 스태프 전용. 인증은 HttpOnly 쿠키 자동 전송.
     try{
-      const res=await fetch('/api/admin/articles',{ headers:{ Authorization:`Bearer ${tok}` } });
+      const res=await fetch('/api/admin/articles');
       if(res.ok){ const j=await res.json(); if(Array.isArray(j.articles)&&j.articles.length) setArticles(j.articles); }
     }catch{}
   };
@@ -1553,7 +1559,7 @@ export default function App() {
   const loadMyArticles=async(uid, name)=>{
     const id = uid != null ? String(uid) : null;
     // 스태프(anon)는 본인 초안이 RLS상 직접 조회 안 되므로, 서버에서 받아둔 전체 목록에서 필터.
-    if(user?.token){
+    if(user && !user.isMember){
       setMyArticles(articles.filter(a=> (id&&String(a.author_id)===id) || (name&&a.author===name)));
       return;
     }
@@ -1624,6 +1630,8 @@ export default function App() {
         try{ await supabase.from('profiles').update({last_logout_at:new Date().toISOString()}).eq('id',user.id); }catch{}
         await supabase.auth.signOut();
       } else {
+        // 스태프: HttpOnly 쿠키는 JS로 못 지우므로 서버에 만료를 요청.
+        try{ await fetch('/api/login',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ action:'logout' }) }); }catch{}
         localStorage.removeItem("cv_user");
       }
     }catch{}
@@ -2789,7 +2797,7 @@ export default function App() {
       </footer>
 
       <SuggestionBox user={user} dark={dark} onRequireLogin={()=>setShowLogin(true)}
-        onSessionExpired={()=>{ try{ localStorage.removeItem("cv_user"); }catch{} setUser(null); alert('로그인 세션이 만료되었습니다. 다시 로그인해주세요.'); setShowLogin(true); }}/>
+        onSessionExpired={()=>{ try{ fetch('/api/login',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ action:'logout' }) }); }catch{} try{ localStorage.removeItem("cv_user"); }catch{} setUser(null); alert('로그인 세션이 만료되었습니다. 다시 로그인해주세요.'); setShowLogin(true); }}/>
     </div>
     </SCContext.Provider>
   );

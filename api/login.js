@@ -3,6 +3,7 @@ import { verifyPassword } from '../lib/password.js';
 import { signStaffToken } from './_lib/staffToken.js';
 import { V } from './_lib/validate.js';
 import { guardMutation } from './_lib/csrf.js';
+import { setStaffCookie, clearStaffCookie } from './_lib/cookies.js';
 
 const MAX_ATTEMPTS = 10;
 const WINDOW_SECONDS = 15 * 60; // 15분
@@ -10,6 +11,13 @@ const WINDOW_SECONDS = 15 * 60; // 15분
 export default async function handler(req, res) {
   if (guardMutation(req, res)) return; // CSRF: preflight 처리 + 교차 출처 차단
   if (req.method !== 'POST') return res.status(405).end();
+
+  // 로그아웃: HttpOnly 스태프 쿠키는 JS로 못 지우므로 서버가 만료시킨다.
+  // (별도 함수를 추가하지 않고 login 엔드포인트에 통합 — Vercel 무료 함수 개수 한도 보호)
+  if ((req.body || {}).action === 'logout') {
+    clearStaffCookie(res);
+    return res.status(200).json({ ok: true });
+  }
 
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 'unknown';
 
@@ -63,10 +71,15 @@ export default async function handler(req, res) {
   // 4) 성공 — 해당 IP의 시도 기록 제거
   await supabase.from('login_attempts').delete().eq('ip', ip);
 
-  // 서버 API 권한 검증용 서명 토큰 발급 (STAFF_TOKEN_SECRET 미설정 시 토큰 없이 반환 → 기존 동작 유지)
-  let token;
-  try { token = signStaffToken({ id: user.id, name: user.name, role: user.role }); }
-  catch { token = undefined; }
+  // 서버 API 권한 검증용 서명 토큰 발급 후 HttpOnly 쿠키로 내려준다.
+  // 토큰을 응답 본문/ localStorage에 두지 않아 XSS로도 탈취되지 않는다(쿠키는 JS 비가독).
+  // STAFF_TOKEN_SECRET 미설정 시엔 토큰 없이 신원만 반환(기존 동작 유지).
+  let exp;
+  try {
+    const token = signStaffToken({ id: user.id, name: user.name, role: user.role });
+    setStaffCookie(res, token);
+    exp = Date.now() + 12 * 60 * 60 * 1000; // 클라 UI가 만료를 알고 자동 로그아웃하도록(토큰 아님)
+  } catch { /* 토큰 미발급 — 쿠키 없이 진행 */ }
 
-  return res.status(200).json({ id: user.id, name: user.name, role: user.role, token });
+  return res.status(200).json({ id: user.id, name: user.name, role: user.role, exp });
 }

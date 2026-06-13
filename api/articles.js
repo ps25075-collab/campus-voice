@@ -15,7 +15,7 @@
 //   listTrash: admin 전용. 휴지통 목록.
 //   setHero : admin 전용.
 import { createClient } from '@supabase/supabase-js';
-import { verifyStaffToken } from './_lib/staffToken.js';
+import { verifyStaffToken, staffTokenFromReq } from './_lib/staffToken.js';
 import { writeAudit } from './_lib/audit.js';
 import { reauthStaff } from './_lib/reauth.js';
 import { V } from './_lib/validate.js';
@@ -33,14 +33,13 @@ const bearer = (req) => {
 
 // 요청자 신원 확정: 스태프 토큰 → 회원 JWT 순으로 검증.
 async function resolvePrincipal(req, svc) {
-  const token = bearer(req);
-  if (!token) return null;
-
-  // 1) 스태프 서명 토큰
-  const staff = verifyStaffToken(token);
+  // 1) 스태프 서명 토큰 — HttpOnly 쿠키(cv_staff) 우선, Bearer 폴백
+  const staff = verifyStaffToken(staffTokenFromReq(req));
   if (staff) return { kind: 'staff', id: String(staff.id), name: staff.name, role: staff.role };
 
-  // 2) 회원 Supabase 세션 JWT
+  // 2) 회원 Supabase 세션 JWT (Authorization 헤더)
+  const token = bearer(req);
+  if (!token) return null;
   const { data, error } = await svc.auth.getUser(token);
   if (error || !data?.user) return null;
   const uid = data.user.id;

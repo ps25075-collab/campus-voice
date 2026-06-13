@@ -1,14 +1,13 @@
-// CSRF / 교차 출처 상태 변경 방어 (defense-in-depth).
+// CSRF / 교차 출처 상태 변경 방어.
 //
-// 이 프로젝트의 1차 방어선은 "권한이 필요한 API는 Authorization: Bearer 헤더 토큰으로만
-// 인증한다"는 점이다. 토큰은 쿠키가 아니라 localStorage에 있어 브라우저가 교차 사이트
-// 요청에 자동으로 붙이지 않으며, 커스텀 헤더가 붙는 순간 요청은 'non-simple'이 되어
-// CORS preflight를 거친다 → 아래 화이트리스트에 없는 출처는 preflight 단계에서 차단된다.
+// 스태프 인증 토큰은 HttpOnly + SameSite=Strict 쿠키(cv_staff)에 담긴다(cookies.js 참고).
+// 쿠키가 자동 전송되므로 CSRF를 막는 책임은 다음 2겹으로 나뉜다:
+//  1) SameSite=Strict: 브라우저가 교차 사이트 요청에 쿠키를 아예 붙이지 않음(쿠키 계층 1차 차단).
+//  2) enforceSameOrigin: 변경(POST/PUT/PATCH/DELETE) 요청의 Origin/Referer가 화이트리스트에
+//     없으면 거부 → 서버 계층에서 교차 출처 변경을 차단(쿠키/헤더 인증 무관하게 동작).
+// 회원(Supabase JWT)은 여전히 Authorization 헤더로 인증하므로 자동 전송되지 않는다.
 //
-// 여기서는 그 위에 2차 방어선을 더한다:
-//  1) enforceSameOrigin: 변경(POST/PUT/PATCH/DELETE) 요청의 Origin/Referer가
-//     화이트리스트에 없으면 거부 → 토큰 없이도(또는 미래에 쿠키 인증이 추가돼도) CSRF 차단.
-//  2) applyCors: 와일드카드(*) 없이 '자신의 도메인'만 허용. preflight(OPTIONS) 처리.
+// 추가로 applyCors는 와일드카드(*) 없이 '자신의 도메인'만 허용하고 preflight(OPTIONS)를 처리한다.
 
 const PROD_ORIGIN = 'https://campus-voice-green-gamma.vercel.app';
 
