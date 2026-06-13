@@ -37,13 +37,12 @@ if (!shell.includes('<div id="root"></div>')) {
 }
 writeFileSync(shellPath, shell);
 
-// 하드코딩 폴백 제거 — 빌드 환경의 env 사용. VITE_ 또는 비-VITE 이름 모두 허용(빌드 단계라 둘 다 접근 가능).
-const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-const key = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+const url = process.env.VITE_SUPABASE_URL || 'https://fayxycakxbkglcywhyei.supabase.co';
+const key = process.env.VITE_SUPABASE_ANON_KEY ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZheXh5Y2FreGJrZ2xjeXdoeWVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyODM3MzYsImV4cCI6MjA5NDg1OTczNn0.03Mqbid979nlXB-IhuuDu1F3OCSO_Rus2zXCbVIxUGY';
 
 let articles = [];
 try {
-  if (!url || !key) throw new Error('SUPABASE env 누락 — 홈 기사 주입 생략(셸만 생성)');
   const supabase = createClient(url, key, { auth: { persistSession: false } });
   const { data, error } = await supabase
     .from('articles')
