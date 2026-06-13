@@ -1551,6 +1551,8 @@ export default function App() {
     if(!u || u.isMember) return;  // 스태프 전용. 인증은 HttpOnly 쿠키 자동 전송.
     try{
       const res=await fetch('/api/admin/articles');
+      // 쿠키 만료/무효 → 401. 대기·반려 기사를 조용히 숨기지 말고 재로그인 유도.
+      if(res.status===401){ handleStaffSessionExpired(); return; }
       if(res.ok){ const j=await res.json(); if(Array.isArray(j.articles)&&j.articles.length) setArticles(j.articles); }
     }catch{}
   };
@@ -1637,6 +1639,16 @@ export default function App() {
     }catch{}
     setUser(null); setPage("home");
     setBookmarks([]); setBookmarkedArticles([]);
+  };
+
+  // 스태프 세션 만료 공통 처리: 만료된 쿠키로 관리자 API가 401을 주면, 빈 목록을 조용히
+  // 보여주지 않고 세션을 정리한 뒤 재로그인을 유도한다. (구 세션이 대기 기사를 숨기던 문제 방지)
+  const handleStaffSessionExpired=()=>{
+    try{ fetch('/api/login',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ action:'logout' }) }); }catch{}
+    try{ localStorage.removeItem("cv_user"); }catch{}
+    setUser(null);
+    alert('로그인 세션이 만료되었습니다. 다시 로그인해주세요.');
+    setShowLogin(true);
   };
 
   const MAX_BODY_CHARS = 50000;
@@ -2797,7 +2809,7 @@ export default function App() {
       </footer>
 
       <SuggestionBox user={user} dark={dark} onRequireLogin={()=>setShowLogin(true)}
-        onSessionExpired={()=>{ try{ fetch('/api/login',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ action:'logout' }) }); }catch{} try{ localStorage.removeItem("cv_user"); }catch{} setUser(null); alert('로그인 세션이 만료되었습니다. 다시 로그인해주세요.'); setShowLogin(true); }}/>
+        onSessionExpired={handleStaffSessionExpired}/>
     </div>
     </SCContext.Provider>
   );
