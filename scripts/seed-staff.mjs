@@ -3,21 +3,21 @@
 //
 // 사용법 (로컬 .env 또는 셸 환경변수 필요):
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY  (서버 전용)
-//   ADMIN_PW, EDITOR1_PW, EDITOR2_PW, COLUMNIST1_PW, COLUMNIST2_PW
+//   ADMIN_PW
 //
 //   node --env-file=.env scripts/seed-staff.mjs
 //
 // 시드 완료 후엔 Vercel/호스팅에서 *_PW 평문 환경변수를 삭제해도 된다.
+//
+// ⚠️ editor1/editor2/columnist1/columnist2 계정은 과거 평문 비밀번호가 공개 git
+//    히스토리에 유출돼 삭제되었다(2026-06-13). 재생성 금지 — 필요 시 새 id/비밀번호로
+//    추가하고, 같은 비밀번호 재사용은 금지한다.
 
 import { createClient } from '@supabase/supabase-js';
 import { hashPassword } from '../lib/password.js';
 
 const STAFF = [
   { id: 'admin',      name: '관리자', role: 'admin',     pwEnv: 'ADMIN_PW'      },
-  { id: 'editor1',    name: '김편집', role: 'editor',    pwEnv: 'EDITOR1_PW'    },
-  { id: 'editor2',    name: '이기자', role: 'editor',    pwEnv: 'EDITOR2_PW'    },
-  { id: 'columnist1', name: '박칼럼', role: 'columnist', pwEnv: 'COLUMNIST1_PW' },
-  { id: 'columnist2', name: '최기고', role: 'columnist', pwEnv: 'COLUMNIST2_PW' },
 ];
 
 const url = process.env.SUPABASE_URL;
