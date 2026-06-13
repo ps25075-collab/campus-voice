@@ -89,9 +89,9 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
-  // ── 댓글 삭제 (admin/editor 모더레이션) ──
+  // ── 댓글 삭제 (관리자 모더레이션) ──  (스태프 계정은 현재 admin뿐)
   if (action === 'delete') {
-    const staff = requireStaff(req, ['admin', 'editor']);
+    const staff = requireStaff(req, ['admin']);
     if (!staff) return res.status(401).json({ error: 'unauthorized' });
 
     const svc = svcClient(res); if (!svc) return;

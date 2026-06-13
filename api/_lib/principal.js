@@ -2,7 +2,7 @@
 // 권한이 필요한 서버 API(기사/이미지 업로드 등)에서 공통 사용.
 import { verifyStaffToken, staffTokenFromReq } from './staffToken.js';
 
-export const CAN_WRITE = ['admin', 'editor', 'columnist', 'reporter'];
+export const CAN_WRITE = ['admin', 'columnist', 'reporter']; // editor 스태프 계정은 없음
 
 export function bearer(req) {
   const h = req.headers.authorization || '';

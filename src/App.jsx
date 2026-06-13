@@ -109,9 +109,10 @@ function renderArticleBody(text){
   return out;
 }
 
-const canWrite    = r => ["admin","editor","columnist","reporter"].includes(r);
-const canReadBox  = r => ["admin","editor"].includes(r);
-const canDelComment = r => ["admin","editor"].includes(r);
+// editor 스태프 계정은 없음 → 권한 체크에서 제외(admin 스태프 + 회원 columnist/reporter만 유효).
+const canWrite    = r => ["admin","columnist","reporter"].includes(r);
+const canReadBox  = r => r === "admin";       // 건의함 열람·삭제 모두 관리자만
+const canDelComment = r => r === "admin";      // 댓글 모더레이션은 관리자만
 const allowedTypes  = r => r==="columnist" ? ["칼럼"] : ["기사","칼럼"];
 
 const DUMMY_ARTICLES = [
@@ -152,7 +153,7 @@ const CMT_KEY  = (id) => `segal_comments_${id}`;
 
 const statusLabel = { published:"게재됨", pending:"승인 대기", rejected:"반려됨" };
 const statusStyle = { published:"bg-green-100 text-green-700", pending:"bg-yellow-100 text-yellow-700", rejected:"bg-red-100 text-red-600" };
-const roleLabel   = { admin:"👑 관리자", editor:"📰 기자", reporter:"📰 기자 회원", columnist:"✒️ 칼럼니스트", pending:"⏳ 승인 대기", rejected:"❌ 미승인" };
+const roleLabel   = { admin:"👑 관리자", reporter:"📰 기자 회원", columnist:"✒️ 칼럼니스트", pending:"⏳ 승인 대기", rejected:"❌ 미승인" };
 const memberRoleLabel = { pending:"승인 대기", reporter:"기자 승인됨", columnist:"칼럼니스트 승인됨", rejected:"가입 거절" };
 const memberRoleStyle = { pending:"bg-yellow-100 text-yellow-700", reporter:"bg-blue-100 text-blue-700", columnist:"bg-green-100 text-green-700", rejected:"bg-red-100 text-red-600" };
 
@@ -772,7 +773,7 @@ function CommentSection({ articleId, user, dark }) {
   };
 
   const del = async (id) => {
-    // 댓글 삭제는 RLS로 직접 차단됨 → admin/editor 서버 API 경유.
+    // 댓글 삭제는 RLS로 직접 차단됨 → 관리자(admin) 서버 API 경유.
     try{
       const res = await fetch('/api/comments', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ action:'delete', id }) });
       if(!res.ok) throw new Error();
@@ -907,6 +908,17 @@ function SuggestionBox({ user, dark, onRequireLogin, onSessionExpired }) {
 
   useEffect(()=>{ if(viewOpen) loadSuggestions(); },[viewOpen]);
 
+  // 건의 삭제는 관리자(admin)만. 서버가 권한을 재검증하므로 UI 숨김은 보조 수단.
+  const deleteSuggestion = async (id) => {
+    if(!window.confirm('이 건의를 삭제하시겠습니까?')) return;
+    try{
+      const res = await fetch(`/api/admin/suggestions?id=${encodeURIComponent(id)}`, { method:'DELETE' });
+      if(res.status===401){ onSessionExpired?.(); return; }
+      if(!res.ok) throw new Error();
+      setSuggestions(prev=>prev.filter(s=>s.id!==id));
+    }catch{ alert('건의 삭제에 실패했습니다.'); }
+  };
+
   const submit = async () => {
     if(!user){ onRequireLogin?.(); return; }   // 로그인 후에만 건의 가능
     if(!form.content.trim()) return;
@@ -996,7 +1008,15 @@ function SuggestionBox({ user, dark, onRequireLogin, onSessionExpired }) {
                   <div key={s.id} className={`rounded-xl border p-4 ${dark?"bg-gray-800 border-gray-700":"bg-gray-50 border-gray-200"}`}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-medium text-amber-600">✍️ {s.name}</span>
-                      <span className="text-xs text-gray-400">{s.date}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-400">{s.date}</span>
+                        {user?.role==="admin" && (
+                          <button onClick={()=>deleteSuggestion(s.id)} aria-label="건의 삭제"
+                            className="flex items-center gap-0.5 text-xs text-red-400 hover:text-red-600 transition-colors">
+                            <Trash2 size={12}/> 삭제
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <p className="text-sm leading-relaxed">{s.content}</p>
                   </div>

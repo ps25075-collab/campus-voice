@@ -15,8 +15,8 @@ export default async function handler(req, res) {
   const supabase = createClient(process.env.SUPABASE_URL, serviceKey, { auth: { persistSession: false } });
 
   if (req.method === 'GET') {
-    // 스태프(admin/editor)를 제외한 가입 회원 목록
-    const { data, error } = await supabase.from('profiles').select('*').not('role', 'in', '(admin,editor)');
+    // 스태프(admin)를 제외한 가입 회원 목록 (editor 스태프 계정은 없음)
+    const { data, error } = await supabase.from('profiles').select('*').not('role', 'in', '(admin)');
     if (error) return res.status(500).json({ error: 'load failed' });
     return res.status(200).json({ members: data || [] });
   }

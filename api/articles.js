@@ -2,12 +2,12 @@
 // 권한은 서버에서 엄격히 검증한다. 클라이언트의 role/status는 절대 신뢰하지 않는다.
 //
 // 인증 주체(principal) 2종:
-//   - 스태프(admin/editor/columnist): HMAC staffToken (Authorization: Bearer <token>)
+//   - 스태프(admin): HMAC staffToken (Authorization: Bearer <token>) — 현재 스태프 계정은 admin뿐.
 //   - 회원(reporter/columnist): Supabase 세션 JWT (Authorization: Bearer <access_token>)
 //
 // 액션별 권한:
 //   create  : 작성 권한 보유자(아래 CAN_WRITE). status는 서버가 'pending'으로 강제.
-//   update  : 본인 글(author_id 일치) 또는 admin/editor. 내용 필드만. status/hero 변경 불가.
+//   update  : 본인 글(author_id 일치) 또는 admin. 내용 필드만. status/hero 변경 불가.
 //   setStatus: admin 전용. (pending|published|rejected)
 //   delete  : admin 전용. soft delete(휴지통) + 재인증 + 감사 로그.
 //   restore : admin 전용. 휴지통에서 복구.
@@ -22,7 +22,7 @@ import { V } from './_lib/validate.js';
 import { guardMutation } from './_lib/csrf.js';
 import { checkMassDeletion } from './_lib/alert.js';
 
-const CAN_WRITE = ['admin', 'editor', 'columnist', 'reporter'];
+const CAN_WRITE = ['admin', 'columnist', 'reporter']; // editor 스태프 계정은 없음
 const MAX_BODY_CHARS = 50000;
 const VALID_STATUS = ['pending', 'published', 'rejected'];
 
@@ -61,7 +61,6 @@ export default async function handler(req, res) {
   if (!principal) return res.status(401).json({ error: 'unauthorized' });
 
   const isAdmin = principal.kind === 'staff' && principal.role === 'admin';
-  const isEditor = principal.kind === 'staff' && (principal.role === 'admin' || principal.role === 'editor');
   const canWrite = CAN_WRITE.includes(principal.role);
 
   const body = req.body || {};
@@ -126,7 +125,7 @@ export default async function handler(req, res) {
       if (existing.deleted_at) return res.status(404).json({ error: 'not found' }); // 휴지통 글은 수정 불가
 
       const owns = existing.author_id != null && String(existing.author_id) === principal.id;
-      if (!owns && !isEditor) return res.status(403).json({ error: 'forbidden' });
+      if (!owns && !isAdmin) return res.status(403).json({ error: 'forbidden' }); // 본인 글 또는 관리자만
 
       // 내용 필드만 화이트리스트로 반영하되, 각 값을 문자열·길이로 검증.
       // status/hero/author/views는 절대 변경하지 않음.
