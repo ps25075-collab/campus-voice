@@ -34,7 +34,8 @@ const anon = createClient(URL, ANON, { auth: { persistSession: false } });
 const fails = [];
 const oks = [];
 const FORGED_UUID = '00000000-0000-0000-0000-0000000feeed';
-const cleanup = [];
+const cleanup = [];       // [table, user_id]
+const cleanupByText = []; // [table, column, value] — .select() 못 쓰는 테이블의 누출행 정리용
 
 // check: name, 통과조건 함수(true=안전). rows/error 기반.
 async function expectBlocked(name, promise, isSafe) {
@@ -91,6 +92,22 @@ await expectBlocked('article_likes: 회원 bare-UUID 비노출',
   if (r && !r.error) cleanup.push(['bookmarks', FORGED_UUID]);
 }
 
+// #2(스팸) 댓글·건의 직접 INSERT 차단 — 작성은 서버(/api/comments) 경유만(IP 레이트리밋/허니팟
+//   우회 방지). (20260613_ugc_antispam.sql) anon이 직접 insert되면 '열림'.
+//   ※ .select() 없이 에러 유무로만 판정: suggestions처럼 'INSERT 허용·SELECT 차단'인 테이블에서
+//      .select()를 붙이면 insert가 됐는데도 select 거부 에러로 오판(거짓 통과)하므로 금지.
+const TODAY = new Date().toISOString().slice(0, 10);
+{
+  const r = await expectBlocked('comments 직접 INSERT 차단(서버 경유 강제)',
+    anon.from('comments').insert({ article_id: VALID_AID, name: '__verify__', text: '__verify_blocked__', date: TODAY, parent_id: null, likes: 0 }), denied);
+  if (r && !r.error) cleanupByText.push(['comments', 'text', '__verify_blocked__']);
+}
+{
+  const r = await expectBlocked('suggestions 직접 INSERT 차단(서버 경유 강제)',
+    anon.from('suggestions').insert({ name: '__verify__', content: '__verify_blocked__', date: TODAY }), denied);
+  if (r && !r.error) cleanupByText.push(['suggestions', 'content', '__verify_blocked__']);
+}
+
 // #3 카운터 임의값 변조 차단(가능하면 published 기사 1건 대상)
 {
   const { data: pub } = await anon.from('articles').select('id').eq('status', 'published').limit(1);
@@ -103,9 +120,10 @@ await expectBlocked('article_likes: 회원 bare-UUID 비노출',
 }
 
 // 점검용으로 새어 들어간 위조 행은 service 키가 있으면 정리(없으면 스킵)
-if (cleanup.length && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+if ((cleanup.length || cleanupByText.length) && process.env.SUPABASE_SERVICE_ROLE_KEY) {
   const svc = createClient(URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
   for (const [tbl, uid] of cleanup) await svc.from(tbl).delete().eq('user_id', uid);
+  for (const [tbl, col, val] of cleanupByText) await svc.from(tbl).delete().eq(col, val);
 }
 
 console.log('통과:');

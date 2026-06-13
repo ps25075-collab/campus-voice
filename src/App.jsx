@@ -708,6 +708,24 @@ function CommentSection({ articleId, user, dark }) {
   const sub  = dark ? "text-gray-400" : "text-gray-500";
   // 비회원/스태프(및 로그아웃 후 만료 JWT 잔존)는 anon 키로 → 만료 JWT 첨부 401 방지. (LikeButton과 동일 방침)
   const db = user?.isMember ? supabase : supabasePublic;
+  const [hp, setHp] = useState("");  // 허니팟(봇 차단) — 사람에겐 안 보임
+
+  // 댓글 작성은 서버(/api/comments) 경유 — 봇/스팸 방어(IP 레이트리밋·허니팟). 직접 INSERT는 RLS로 차단됨.
+  // 회원은 세션 JWT를 보내 서버가 실명으로 기록(스태프는 HttpOnly 쿠키 자동 전송, 익명은 헤더 없음).
+  const commentAuthHeaders = async () => {
+    if(user?.isMember){ try{ const { data } = await supabase.auth.getSession(); const t=data?.session?.access_token; if(t) return { Authorization:`Bearer ${t}` }; }catch{} }
+    return {};
+  };
+  const postComment = async (payload) => {
+    const res = await fetch('/api/comments', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', ...(await commentAuthHeaders()) },
+      body: JSON.stringify({ ...payload, hp }),
+    });
+    let json={}; try{ json=await res.json(); }catch{}
+    if(!res.ok) throw new Error(json.error || `요청 실패 (HTTP ${res.status})`);
+    return json;
+  };
 
   useEffect(()=>{
     (async()=>{
@@ -737,18 +755,20 @@ function CommentSection({ articleId, user, dark }) {
 
   const submitComment = async () => {
     if(!text.trim()) return;
-    const newC = { article_id:articleId, name:(user?.name||name.trim()||"익명"), text:text.trim(), date:today(), parent_id:null, likes:0 };
-    const { data } = await db.from("comments").insert(newC).select().single();
-    if(data) setComments(prev=>[...prev, data]);
-    setName(""); setText("");
+    try{
+      const { comment } = await postComment({ action:'create', article_id:articleId, text:text.trim() });
+      if(comment) setComments(prev=>[...prev, comment]);
+      setName(""); setText("");
+    }catch(e){ alert(e.message || '댓글 작성에 실패했습니다.'); }
   };
 
   const submitReply = async () => {
     if(!replyText.trim()||!replyTo) return;
-    const newC = { article_id:articleId, name:(user?.name||replyName.trim()||"익명"), text:replyText.trim(), date:today(), parent_id:replyTo.id, likes:0 };
-    const { data } = await db.from("comments").insert(newC).select().single();
-    if(data) setComments(prev=>[...prev, data]);
-    setReplyTo(null); setReplyText(""); setReplyName("");
+    try{
+      const { comment } = await postComment({ action:'reply', article_id:articleId, parent_id:replyTo.id, text:replyText.trim() });
+      if(comment) setComments(prev=>[...prev, comment]);
+      setReplyTo(null); setReplyText(""); setReplyName("");
+    }catch(e){ alert(e.message || '답글 작성에 실패했습니다.'); }
   };
 
   const del = async (id) => {
@@ -806,9 +826,13 @@ function CommentSection({ articleId, user, dark }) {
         <span className="text-sm font-normal text-gray-400">({comments.length})</span>
       </h3>
       <div className={"rounded-xl border p-4 mb-4 space-y-2 " + (dark?"bg-gray-900 border-gray-800":"bg-white border-gray-200")}>
+        {/* 허니팟: 봇만 채우는 숨김 필드(사람에겐 안 보임) */}
+        <input type="text" name="website" value={hp} onChange={e=>setHp(e.target.value)}
+          tabIndex={-1} autoComplete="off" aria-hidden="true"
+          style={{position:'absolute',left:'-9999px',width:1,height:1,opacity:0}}/>
         {user
           ? <p className={"text-xs font-medium " + (dark?"text-green-400":"text-green-600")}>{user.name} 으로 댓글 작성</p>
-          : <input value={name} onChange={e=>setName(e.target.value)} placeholder="이름 (선택, 미입력 시 익명)"
+          : <input value={name} onChange={e=>setName(e.target.value)} placeholder="익명으로 작성됩니다"
               className={"w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-green-600 " + inp}/>
         }
         <textarea value={text} onChange={e=>setText(e.target.value)} rows={3} placeholder="댓글을 입력하세요..."
@@ -865,6 +889,7 @@ function SuggestionBox({ user, dark, onRequireLogin, onSessionExpired }) {
   const [suggestions, setSuggestions] = useState([]);
   const [form, setForm]         = useState({ content:"" });
   const [sent, setSent]         = useState(false);
+  const [hp, setHp]             = useState("");   // 허니팟(봇 차단)
   const card = dark?"bg-gray-900 border-gray-800 text-gray-100":"bg-white border-gray-200 text-gray-900";
   const inp  = dark?"bg-gray-800 border-gray-700 text-white placeholder-gray-500":"bg-white border-gray-300 placeholder-gray-400";
 
@@ -885,11 +910,15 @@ function SuggestionBox({ user, dark, onRequireLogin, onSessionExpired }) {
   const submit = async () => {
     if(!user){ onRequireLogin?.(); return; }   // 로그인 후에만 건의 가능
     if(!form.content.trim()) return;
-    const newItem = { name: user.name, content: form.content.trim(), date: today() };   // 로그인 실명으로 고정
-    // SELECT는 RLS로 막혀 있으므로 .select() 없이 INSERT만 (반환 불필요)
-    // 건의는 익명 INSERT가 허용된 테이블 → 항상 supabasePublic(anon)로 전송해 만료 JWT 첨부 401을 차단.
-    const { error } = await supabasePublic.from('suggestions').insert(newItem);
-    if(error){ alert('건의 전송에 실패했습니다. 다시 시도해주세요.'); return; }
+    // 건의 작성은 서버(/api/comments) 경유 — 봇/스팸 방어(IP 레이트리밋·허니팟) + 신원 서버 강제(사칭 차단).
+    // 직접 INSERT는 RLS로 차단됨. 회원은 세션 JWT 전송, 스태프는 HttpOnly 쿠키 자동 전송.
+    let headers = { 'Content-Type':'application/json' };
+    if(user.isMember){ try{ const { data } = await supabase.auth.getSession(); const t=data?.session?.access_token; if(t) headers.Authorization=`Bearer ${t}`; }catch{} }
+    try{
+      const res = await fetch('/api/comments', { method:'POST', headers, body: JSON.stringify({ action:'suggest', content:form.content.trim(), hp }) });
+      if(res.status===401){ onSessionExpired?.(); return; }
+      if(!res.ok) throw new Error();
+    }catch{ alert('건의 전송에 실패했습니다. 다시 시도해주세요.'); return; }
     setForm({content:""});
     setSent(true); setTimeout(()=>{ setSent(false); setOpen(false); },2000);
   };
@@ -935,6 +964,10 @@ function SuggestionBox({ user, dark, onRequireLogin, onSessionExpired }) {
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block text-gray-500">건의 내용 *</label>
+                  {/* 허니팟: 봇만 채우는 숨김 필드 */}
+                  <input type="text" name="website" value={hp} onChange={e=>setHp(e.target.value)}
+                    tabIndex={-1} autoComplete="off" aria-hidden="true"
+                    style={{position:'absolute',left:'-9999px',width:1,height:1,opacity:0}}/>
                   <textarea value={form.content} onChange={e=>setForm({...form,content:e.target.value})}
                     rows={4} placeholder="어떤 기사를 원하시나요?"
                     className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none ${inp}`}/>
