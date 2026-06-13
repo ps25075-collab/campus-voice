@@ -1494,6 +1494,7 @@ export default function App() {
   const loadMembers=async()=>{
     try{
       const res=await fetch('/api/admin/members',{ headers: staffAuthHeaders() });
+      if(res.status===401){ handleStaffSessionExpired(); return; }  // 빈 목록 오인 방지 → 재로그인 유도
       if(!res.ok){ setMembers([]); return; }
       const { members:list }=await res.json();
       setMembers(list||[]);
@@ -1518,6 +1519,7 @@ export default function App() {
   const loadSubscribers=async()=>{
     try{
       const res=await fetch('/api/admin/subscribers',{ headers: staffAuthHeaders() });
+      if(res.status===401){ handleStaffSessionExpired(); return; }  // 빈 목록 오인 방지 → 재로그인 유도
       if(!res.ok){ setSubscribers([]); return; }
       const { subscribers:list }=await res.json();
       setSubscribers(list||[]);
