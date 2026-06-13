@@ -39,23 +39,12 @@
     <meta name="apple-mobile-web-app-title" content="세계를 알리다" />
 
     <!-- 다크 모드 초기 깜빡임(FOUC) 방지: React 마운트 전에 배경색 결정 -->
-    <script>
-      try {
-        var d = localStorage.getItem('campus_voice_dark');
-        document.documentElement.style.backgroundColor =
-          d && JSON.parse(d) ? '#030712' : '#f9fafb';
-      } catch (e) {}
-    </script>
+    <!-- CSP 강화: 인라인 스크립트 대신 외부 파일(script-src 'self')로 로드 -->
+    <script src="/theme-init.js"></script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {});
-        });
-      }
-    </script>
+    <script src="/sw-register.js"></script>
   </body>
 </html>

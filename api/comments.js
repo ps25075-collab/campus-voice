@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     const cid = idv.value;
     // 해당 댓글과 그 답글(parent_id)을 함께 삭제
     const { error } = await svc.from('comments').delete().or(`id.eq.${pgValue(cid)},parent_id.eq.${pgValue(cid)}`);
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) { console.error('[comments] delete error:', error.message); return res.status(500).json({ error: 'delete failed' }); }
     await writeAudit(svc, { actor: staff, action: 'comment.delete', targetTable: 'comments', targetId: cid, req });
     return res.status(200).json({ ok: true });
   }

@@ -227,6 +227,8 @@ export default async function handler(req, res) {
 
     return res.status(400).json({ error: 'unknown action' });
   } catch (err) {
-    return res.status(500).json({ error: err?.message || 'server error' });
+    // 원시 DB/내부 오류 메시지는 스키마·구현 세부를 노출할 수 있으므로 클라이언트엔 일반 메시지만.
+    console.error('[articles] handler error:', err?.message || err);
+    return res.status(500).json({ error: 'server error' });
   }
 }
