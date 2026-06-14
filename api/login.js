@@ -1,6 +1,7 @@
 import { getAdminClient } from '../lib/supabaseAdmin.js';
 import { verifyPassword } from '../lib/password.js';
 import { signStaffToken } from './_lib/staffToken.js';
+import { verifyTotp } from './_lib/totp.js';
 import { V } from './_lib/validate.js';
 import { guardMutation } from './_lib/csrf.js';
 import { setStaffCookie, clearStaffCookie } from './_lib/cookies.js';
@@ -49,10 +50,14 @@ export default async function handler(req, res) {
   if (!uv.ok || !pv.ok) return res.status(400).json({ error: 'invalid' });
   const username = uv.value, password = pv.value;
 
-  // 2) 계정 조회 (비밀번호 해시는 service_role 로만 접근 가능 — anon 노출 차단)
+  // 2) 계정 조회 (비밀번호 해시·TOTP 비밀키는 service_role 로만 접근 — anon 노출 차단)
+  //   select('*') 인 이유: totp_secret 컬럼 마이그레이션(20260614_staff_mfa.sql)이 아직
+  //   적용되지 않은 DB에서도 깨지지 않도록 — 컬럼이 없으면 user.totp_secret 이 undefined 라
+  //   2단계 검증이 자동으로 건너뛰어진다(무중단). 컬럼이 있으면 값이 포함돼 MFA가 켜진다.
+  //   (응답으로 내보내는 건 아래에서 id/name/role 뿐 — 해시·시크릿은 서버에만 머무름)
   const { data: user } = await supabase
     .from('staff_users')
-    .select('id, name, role, password_hash')
+    .select('*')
     .eq('id', username)
     .maybeSingle();
 
@@ -66,6 +71,24 @@ export default async function handler(req, res) {
       p_window_seconds: WINDOW_SECONDS,
     });
     return res.status(401).json({ error: '아이디 또는 비밀번호가 올바르지 않습니다.' });
+  }
+
+  // 3b) 2단계 인증(우려 #1): totp_secret 이 설정된 계정은 6자리 코드까지 맞아야 통과.
+  //   • 코드 미입력 → mfaRequired 응답(쿠키 미발급). 클라이언트가 2단계 입력칸을 띄운다.
+  //   • 코드 불일치 → 실패 카운트 증가(코드 무차별 대입 방어) 후 거부.
+  //   • totp_secret 이 null(미등록)이면 기존 1단계 유지 → 등록 전에도 무중단.
+  if (user.totp_secret) {
+    const totp = (req.body || {}).totp;
+    if (totp === undefined || totp === null || totp === '') {
+      return res.status(401).json({ mfaRequired: true });
+    }
+    if (!verifyTotp(user.totp_secret, totp)) {
+      await supabase.rpc('register_failed_login', {
+        p_ip: ip,
+        p_window_seconds: WINDOW_SECONDS,
+      });
+      return res.status(401).json({ mfaRequired: true, error: '인증 코드가 올바르지 않습니다.' });
+    }
   }
 
   // 4) 성공 — 해당 IP의 시도 기록 제거
