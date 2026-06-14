@@ -1915,7 +1915,7 @@ export default function App() {
   const inp =dark?"bg-gray-800 border-gray-700 text-white placeholder-gray-500":"bg-white border-gray-300 placeholder-gray-400";
 
   const SNS=[
-    {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.265 5.632L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg>,label:"X (트위터)",color:"text-gray-800",href:"https://twitter.com/intent/follow?screen_name=se_al_official_"},
+    {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.265 5.632L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg>,label:"X (트위터)",color:dark?"text-gray-100":"text-gray-800",href:"https://twitter.com/intent/follow?screen_name=se_al_official_"},
     {icon:<Instagram size={14}/>,label:"인스타그램",color:"text-pink-500",href:null},
     {icon:<Facebook size={14}/>,label:"페이스북",color:"text-blue-600",href:null},
     {icon:<Youtube size={14}/>,label:"유튜브",color:"text-red-600",href:null},
