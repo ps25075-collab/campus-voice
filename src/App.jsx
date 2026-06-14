@@ -2579,7 +2579,7 @@ export default function App() {
                   <span>{selected.date}</span>
                   {selected.author&&<span className="text-amber-600 font-medium flex items-center gap-1"><PenLine size={12}/> {selected.author}</span>}
                   <span className="flex items-center gap-1"><Eye size={12}/> {(selected.views||0).toLocaleString()}</span>
-                  <span className="flex items-center gap-1"><BookOpen size={12}/> 약 {readingTime(selected.body)}분 읽기</span>
+                  <span className="flex items-center gap-1"><BookOpen size={12}/> 읽는시간:{readingTime(selected.body)}분</span>
                 </div>
                 <button onClick={()=>setShowShare(true)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-colors hover:opacity-80" style={{borderColor:accentText,color:accentText}}><Share2 size={12}/> 공유</button>
               </div>
@@ -2751,7 +2751,7 @@ export default function App() {
                             <span className={`text-xs text-white px-2 py-0.5 rounded-full ${typeColor[a.type]||"bg-gray-500"}`}>{a.type||"기사"}</span>
                             <span className={`text-xs text-white px-2 py-0.5 rounded-full ${catColor[a.category]||"bg-gray-500"}`}>{a.category}</span>
                           </div>
-                          <span className="text-xs text-gray-400 flex items-center gap-1">{a.date} · <Eye size={10}/> {(a.views||0).toLocaleString()} · <BookOpen size={10}/> {readingTime(a.body)}분 읽기</span>
+                          <span className="text-xs text-gray-400 flex items-center gap-1">{a.date} · <Eye size={10}/> {(a.views||0).toLocaleString()} · <BookOpen size={10}/> 읽는시간:{readingTime(a.body)}분</span>
                         </div>
                         <h3 className="font-semibold text-[15px] md:text-base leading-snug mb-1 line-clamp-2 group-hover:opacity-80 transition-opacity">{a.title}</h3>
                         {a.author&&<p className="text-xs text-amber-600 mb-0.5">✒️ {a.author}</p>}
