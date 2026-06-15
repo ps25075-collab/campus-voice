@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.1",
-    "lucide-react": "^0.441.0",
+    "lucide-react": "^1.18.0",
     "nodemailer": "^8.0.11",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
