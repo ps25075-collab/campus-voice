@@ -16,7 +16,7 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
         with:
           node-version: 22   # @supabase/supabase-js는 native WebSocket 필요(Node 20엔 없음)
