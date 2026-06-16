@@ -1,26 +1,34 @@
-# 🔴 적용 필요 (2026-06-14) — 관리자 2단계 인증 (우려 #1)
+# 🔴 적용 필요 (2026-06-14) — 관리자 2단계 인증: 이메일 OTP (우려 #1)
 
 `supabase/migrations/20260614_staff_mfa.sql` 을 **아직 적용하지 않았습니다.**
-(라이브 DB 확인: `staff_users.totp_secret` 컬럼 없음 → 마이그레이션 미적용)
+(라이브 DB 확인: `staff_users.mfa_email` 등 컬럼 없음 → 마이그레이션 미적용)
+
+> 방식 변경: 기존 TOTP(Authenticator 앱)에서 **이메일 OTP**로 전환했다. 로그인 시 스태프의
+> 메일(보통 Gmail)로 6자리 일회용 코드를 보내고, 데스크탑 메일함에서 받아 입력한다.
+> (모바일/앱 불필요 — 데스크탑만으로 2단계 유지)
 
 ## 무엇을 켜나
-`staff_users` 에 `totp_secret` 컬럼을 추가해, 값이 설정된 계정은 로그인 2단계로
-**6자리 TOTP 코드**(Google Authenticator 등)를 추가 검증한다(`api/login.js` + `api/_lib/totp.js`).
-피싱·크리덴셜 도용으로 비밀번호가 새도 두 번째 요소 없이는 로그인 불가.
+`staff_users` 에 `mfa_email`(+ `mfa_code_hash`/`mfa_code_expires_at`/`mfa_code_attempts`/`mfa_code_sent_at`)
+컬럼을 추가해, `mfa_email` 이 설정된 계정은 로그인 2단계로 **메일로 받은 6자리 코드**를 추가
+검증한다(`api/login.js` + `api/_lib/emailOtp.js`). 비밀번호가 새도 메일함 접근 없이는 로그인 불가.
+코드는 평문이 아니라 HMAC-SHA256 해시로 저장되고, 10분 만료·코드당 5회 시도·재발송 쿨다운으로 보호된다.
 
 ## 무중단
 - **코드는 적용 전에도 안 깨짐**: `login.js` 는 `select('*')` 라 컬럼이 없어도 동작하고,
-  `totp_secret` 이 없으면(undefined) 2단계를 건너뛰어 기존 1단계 로그인 그대로다.
-- 마이그 적용 후에도 `totp_secret` 이 null 인 동안은 1단계 유지. 등록해야 비로소 MFA 활성.
+  `mfa_email` 이 없으면(undefined) 2단계를 건너뛰어 기존 1단계 로그인 그대로다.
+- 마이그 적용 후에도 `mfa_email` 이 null 인 동안은 1단계 유지. 등록해야 비로소 MFA 활성.
+
+## 선행 조건
+프로덕션(Vercel)에 **`GMAIL_USER` / `GMAIL_APP_PASSWORD`** 가 설정돼 있어야 코드 메일이 발송된다
+(newsletter/subscribe 와 동일 키 — 이미 사용 중). 없으면 로그인 단계에서 500(메일 발송 실패)로 막힌다.
 
 ## 적용 순서
 1. Supabase 대시보드 → **SQL Editor** → `20260614_staff_mfa.sql` 붙여넣고 **Run** (재실행 안전).
-2. 로컬에서 관리자 TOTP 등록:
+2. 로컬에서 관리자 이메일 OTP 등록(수신 이메일 지정):
    ```bash
-   node --env-file=.env scripts/setup-mfa.mjs admin
+   node --env-file=.env scripts/setup-mfa.mjs admin you@gmail.com
    ```
-   출력된 `otpauth://` URI / base32 시크릿을 Authenticator 앱에 추가.
-3. 로그아웃 후 다시 로그인 → 비밀번호 입력 후 **인증 코드 6자리** 단계가 뜨고, 앱 코드로
+3. 로그아웃 후 다시 로그인 → 비밀번호 입력 → 지정한 메일로 **6자리 코드**가 오고, 입력하면
    통과되는지 확인. (해제: `node --env-file=.env scripts/setup-mfa.mjs admin --disable`)
 
 ---

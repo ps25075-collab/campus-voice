@@ -1344,8 +1344,8 @@ export default function App() {
   const [delBusy,setDelBusy]         = useState(false);
   const [user,setUser]               = useState(null);
   const [showLogin,setShowLogin]     = useState(false);
-  const [loginForm,setLoginForm]     = useState({id:"",pw:"",totp:""});
-  const [mfaStep,setMfaStep]         = useState(false);   // 직원 2단계 인증(TOTP) 코드 입력 단계
+  const [loginForm,setLoginForm]     = useState({id:"",pw:"",code:""});
+  const [mfaStep,setMfaStep]         = useState(false);   // 직원 2단계 인증(이메일 OTP) 코드 입력 단계
   const [loginError,setLoginError]   = useState("");
   const [adminTab,setAdminTab]       = useState("pending");
   const [loginTab,setLoginTab]       = useState("member");
@@ -1477,12 +1477,13 @@ export default function App() {
   const handleLogin=async()=>{
     setLoginError("");
     try{
-      const res=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:loginForm.id,password:loginForm.pw,totp:loginForm.totp||undefined})});
+      const res=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:loginForm.id,password:loginForm.pw,code:loginForm.code||undefined})});
       const data=await res.json().catch(()=>({}));
-      // 2단계 인증 필요: 비밀번호는 맞고 TOTP 코드가 더 필요한 단계 → 코드 입력칸 표시.
+      // 2단계 인증 필요: 비밀번호는 맞고 이메일로 받은 코드가 더 필요한 단계 → 코드 입력칸 표시.
       if(res.status===401&&data.mfaRequired){
         setMfaStep(true);
-        setLoginError(data.error||"");   // 코드 불일치면 메시지, 첫 요구면 빈 값
+        // 코드 불일치/만료면 그 메시지, 첫 요구(메일 발송)면 안내 문구.
+        setLoginError(data.error||(data.mfaSent?"등록된 이메일로 인증 코드를 보냈습니다. 메일함을 확인하세요.":""));
         return;
       }
       if(!res.ok){ setLoginError("아이디 또는 비밀번호가 올바르지 않습니다."); return; }
@@ -1490,7 +1491,7 @@ export default function App() {
       localStorage.setItem("cv_user",JSON.stringify(data));
       loadStaffArticles(data);
       loadBookmarks(data.id, false);
-      setShowLogin(false); setLoginForm({id:"",pw:"",totp:""}); setMfaStep(false);
+      setShowLogin(false); setLoginForm({id:"",pw:"",code:""}); setMfaStep(false);
     }catch{ setLoginError("로그인 중 오류가 발생했습니다."); }
   };
 
@@ -2030,18 +2031,18 @@ export default function App() {
 
       {/* LOGIN MODAL */}
       {showLogin&&(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={()=>{setShowLogin(false);setShowSignup(false);setSignupDone(false);setSignupErr("");setLoginError("");setMfaStep(false);setLoginForm(f=>({...f,totp:""}));}}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={()=>{setShowLogin(false);setShowSignup(false);setSignupDone(false);setSignupErr("");setLoginError("");setMfaStep(false);setLoginForm(f=>({...f,code:""}));}}>
           <div className={`rounded-2xl shadow-2xl p-6 w-84 max-w-sm w-full ${dark?"bg-gray-900 text-gray-100":"bg-white text-gray-900"}`} onClick={e=>e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h2 className="font-bold text-lg">{showSignup?"회원가입":"로그인"}</h2>
-              <button onClick={()=>{setShowLogin(false);setShowSignup(false);setSignupDone(false);setSignupErr("");setLoginError("");setMfaStep(false);setLoginForm(f=>({...f,totp:""}));}}><X size={18}/></button>
+              <button onClick={()=>{setShowLogin(false);setShowSignup(false);setSignupDone(false);setSignupErr("");setLoginError("");setMfaStep(false);setLoginForm(f=>({...f,code:""}));}}><X size={18}/></button>
             </div>
 
             {/* 탭 */}
             {!showSignup&&(
               <div className={`flex gap-1 mb-4 p-1 rounded-lg ${dark?"bg-gray-800":"bg-gray-100"}`}>
                 {[{key:"member",label:"회원"},{key:"staff",label:"직원"}].map(t=>(
-                  <button key={t.key} onClick={()=>{setLoginTab(t.key);setLoginError("");setMfaStep(false);setLoginForm(f=>({...f,totp:""}));}}
+                  <button key={t.key} onClick={()=>{setLoginTab(t.key);setLoginError("");setMfaStep(false);setLoginForm(f=>({...f,code:""}));}}
                     className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${loginTab===t.key?(dark?"bg-gray-700 text-white":"bg-white shadow text-gray-900"):(dark?"text-gray-400":"text-gray-500")}`}>
                     {t.label}
                   </button>
@@ -2059,11 +2060,11 @@ export default function App() {
                 <input value={loginForm.id} onChange={e=>setLoginForm({...loginForm,id:e.target.value})} disabled={mfaStep} placeholder="아이디" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 disabled:opacity-50 ${inp}`}/>
                 <input type="password" value={loginForm.pw} onChange={e=>setLoginForm({...loginForm,pw:e.target.value})} disabled={mfaStep} onKeyDown={e=>e.key==="Enter"&&handleLogin()} placeholder="비밀번호" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 disabled:opacity-50 ${inp}`}/>
                 {mfaStep&&(
-                  <input value={loginForm.totp} onChange={e=>setLoginForm({...loginForm,totp:e.target.value.replace(/\D/g,"").slice(0,6)})} onKeyDown={e=>e.key==="Enter"&&handleLogin()} inputMode="numeric" autoFocus placeholder="인증 코드 6자리 (Authenticator 앱)" className={`w-full border rounded-lg px-3 py-2 text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
+                  <input value={loginForm.code} onChange={e=>setLoginForm({...loginForm,code:e.target.value.replace(/\D/g,"").slice(0,6)})} onKeyDown={e=>e.key==="Enter"&&handleLogin()} inputMode="numeric" autoFocus placeholder="인증 코드 6자리 (이메일로 전송됨)" className={`w-full border rounded-lg px-3 py-2 text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
                 )}
                 {loginError&&<p className="text-red-500 text-xs">{loginError}</p>}
                 <button onClick={handleLogin} style={{backgroundColor:SC}} className="w-full py-2 text-white rounded-lg text-sm font-medium hover:opacity-90">{mfaStep?"인증 코드 확인":"로그인"}</button>
-                {mfaStep&&<button onClick={()=>{setMfaStep(false);setLoginForm({...loginForm,totp:""});setLoginError("");}} className={`w-full py-1.5 rounded-lg text-xs ${dark?"text-gray-400 hover:text-gray-200":"text-gray-500 hover:text-gray-700"}`}>← 처음부터 다시</button>}
+                {mfaStep&&<button onClick={()=>{setMfaStep(false);setLoginForm({...loginForm,code:""});setLoginError("");}} className={`w-full py-1.5 rounded-lg text-xs ${dark?"text-gray-400 hover:text-gray-200":"text-gray-500 hover:text-gray-700"}`}>← 처음부터 다시</button>}
               </div>
             )}
 
