@@ -49,7 +49,8 @@ export default async function handler(req, res) {
 
     const av = V.intId(body.article_id);
     if (!av.ok) return res.status(400).json({ error: 'invalid article_id' });
-    const tv = V.str(body.text, { min: 1, max: MAX_TEXT, field: 'text' });
+    // V.text: 길이 검사에 더해 제어문자·BiDi·제로폭 스푸핑 문자를 제거(우려 #4).
+    const tv = V.text(body.text, { min: 1, max: MAX_TEXT, field: 'text' });
     if (!tv.ok) return res.status(400).json({ error: tv.error });
 
     let parentId = null;
@@ -80,7 +81,7 @@ export default async function handler(req, res) {
     if (await rateLimited(svc, { key: `suggest:${clientIp(req)}`, max: 5, windowSeconds: 15 * 60 }))
       return res.status(429).json({ error: '건의가 너무 많습니다. 잠시 후 다시 시도해주세요.' });
 
-    const cv = V.str(body.content, { min: 1, max: MAX_TEXT, field: 'content' });
+    const cv = V.text(body.content, { min: 1, max: MAX_TEXT, field: 'content' });
     if (!cv.ok) return res.status(400).json({ error: cv.error });
 
     const row = { name: principal.name, content: cv.value, date: todayStr() };

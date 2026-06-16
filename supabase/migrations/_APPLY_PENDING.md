@@ -1,3 +1,31 @@
+# 🔴 적용 필요 (2026-06-17) — 댓글·건의 본문 형식(제어문자) 강제 (우려 #4)
+
+`supabase/migrations/20260617_ugc_format.sql` 을 **아직 적용하지 않았습니다.**
+(라이브 DB 확인: `comments_text_ctrl_chk`·`suggestions_content_ctrl_chk` 제약 없음 → 미적용)
+
+## 무엇을 닫나
+길이 제한은 이미 양쪽에 있음(서버 `V.str` max=2000 + DB `comments_len_chk`/`suggestions_len_chk`).
+빈 곳은 **본문 내 제어문자**(널바이트·BEL·DEL·C1 등)로, 서버·DB 모두 안 걸러 로그 오염·표시 왜곡·
+스푸핑에 악용될 여지가 있었다. 2층으로 막는다:
+1. 앱: `api/_lib/validate.js` 의 `V.text()` 가 제어문자·BiDi·제로폭 제거 후 길이 검사
+   (`api/comments.js` 댓글 text / 건의 content 가 `V.text` 사용). **이미 배포됨**.
+2. DB: `comments.text`/`suggestions.content` 에 제어문자 금지 CHECK 추가(탭/줄바꿈/복귀만 허용).
+   기존 행은 선제 정제 후 제약 추가(멱등). **이 SQL 적용 필요**.
+
+## 무중단
+- DB 제약 미적용이어도 앱의 `V.text` 가 이미 정제하므로 정상 입력은 그대로 저장된다.
+  DB CHECK는 직접 경로/우회 대비 방어적 2층일 뿐. 적용해야 DB 레벨 강제가 켜진다.
+
+## 적용 순서
+1. Supabase 대시보드 → **SQL Editor** → `20260617_ugc_format.sql` 붙여넣고 **Run** (재실행 안전).
+2. 로컬에서 DB 연동 검증:
+   ```bash
+   node --env-file=.env scripts/verify-ugc-format.mjs
+   ```
+   (앱 `V.text` 정제 + DB가 제어문자/초과 길이 insert를 거부하는지 확인. `🎉 모든 검증 통과` 떠야 함)
+
+---
+
 # ✅ 적용 완료 (2026-06-16) — 계정 단위 무차별 대입 방어 (우려 #3)
 
 `supabase/migrations/20260616_account_lockout.sql` **적용 완료.** SQL Editor Run(`Success. No rows
