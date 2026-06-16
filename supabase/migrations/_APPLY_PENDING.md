@@ -1,7 +1,9 @@
-# 🔴 적용 필요 (2026-06-16) — 계정 단위 무차별 대입 방어 (우려 #3)
+# ✅ 적용 완료 (2026-06-16) — 계정 단위 무차별 대입 방어 (우려 #3)
 
-`supabase/migrations/20260616_account_lockout.sql` 을 **아직 적용하지 않았습니다.**
-(라이브 DB 확인: `account_login_attempts` 테이블·`register_failed_account_login` 함수 없음 → 미적용)
+`supabase/migrations/20260616_account_lockout.sql` **적용 완료.** SQL Editor Run(`Success. No rows
+returned`) 후 `node --env-file=.env scripts/verify-account-lockout.mjs` **모든 검증 통과**로 확인:
+카운트 누적(1→2→3)·임계 도달 시 잠금(`just_locked`)·이미 잠긴 계정 재시도 경보 1회·`locked_until`
+조회(login.js 사전 점검 경로)·anon RLS 차단·테스트 정리까지 정상.
 
 ## 무엇을 닫나
 기존 레이트리밋은 IP 단위(`login_attempts.ip`)뿐이라, 공격자가 **IP를 분산**하면 한 계정을 노리는
@@ -15,7 +17,7 @@
 - 카운터는 **존재하는 계정에 대해서만** 증가(임의 username 플러딩 방지). 잠금 응답은 IP 한도와
   동일한 일반 429 문구라 계정 존재 여부 추가 노출을 최소화.
 
-## 적용 순서
+## 재적용/재검증 방법 (필요 시)
 1. Supabase 대시보드 → **SQL Editor** → `20260616_account_lockout.sql` 붙여넣고 **Run** (재실행 안전).
 2. 로컬에서 DB 연동 검증:
    ```bash
