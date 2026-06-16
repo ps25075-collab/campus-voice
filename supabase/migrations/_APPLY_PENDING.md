@@ -1,7 +1,9 @@
-# 🔴 적용 필요 (2026-06-17) — 댓글·건의 본문 형식(제어문자) 강제 (우려 #4)
+# ✅ 적용 완료 (2026-06-17) — 댓글·건의 본문 형식(제어문자) 강제 (우려 #4)
 
-`supabase/migrations/20260617_ugc_format.sql` 을 **아직 적용하지 않았습니다.**
-(라이브 DB 확인: `comments_text_ctrl_chk`·`suggestions_content_ctrl_chk` 제약 없음 → 미적용)
+`supabase/migrations/20260617_ugc_format.sql` **적용 완료.** SQL Editor Run(`Success. No rows
+returned`) 후 `node --env-file=.env scripts/verify-ugc-format.mjs` **모든 검증 통과**로 확인:
+앱 `V.text` 정제·초과길이/제어문자 거부 + DB가 comments/suggestions 제어문자·초과길이 insert를
+CHECK(23514)로 거부, 정상 insert는 허용.
 
 ## 무엇을 닫나
 길이 제한은 이미 양쪽에 있음(서버 `V.str` max=2000 + DB `comments_len_chk`/`suggestions_len_chk`).
@@ -16,7 +18,7 @@
 - DB 제약 미적용이어도 앱의 `V.text` 가 이미 정제하므로 정상 입력은 그대로 저장된다.
   DB CHECK는 직접 경로/우회 대비 방어적 2층일 뿐. 적용해야 DB 레벨 강제가 켜진다.
 
-## 적용 순서
+## 재적용/재검증 방법 (필요 시)
 1. Supabase 대시보드 → **SQL Editor** → `20260617_ugc_format.sql` 붙여넣고 **Run** (재실행 안전).
 2. 로컬에서 DB 연동 검증:
    ```bash
