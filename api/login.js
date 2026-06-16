@@ -5,9 +5,46 @@ import { generateCode, hashCode, verifyCode, sendOtpMail, CODE_TTL_MS, MAX_CODE_
 import { V } from './_lib/validate.js';
 import { guardMutation } from './_lib/csrf.js';
 import { setStaffCookie, clearStaffCookie } from './_lib/cookies.js';
+import { sendAlert } from './_lib/alert.js';
 
 const MAX_ATTEMPTS = 10;
 const WINDOW_SECONDS = 15 * 60; // 15분
+
+// 계정(username) 단위 잠금 — 분산 IP로 한 계정을 노리는 무차별 대입 방어(우려 #3).
+// IP 한도와 별개로, 같은 계정의 실패가 윈도우 내 ACCOUNT_MAX_ATTEMPTS 회 누적되면
+// ACCOUNT_LOCK_SECONDS 동안 계정을 잠근다(비번이 맞아도 거부). IP 한도(10)보다 높게 둬
+// 정상 사용자의 단순 오타보다는 분산 공격에서만 트립되도록 한다.
+const ACCOUNT_MAX_ATTEMPTS = 15;
+const ACCOUNT_LOCK_SECONDS = 30 * 60; // 30분
+
+// 계정 실패를 원자적으로 누적하고, 임계 초과로 '새로' 잠겼으면 관리자에게 1회 경보.
+// 존재하는 계정에 대해서만 호출(테이블 플러딩 방지). best-effort — 실패해도 로그인 흐름 불변.
+async function registerAccountFailure(supabase, account, ip) {
+  try {
+    const { data } = await supabase.rpc('register_failed_account_login', {
+      p_account: account,
+      p_window_seconds: WINDOW_SECONDS,
+      p_max_attempts: ACCOUNT_MAX_ATTEMPTS,
+      p_lock_seconds: ACCOUNT_LOCK_SECONDS,
+    });
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row?.just_locked) {
+      await sendAlert(
+        `계정 잠금: '${account}' 분산 무차별 대입 의심`,
+        [
+          `계정 '${account}' 의 로그인 실패가 ${WINDOW_SECONDS / 60}분 내 ${row.count}회 누적되어`,
+          `${ACCOUNT_LOCK_SECONDS / 60}분간 잠금했습니다(해제 예정: ${row.locked_until}).`,
+          `마지막 시도 IP: ${ip}`,
+          ``,
+          `여러 IP에서 한 계정을 노리는 무차별 대입일 수 있습니다. 본인 시도가 아니라면`,
+          `비밀번호를 변경하고, 잠금은 시간이 지나면 자동 해제됩니다.`,
+        ].join('\n')
+      );
+    }
+  } catch (e) {
+    console.error('[login] 계정 실패 카운트 기록 실패:', e?.message);
+  }
+}
 
 export default async function handler(req, res) {
   if (guardMutation(req, res)) return; // CSRF: preflight 처리 + 교차 출처 차단
@@ -61,6 +98,20 @@ export default async function handler(req, res) {
     .eq('id', username)
     .maybeSingle();
 
+  // 2b) 계정 단위 잠금 사전 점검(우려 #3): 분산 IP 무차별 대입으로 잠긴 계정은 비번이
+  //   맞아도 거부한다. 존재하는 계정에 대해서만 기록되므로 user 가 있을 때만 조회한다.
+  //   응답은 IP 한도와 동일한 일반 429 문구 → 계정 존재 여부 추가 노출 최소화.
+  if (user) {
+    const { data: acct } = await supabase
+      .from('account_login_attempts')
+      .select('locked_until')
+      .eq('account', user.id)
+      .maybeSingle();
+    if (acct?.locked_until && new Date(acct.locked_until).getTime() > now) {
+      return res.status(429).json({ error: '너무 많은 로그인 시도입니다. 잠시 후 다시 시도해주세요.' });
+    }
+  }
+
   // 3) 상수시간 비교. 사용자가 없어도 더미 해시로 검증해 타이밍 누출 방지.
   const ok = verifyPassword(password, user?.password_hash);
 
@@ -70,6 +121,8 @@ export default async function handler(req, res) {
       p_ip: ip,
       p_window_seconds: WINDOW_SECONDS,
     });
+    // 계정 단위 카운터도 누적(존재 계정만) — 분산 IP 공격은 IP 카운터를 우회하므로.
+    if (user) await registerAccountFailure(supabase, user.id, ip);
     return res.status(401).json({ error: '아이디 또는 비밀번호가 올바르지 않습니다.' });
   }
 
@@ -126,6 +179,8 @@ export default async function handler(req, res) {
         p_ip: ip,
         p_window_seconds: WINDOW_SECONDS,
       });
+      // OTP 오입력도 계정 단위로 누적 — 분산 IP의 코드 추측 공격 방어(우려 #3).
+      await registerAccountFailure(supabase, user.id, ip);
       return res.status(401).json({ mfaRequired: true, error: '인증 코드가 올바르지 않습니다.' });
     }
     // 성공 — 일회용 코드 폐기(재사용 차단).
@@ -133,8 +188,9 @@ export default async function handler(req, res) {
       .update({ mfa_code_hash: null, mfa_code_expires_at: null, mfa_code_attempts: 0 }).eq('id', user.id);
   }
 
-  // 4) 성공 — 해당 IP의 시도 기록 제거
+  // 4) 성공 — 해당 IP의 시도 기록 + 계정 단위 실패/잠금 기록 제거
   await supabase.from('login_attempts').delete().eq('ip', ip);
+  await supabase.from('account_login_attempts').delete().eq('account', user.id);
 
   // 서버 API 권한 검증용 서명 토큰 발급 후 HttpOnly 쿠키로 내려준다.
   // 토큰을 응답 본문/ localStorage에 두지 않아 XSS로도 탈취되지 않는다(쿠키는 JS 비가독).

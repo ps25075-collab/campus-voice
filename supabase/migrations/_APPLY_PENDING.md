@@ -1,7 +1,35 @@
-# 🔴 적용 필요 (2026-06-14) — 관리자 2단계 인증: 이메일 OTP (우려 #1)
+# 🔴 적용 필요 (2026-06-16) — 계정 단위 무차별 대입 방어 (우려 #3)
 
-`supabase/migrations/20260614_staff_mfa.sql` 을 **아직 적용하지 않았습니다.**
-(라이브 DB 확인: `staff_users.mfa_email` 등 컬럼 없음 → 마이그레이션 미적용)
+`supabase/migrations/20260616_account_lockout.sql` 을 **아직 적용하지 않았습니다.**
+(라이브 DB 확인: `account_login_attempts` 테이블·`register_failed_account_login` 함수 없음 → 미적용)
+
+## 무엇을 닫나
+기존 레이트리밋은 IP 단위(`login_attempts.ip`)뿐이라, 공격자가 **IP를 분산**하면 한 계정을 노리는
+무차별 대입을 우회할 수 있었다. 계정(username) 단위 실패 카운터(`account_login_attempts`)를 병행해,
+윈도우(15분) 내 실패가 임계치(`ACCOUNT_MAX_ATTEMPTS`=15)를 넘으면 그 계정을 30분 잠그고(비번이
+맞아도 거부), 잠금 발생 시 관리자에게 경보 메일을 1회 보낸다(`api/login.js` + `api/_lib/alert.js`).
+
+## 무중단
+- **적용 전에도 안 깨짐**: `login.js`는 테이블/함수가 없으면 조회는 조용히 실패(잠금 없이 통과),
+  RPC 호출은 try/catch로 무시 → 기존 IP 레이트리밋 그대로 동작한다. 적용해야 계정 잠금이 활성.
+- 카운터는 **존재하는 계정에 대해서만** 증가(임의 username 플러딩 방지). 잠금 응답은 IP 한도와
+  동일한 일반 429 문구라 계정 존재 여부 추가 노출을 최소화.
+
+## 적용 순서
+1. Supabase 대시보드 → **SQL Editor** → `20260616_account_lockout.sql` 붙여넣고 **Run** (재실행 안전).
+2. 로컬에서 DB 연동 검증:
+   ```bash
+   node --env-file=.env scripts/verify-account-lockout.mjs
+   ```
+   (합성 테스트 계정으로 카운트 증가·임계 잠금·정리까지 자동 확인. `🎉 모든 검증 통과` 떠야 함)
+3. (선택) 경보 메일 수신 주소는 `ALERT_EMAIL`(없으면 `GMAIL_USER`).
+
+---
+
+# ✅ 적용 완료 (2026-06-16) — 관리자 2단계 인증: 이메일 OTP (우려 #1)
+
+`supabase/migrations/20260614_staff_mfa.sql` **적용 완료.** (`setup-mfa.mjs`로 admin 수신 이메일
+등록이 성공 → `mfa_email` 등 컬럼 존재 확인. admin 계정 이메일 OTP 2단계 인증 활성.)
 
 > 방식 변경: 기존 TOTP(Authenticator 앱)에서 **이메일 OTP**로 전환했다. 로그인 시 스태프의
 > 메일(보통 Gmail)로 6자리 일회용 코드를 보내고, 데스크탑 메일함에서 받아 입력한다.
