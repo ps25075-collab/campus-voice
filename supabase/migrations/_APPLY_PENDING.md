@@ -1,3 +1,34 @@
+# ✅ 적용 완료 (2026-06-17) — market_cache RLS 활성 (Supabase advisor: rls_disabled_in_public)
+
+`supabase/migrations/20260612_market_cache.sql` 의 **마지막 줄(`enable row level security`)만
+미적용** 상태였음. Supabase 보안 advisor가 `rls_disabled_in_public`(critical)로 경보(2026-06-12).
+**2026-06-17 SQL Editor Run 으로 적용 완료**, 라이브 재검증 통과:
+service_role SELECT/UPDATE(`latest`) 정상 + anon SELECT/INSERT 둘 다 `permission denied`(401).
+(advisor 패널의 `rls_disabled_in_public` 경보 소거는 대시보드에서 최종 확인.)
+
+## 실제 위험도 — 낮음 (데이터 노출은 이미 차단됨)
+라이브 확인 결과 `revoke all ... from anon, authenticated` 는 이미 적용돼 있어,
+anon 키로 SELECT/INSERT 모두 `permission denied for table market_cache`(401)로 막힌다.
+즉 이메일 문구("누구나 읽고/수정/삭제 가능")는 이 테이블엔 해당하지 않는다(grant 단계에서 차단).
+남은 것은 advisor가 보는 **RLS 플래그**뿐 — 심층방어로 켜면 경보가 사라진다.
+(`market_cache`는 전부 `/api/finance` 가 service_role 로만 접근하므로 정책 없이 enable 만 하면 됨.)
+
+## 적용 방법
+Supabase 대시보드 → **SQL Editor** 에 아래 붙여넣고 **Run** (재실행 안전):
+
+```sql
+alter table public.market_cache enable row level security;
+revoke all on public.market_cache from anon, authenticated;
+```
+
+(전체 `20260612_market_cache.sql` 을 다시 Run 해도 동일 — `create table if not exists` 라 멱등.)
+
+## 적용 후 확인
+- Supabase Advisors 패널에서 `rls_disabled_in_public` 경보가 사라지는지 확인.
+- anon 차단은 그대로 유지(여전히 permission denied 면 정상).
+
+---
+
 # ✅ 적용 완료 (2026-06-17) — 댓글·건의 본문 형식(제어문자) 강제 (우려 #4)
 
 `supabase/migrations/20260617_ugc_format.sql` **적용 완료.** SQL Editor Run(`Success. No rows
