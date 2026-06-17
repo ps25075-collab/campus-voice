@@ -97,6 +97,10 @@ export default async function handler(req, res) {
 
     const svc = svcClient(res); if (!svc) return;
 
+    // IP 레이트리밋(우려 #5): 인증된 모더레이터라도 대량 삭제 폭주를 억제. 분당 30건.
+    if (await rateLimited(svc, { key: `cdelete:${clientIp(req)}`, max: 30, windowSeconds: 60 }))
+      return res.status(429).json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' });
+
     // id는 반드시 양의 정수. .or()는 '원시 필터 문자열'이므로 pgValue 화이트리스트로 한 번 더 차단.
     const idv = V.intId(body.id);
     if (!idv.ok) return res.status(400).json({ error: 'invalid id' });

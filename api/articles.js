@@ -21,6 +21,7 @@ import { reauthStaff } from './_lib/reauth.js';
 import { V } from './_lib/validate.js';
 import { guardMutation } from './_lib/csrf.js';
 import { checkMassDeletion } from './_lib/alert.js';
+import { clientIp, rateLimited } from './_lib/rateLimit.js';
 
 const CAN_WRITE = ['admin', 'columnist', 'reporter']; // editor 스태프 계정은 없음
 const MAX_BODY_CHARS = 50000;
@@ -56,6 +57,11 @@ export default async function handler(req, res) {
   if (!serviceKey || !process.env.SUPABASE_URL)
     return res.status(500).json({ error: 'server not configured' });
   const svc = createClient(process.env.SUPABASE_URL, serviceKey, { auth: { persistSession: false } });
+
+  // IP 레이트리밋(우려 #5): 비싼 인증 검증(getUser+profiles 조회) 전에 두어 미인증 폭주도 차단.
+  // 정상 작성/편집은 분당 40건이면 충분(학교 NAT 공유 IP 고려해 넉넉히). login_attempts 재사용.
+  if (await rateLimited(svc, { key: `articles:${clientIp(req)}`, max: 40, windowSeconds: 60 }))
+    return res.status(429).json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' });
 
   const principal = await resolvePrincipal(req, svc);
   if (!principal) return res.status(401).json({ error: 'unauthorized' });

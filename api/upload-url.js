@@ -4,6 +4,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { resolvePrincipal, CAN_WRITE } from './_lib/principal.js';
 import { guardMutation } from './_lib/csrf.js';
+import { clientIp, rateLimited } from './_lib/rateLimit.js';
 import crypto from 'crypto';
 
 const BUCKET = 'article-images';
@@ -17,6 +18,11 @@ export default async function handler(req, res) {
   if (!serviceKey || !process.env.SUPABASE_URL)
     return res.status(500).json({ error: 'server not configured' });
   const svc = createClient(process.env.SUPABASE_URL, serviceKey, { auth: { persistSession: false } });
+
+  // IP 레이트리밋(우려 #5): 서명 URL 발급 남용/스토리지 폭주 차단. 인증 검증 전에 둔다.
+  // 기사당 이미지 여러 장을 고려해 분당 30건. login_attempts 재사용(신규 테이블 불필요).
+  if (await rateLimited(svc, { key: `upload:${clientIp(req)}`, max: 30, windowSeconds: 60 }))
+    return res.status(429).json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' });
 
   const principal = await resolvePrincipal(req, svc);
   if (!principal) return res.status(401).json({ error: 'unauthorized' });
