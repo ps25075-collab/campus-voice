@@ -703,6 +703,10 @@ function CommentSection({ articleId, user, dark }) {
   const [likedIds,  setLikedIds]  = useState(()=>{
     try{ return JSON.parse(localStorage.getItem("cv_cmt_likes_"+articleId)||"[]"); }catch{ return []; }
   });
+  // 중복 등록 방지: 전송 중 재클릭/엔터를 막는다. ref 는 동기적이라 같은 틱의 더블클릭도
+  // 즉시 차단(상태 갱신은 비동기라 두 번째 클릭이 옛 값을 읽어 통과할 수 있음). state 는 버튼 비활성 UI용.
+  const submittingRef = useRef(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const card = dark ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200";
   const inp  = dark ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400" : "bg-white border-gray-300 placeholder-gray-400";
@@ -756,20 +760,26 @@ function CommentSection({ articleId, user, dark }) {
 
   const submitComment = async () => {
     if(!text.trim()) return;
+    if(submittingRef.current) return;   // 전송 중 재클릭 차단(중복 댓글 방지)
+    submittingRef.current = true; setSubmitting(true);
     try{
       const { comment } = await postComment({ action:'create', article_id:articleId, text:text.trim() });
       if(comment) setComments(prev=>[...prev, comment]);
       setName(""); setText("");
     }catch(e){ alert(e.message || '댓글 작성에 실패했습니다.'); }
+    finally{ submittingRef.current = false; setSubmitting(false); }
   };
 
   const submitReply = async () => {
     if(!replyText.trim()||!replyTo) return;
+    if(submittingRef.current) return;   // 전송 중 재클릭 차단(중복 답글 방지)
+    submittingRef.current = true; setSubmitting(true);
     try{
       const { comment } = await postComment({ action:'reply', article_id:articleId, parent_id:replyTo.id, text:replyText.trim() });
       if(comment) setComments(prev=>[...prev, comment]);
       setReplyTo(null); setReplyText(""); setReplyName("");
     }catch(e){ alert(e.message || '답글 작성에 실패했습니다.'); }
+    finally{ submittingRef.current = false; setSubmitting(false); }
   };
 
   const del = async (id) => {
@@ -838,9 +848,9 @@ function CommentSection({ articleId, user, dark }) {
         }
         <textarea value={text} onChange={e=>setText(e.target.value)} rows={3} placeholder="댓글을 입력하세요..."
           className={"w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 resize-none " + inp}/>
-        <button onClick={submitComment} style={{backgroundColor:SC}}
-          className="flex items-center gap-1.5 px-4 py-2 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
-          <Send size={13}/> 댓글 달기
+        <button onClick={submitComment} disabled={submitting} style={{backgroundColor:SC}}
+          className="flex items-center gap-1.5 px-4 py-2 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed">
+          <Send size={13}/> {submitting ? "등록 중..." : "댓글 달기"}
         </button>
       </div>
       {loading && <p className="text-xs text-gray-400 text-center py-4">불러오는 중...</p>}
@@ -864,9 +874,9 @@ function CommentSection({ articleId, user, dark }) {
                 <textarea value={replyText} onChange={e=>setReplyText(e.target.value)} rows={2} placeholder="답글을 입력하세요..."
                   className={"w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none " + inp}/>
                 <div className="flex gap-2">
-                  <button onClick={submitReply}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-medium transition-colors">
-                    <Send size={12}/> 답글 달기
+                  <button onClick={submitReply} disabled={submitting}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <Send size={12}/> {submitting ? "등록 중..." : "답글 달기"}
                   </button>
                   <button onClick={()=>setReplyTo(null)}
                     className={"px-3 py-1.5 rounded-lg text-xs border transition-colors " + (dark?"border-gray-600 text-gray-400":"border-gray-300 text-gray-500")}>
