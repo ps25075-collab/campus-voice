@@ -1869,14 +1869,18 @@ export default function App() {
     const updated={...article,views:newViews};
     setSelected(updated);
     document.title = `${article.title} — 세계를 알리다`;
+    // URL 갱신은 setArticles/await 보다 '먼저' 동기적으로 해야 한다. 그러지 않으면 아래
+    // 조회수 setArticles 가 articles 를 바꿔 [articles] 라우팅 효과가 재실행되는데, 그때
+    // window.location.pathname 이 아직 '이전' 기사 경로라 openFromUrl 이 이전 기사를 다시
+    // selected 로 덮어써, 첫 클릭에 이전 기사가 보이고 다시 눌러야 해당 기사가 열리는 버그가 났다.
+    const targetPath=`/article/${article.id}`;
+    if(window.location.pathname!==targetPath){
+      window.history.pushState({articleId:article.id}, '', targetPath);
+    }
     if(!alreadyCounted){
       setArticles(prev=>prev.map(a=>a.id===article.id?{...a,views:newViews}:a));
       try{ sessionStorage.setItem(sessionKey,'1'); }catch{}
       try{ const { error } = await supabase.rpc('bump_article_views', { p_id: article.id }); if(error) await supabase.from('articles').update({views:newViews}).eq('id',article.id); }catch{}
-    }
-    const targetPath=`/article/${article.id}`;
-    if(window.location.pathname!==targetPath){
-      window.history.pushState({articleId:article.id}, '', targetPath);
     }
   };
   const doDelete=async()=>{
