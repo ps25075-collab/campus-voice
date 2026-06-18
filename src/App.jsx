@@ -901,6 +901,8 @@ function SuggestionBox({ user, dark, onRequireLogin, onSessionExpired }) {
   const [form, setForm]         = useState({ content:"" });
   const [sent, setSent]         = useState(false);
   const [hp, setHp]             = useState("");   // 허니팟(봇 차단)
+  const sendingRef = useRef(false);               // 전송 중 재클릭 차단(중복 건의 방지)
+  const [sending, setSending]   = useState(false);
   const card = dark?"bg-gray-900 border-gray-800 text-gray-100":"bg-white border-gray-200 text-gray-900";
   const inp  = dark?"bg-gray-800 border-gray-700 text-white placeholder-gray-500":"bg-white border-gray-300 placeholder-gray-400";
 
@@ -932,6 +934,8 @@ function SuggestionBox({ user, dark, onRequireLogin, onSessionExpired }) {
   const submit = async () => {
     if(!user){ onRequireLogin?.(); return; }   // 로그인 후에만 건의 가능
     if(!form.content.trim()) return;
+    if(sendingRef.current) return;             // 전송 중 재클릭 차단(중복 건의 방지)
+    sendingRef.current = true; setSending(true);
     // 건의 작성은 서버(/api/comments) 경유 — 봇/스팸 방어(IP 레이트리밋·허니팟) + 신원 서버 강제(사칭 차단).
     // 직접 INSERT는 RLS로 차단됨. 회원은 세션 JWT 전송, 스태프는 HttpOnly 쿠키 자동 전송.
     let headers = { 'Content-Type':'application/json' };
@@ -941,6 +945,7 @@ function SuggestionBox({ user, dark, onRequireLogin, onSessionExpired }) {
       if(res.status===401){ onSessionExpired?.(); return; }
       if(!res.ok) throw new Error();
     }catch{ alert('건의 전송에 실패했습니다. 다시 시도해주세요.'); return; }
+    finally{ sendingRef.current = false; setSending(false); }
     setForm({content:""});
     setSent(true); setTimeout(()=>{ setSent(false); setOpen(false); },2000);
   };
@@ -995,8 +1000,8 @@ function SuggestionBox({ user, dark, onRequireLogin, onSessionExpired }) {
                     className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none ${inp}`}/>
                 </div>
                 <p className="text-xs text-gray-400 flex items-center gap-1"><Eye size={11}/> 건의 내용은 편집부만 열람할 수 있습니다.</p>
-                <button onClick={submit} className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2">
-                  <Send size={14}/> 건의 보내기
+                <button onClick={submit} disabled={sending} className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <Send size={14}/> {sending?"전송 중...":"건의 보내기"}
                 </button>
               </div>
             )}
@@ -1370,6 +1375,10 @@ export default function App() {
   const [pendingAuthUser,setPendingAuthUser] = useState(null);  // Google 인증 대기 유저
   const [termsCheck,setTermsCheck]       = useState({service:false,privacy:false});
   const [submitting,setSubmitting] = useState(false);
+  // 인증 버튼(로그인/회원가입) 중복 클릭 방지. ref 는 동기적이라 응답 전 연타도 즉시 차단하고,
+  // authBusy 상태로 버튼을 비활성화해 "반응이 없어 다시 누르는" 현상을 없앤다.
+  const authBusyRef = useRef(false);
+  const [authBusy,setAuthBusy] = useState(false);
   const [submitErr,setSubmitErr]   = useState("");
   const [uploading,setUploading]   = useState(false);
   const [showShare,setShowShare]   = useState(false);
@@ -1485,6 +1494,8 @@ export default function App() {
   };
 
   const handleLogin=async()=>{
+    if(authBusyRef.current) return;       // 전송 중 재클릭/엔터 차단(중복 로그인·중복 OTP 메일 방지)
+    authBusyRef.current=true; setAuthBusy(true);
     setLoginError("");
     try{
       const res=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:loginForm.id,password:loginForm.pw,code:loginForm.code||undefined})});
@@ -1503,25 +1514,35 @@ export default function App() {
       loadBookmarks(data.id, false);
       setShowLogin(false); setLoginForm({id:"",pw:"",code:""}); setMfaStep(false);
     }catch{ setLoginError("로그인 중 오류가 발생했습니다."); }
+    finally{ authBusyRef.current=false; setAuthBusy(false); }
   };
 
   const handleMemberLogin=async()=>{
+    if(authBusyRef.current) return;       // 전송 중 재클릭/엔터 차단
+    authBusyRef.current=true; setAuthBusy(true);
     setLoginError("");
-    const {data,error}=await supabase.auth.signInWithPassword({email:memberForm.email,password:memberForm.pw});
-    if(error){
-      if(error.message?.toLowerCase().includes('not confirmed')){
-        setLoginError("이메일 인증이 필요합니다. 가입 시 받은 이메일의 인증 링크를 클릭해주세요.");
-      } else {
-        setLoginError("이메일 또는 비밀번호가 올바르지 않습니다.");
+    try{
+      const {data,error}=await supabase.auth.signInWithPassword({email:memberForm.email,password:memberForm.pw});
+      if(error){
+        if(error.message?.toLowerCase().includes('not confirmed')){
+          setLoginError("이메일 인증이 필요합니다. 가입 시 받은 이메일의 인증 링크를 클릭해주세요.");
+        } else {
+          setLoginError("이메일 또는 비밀번호가 올바르지 않습니다.");
+        }
+        return;
       }
-      return;
-    }
-    await loadMemberProfile(data.user);
-    setShowLogin(false); setMemberForm({email:"",pw:""});
+      await loadMemberProfile(data.user);
+      setShowLogin(false); setMemberForm({email:"",pw:""});
+    }finally{ authBusyRef.current=false; setAuthBusy(false); }
   };
 
   const handleGoogleLogin=async()=>{
-    await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin}});
+    if(authBusyRef.current) return;       // 리다이렉트 직전 연타로 중복 OAuth 트리거 방지
+    authBusyRef.current=true; setAuthBusy(true);
+    try{
+      await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin}});
+    }catch{ authBusyRef.current=false; setAuthBusy(false); }
+    // 성공 시 페이지가 OAuth로 리다이렉트되므로 busy 를 풀지 않는다(중복 클릭 완전 차단).
   };
 
   const handleSignup=async()=>{
@@ -1531,15 +1552,19 @@ export default function App() {
     if(signupForm.pw!==signupForm.pwConfirm){ setSignupErr("비밀번호가 일치하지 않습니다."); return; }
     if(!termsCheck.service){ setSignupErr("서비스 이용약관에 동의해주세요."); return; }
     if(!termsCheck.privacy){ setSignupErr("개인정보 처리방침에 동의해주세요."); return; }
-    // 이름을 auth user_metadata로 전달 → 이메일 인증 후 첫 로그인 시 프로필이 이 이름으로 생성됨.
-    const {data,error}=await supabase.auth.signUp({email:signupForm.email,password:signupForm.pw,options:{data:{full_name:signupForm.name}}});
-    if(error){ setSignupErr(error.message); return; }
-    const now = new Date().toISOString();
-    if(data.user){
-      // 이메일 인증 대기 중엔 세션이 없어 RLS로 INSERT가 막힘(정상). 세션이 있으면 즉시 생성, 없으면 첫 로그인 시 생성 → best-effort.
-      await supabase.from('profiles').upsert({id:data.user.id,display_name:signupForm.name,role:'pending',email:signupForm.email,terms_agreed:true,privacy_agreed:true,terms_agreed_at:now},{onConflict:'id',ignoreDuplicates:true});
-    }
-    setSignupDone(true);
+    if(authBusyRef.current) return;       // 검증 통과 후 전송 단계에서만 잠금(검증 실패는 즉시 안내)
+    authBusyRef.current=true; setAuthBusy(true);
+    try{
+      // 이름을 auth user_metadata로 전달 → 이메일 인증 후 첫 로그인 시 프로필이 이 이름으로 생성됨.
+      const {data,error}=await supabase.auth.signUp({email:signupForm.email,password:signupForm.pw,options:{data:{full_name:signupForm.name}}});
+      if(error){ setSignupErr(error.message); return; }
+      const now = new Date().toISOString();
+      if(data.user){
+        // 이메일 인증 대기 중엔 세션이 없어 RLS로 INSERT가 막힘(정상). 세션이 있으면 즉시 생성, 없으면 첫 로그인 시 생성 → best-effort.
+        await supabase.from('profiles').upsert({id:data.user.id,display_name:signupForm.name,role:'pending',email:signupForm.email,terms_agreed:true,privacy_agreed:true,terms_agreed_at:now},{onConflict:'id',ignoreDuplicates:true});
+      }
+      setSignupDone(true);
+    }finally{ authBusyRef.current=false; setAuthBusy(false); }
   };
 
 
@@ -2077,7 +2102,7 @@ export default function App() {
                   <input value={loginForm.code} onChange={e=>setLoginForm({...loginForm,code:e.target.value.replace(/\D/g,"").slice(0,6)})} onKeyDown={e=>e.key==="Enter"&&handleLogin()} inputMode="numeric" autoFocus placeholder="인증 코드 6자리 (이메일로 전송됨)" className={`w-full border rounded-lg px-3 py-2 text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
                 )}
                 {loginError&&<p className="text-red-500 text-xs">{loginError}</p>}
-                <button onClick={handleLogin} style={{backgroundColor:SC}} className="w-full py-2 text-white rounded-lg text-sm font-medium hover:opacity-90">{mfaStep?"인증 코드 확인":"로그인"}</button>
+                <button onClick={handleLogin} disabled={authBusy} style={{backgroundColor:SC}} className="w-full py-2 text-white rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">{authBusy?"처리 중...":(mfaStep?"인증 코드 확인":"로그인")}</button>
                 {mfaStep&&<button onClick={()=>{setMfaStep(false);setLoginForm({...loginForm,code:""});setLoginError("");}} className={`w-full py-1.5 rounded-lg text-xs ${dark?"text-gray-400 hover:text-gray-200":"text-gray-500 hover:text-gray-700"}`}>← 처음부터 다시</button>}
               </div>
             )}
@@ -2088,13 +2113,13 @@ export default function App() {
                 <input type="email" value={memberForm.email} onChange={e=>setMemberForm({...memberForm,email:e.target.value})} placeholder="이메일" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
                 <input type="password" value={memberForm.pw} onChange={e=>setMemberForm({...memberForm,pw:e.target.value})} onKeyDown={e=>e.key==="Enter"&&handleMemberLogin()} placeholder="비밀번호" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
                 {loginError&&<p className="text-red-500 text-xs">{loginError}</p>}
-                <button onClick={handleMemberLogin} style={{backgroundColor:SC}} className="w-full py-2 text-white rounded-lg text-sm font-medium hover:opacity-90">로그인</button>
+                <button onClick={handleMemberLogin} disabled={authBusy} style={{backgroundColor:SC}} className="w-full py-2 text-white rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">{authBusy?"처리 중...":"로그인"}</button>
                 <div className="relative flex items-center gap-2 my-1">
                   <div className={`flex-1 h-px ${dark?"bg-gray-700":"bg-gray-200"}`}/>
                   <span className={`text-xs ${dark?"text-gray-500":"text-gray-400"}`}>또는</span>
                   <div className={`flex-1 h-px ${dark?"bg-gray-700":"bg-gray-200"}`}/>
                 </div>
-                <button onClick={handleGoogleLogin} className={`w-full py-2 rounded-lg text-sm font-medium border flex items-center justify-center gap-2 hover:opacity-80 transition-opacity ${dark?"border-gray-600 text-gray-200":"border-gray-300 text-gray-700"}`}>
+                <button onClick={handleGoogleLogin} disabled={authBusy} className={`w-full py-2 rounded-lg text-sm font-medium border flex items-center justify-center gap-2 hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed ${dark?"border-gray-600 text-gray-200":"border-gray-300 text-gray-700"}`}>
                   <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
                   Google로 로그인 / 회원가입
                 </button>
@@ -2132,7 +2157,7 @@ export default function App() {
                   </label>
                 </div>
                 {signupErr&&<p className="text-red-500 text-xs">{signupErr}</p>}
-                <button onClick={handleSignup} style={{backgroundColor:SC}} className="w-full py-2 text-white rounded-lg text-sm font-medium hover:opacity-90">가입 신청</button>
+                <button onClick={handleSignup} disabled={authBusy} style={{backgroundColor:SC}} className="w-full py-2 text-white rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">{authBusy?"처리 중...":"가입 신청"}</button>
                 <button onClick={()=>{setShowSignup(false);setSignupErr("");}} className={`w-full py-1.5 text-xs ${dark?"text-gray-400":"text-gray-500"} hover:underline`}>← 로그인으로</button>
               </div>
             )}
@@ -2225,16 +2250,20 @@ export default function App() {
               </label>
             </div>
             <button
-              disabled={!termsCheck.service||!termsCheck.privacy}
+              disabled={!termsCheck.service||!termsCheck.privacy||authBusy}
               onClick={async()=>{
-                await loadMemberProfile(pendingAuthUser, true);
-                setShowTermsAgree(false);
-                setPendingAuthUser(null);
-                setTermsCheck({service:false,privacy:false});
+                if(authBusyRef.current) return;
+                authBusyRef.current=true; setAuthBusy(true);
+                try{
+                  await loadMemberProfile(pendingAuthUser, true);
+                  setShowTermsAgree(false);
+                  setPendingAuthUser(null);
+                  setTermsCheck({service:false,privacy:false});
+                }finally{ authBusyRef.current=false; setAuthBusy(false); }
               }}
               style={{backgroundColor:(termsCheck.service&&termsCheck.privacy)?SC:"#9ca3af"}}
-              className="w-full py-2 text-white rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed">
-              동의하고 가입 완료
+              className="w-full py-2 text-white rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50">
+              {authBusy?"처리 중...":"동의하고 가입 완료"}
             </button>
             <button onClick={async()=>{ await supabase.auth.signOut(); setShowTermsAgree(false); setPendingAuthUser(null); setTermsCheck({service:false,privacy:false}); }}
               className={`w-full py-1.5 text-xs mt-2 ${dark?"text-gray-500":"text-gray-400"} hover:underline`}>
