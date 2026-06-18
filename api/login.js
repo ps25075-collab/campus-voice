@@ -136,27 +136,48 @@ export default async function handler(req, res) {
     const code = cv.ok ? cv.value : '';
 
     if (!code) {
-      // 코드 요청 단계: 유효한 코드가 이미 있고 쿨다운 이내면 재발송하지 않는다.
-      const liveCode = user.mfa_code_hash
-        && user.mfa_code_expires_at
-        && new Date(user.mfa_code_expires_at).getTime() > now;
-      const recentlySent = user.mfa_code_sent_at
-        && (now - new Date(user.mfa_code_sent_at).getTime()) < RESEND_COOLDOWN_MS;
-      if (liveCode && recentlySent) {
+      // 코드 요청 단계 — 메일 중복 발송 방지(원자적 슬롯 선점).
+      //
+      // 과거 버그: "유효 코드 존재 && 쿨다운 이내" 를 메모리에서 읽기로 검사한 뒤 메일을
+      //   보내고 그제서야 mfa_code_sent_at 을 기록했다. 같은 계정의 두 요청(더블클릭·클라이언트
+      //   재시도·동시 서버리스 호출)이 거의 동시에 도착하면 둘 다 옛 상태를 읽어 쿨다운 검사를
+      //   통과 → 메일이 항상 2통 발송됐다(읽기→발송→쓰기 사이의 경쟁 상태).
+      //
+      // 해결: 쿨다운 통과 여부를 단일 UPDATE 의 WHERE 로 옮긴다. Postgres 가 동시 UPDATE 를
+      //   직렬화하고 두 번째 요청의 WHERE 를 '갱신된' 행 기준으로 재평가하므로, 슬롯을 선점한
+      //   한 요청만 행을 갱신(=메일 발송)하고 나머지는 0행 → 발송하지 않는다.
+      //   (쿨다운 60s < 코드 TTL 10m 이라 "최근 발송됨" 이면 항상 "유효 코드 존재" 이므로,
+      //    mfa_code_sent_at 단일 조건으로 기존 의미를 그대로 보존한다.)
+      const fresh = generateCode();
+      const cutoff = new Date(now - RESEND_COOLDOWN_MS).toISOString();
+      const { data: claimed } = await supabase
+        .from('staff_users')
+        .update({
+          mfa_code_hash: hashCode(fresh),
+          mfa_code_expires_at: new Date(now + CODE_TTL_MS).toISOString(),
+          mfa_code_attempts: 0,
+          mfa_code_sent_at: new Date(now).toISOString(),
+        })
+        .eq('id', user.id)
+        .or(`mfa_code_sent_at.is.null,mfa_code_sent_at.lt.${cutoff}`)
+        .select('id')
+        .maybeSingle();
+
+      // 다른 동시 요청이 이미 쿨다운 내에 발송(슬롯 선점)함 → 재발송 생략(메일 1통 유지).
+      if (!claimed) {
         return res.status(401).json({ mfaRequired: true, mfaSent: true });
       }
-      const fresh = generateCode();
+
       const sent = await sendOtpMail(user.mfa_email, fresh);
       if (!sent) {
+        // 발송 실패(GMAIL 미설정 등) — 방금 선점한 슬롯을 비워 재요청이 쿨다운에 막히지
+        //   않게 한다(best-effort). 미전달 코드를 남겨두지 않는다.
+        await supabase.from('staff_users')
+          .update({ mfa_code_hash: null, mfa_code_expires_at: null, mfa_code_sent_at: null })
+          .eq('id', user.id);
         console.error('[login] MFA 메일 발송 실패(GMAIL 미설정?)');
         return res.status(500).json({ error: '인증 메일 발송에 실패했습니다. 관리자에게 문의하세요.' });
       }
-      await supabase.from('staff_users').update({
-        mfa_code_hash: hashCode(fresh),
-        mfa_code_expires_at: new Date(now + CODE_TTL_MS).toISOString(),
-        mfa_code_attempts: 0,
-        mfa_code_sent_at: new Date(now).toISOString(),
-      }).eq('id', user.id);
       return res.status(401).json({ mfaRequired: true, mfaSent: true });
     }
 
