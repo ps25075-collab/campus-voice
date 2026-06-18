@@ -159,6 +159,35 @@ const memberRoleStyle = { pending:"bg-yellow-100 text-yellow-700", reporter:"bg-
 
 /* ── 이미지 컴포넌트 ── */
 const CAT_EMOJI = { 긴급:"⚠️", 경제:"💰", 문화:"🎨", 기술:"💡", 선거:"🗳️" };
+
+// 비동기 동작 버튼 공통 컴포넌트.
+// 클릭하면 onClick 의 작업(주로 네트워크/DB)이 끝날 때까지 버튼이 자동으로 비활성화되고
+// "처리 중..." 표시로 바뀐다 → 응답이 늦을 때 사용자가 두 번 눌러 중복 제출하는 실수를 막는다.
+// - onClick 이 Promise 를 반환하면 그 동안 busy 유지(완료/실패 후 자동 복귀).
+// - busyRef(동기)로 같은 틱의 연타도 즉시 차단(setState 는 비동기라 두 번째 클릭이 옛 값을 읽을 수 있음).
+// - busyLabel 로 "삭제 중" 등 문구를 지정(기본: 스피너 + "처리 중...").
+// - 기존 <button> 속성(className/style/title/aria-label 등)은 그대로 통과.
+function AsyncButton({ onClick, children, busyLabel, busyIcon=true, disabled=false, className="", ...rest }) {
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const run = async (e) => {
+    if(busyRef.current || disabled || !onClick) return;
+    busyRef.current = true; setBusy(true);
+    try{ await onClick(e); }
+    finally{ busyRef.current = false; setBusy(false); }
+  };
+  return (
+    <button {...rest} disabled={disabled||busy} aria-busy={busy} onClick={run}
+      className={`${className}${busy?" opacity-60 cursor-not-allowed":""}`}>
+      {busy
+        ? (busyLabel!==undefined
+            ? busyLabel
+            : <><RefreshCw size={14} className="animate-spin"/>처리 중...</>)
+        : children}
+    </button>
+  );
+}
+
 function ArticleImage({ image, category, title, priority=false, className="", style={} }) {
   const [failed, setFailed] = useState(false);
   const show = image && !failed;
@@ -819,9 +848,9 @@ function CommentSection({ articleId, user, dark }) {
               </button>
             )}
             {canDelComment(user?.role) && (
-              <button onClick={()=>del(c.id)} className="flex items-center gap-0.5 text-xs text-red-400 hover:text-red-600 transition-colors">
+              <AsyncButton onClick={()=>del(c.id)} busyLabel={<><RefreshCw size={11} className="animate-spin"/> 삭제 중</>} className="flex items-center gap-0.5 text-xs text-red-400 hover:text-red-600 transition-colors">
                 <Trash2 size={11}/> 삭제
-              </button>
+              </AsyncButton>
             )}
           </div>
         </div>
@@ -1026,10 +1055,10 @@ function SuggestionBox({ user, dark, onRequireLogin, onSessionExpired }) {
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-gray-400">{s.date}</span>
                         {user?.role==="admin" && (
-                          <button onClick={()=>deleteSuggestion(s.id)} aria-label="건의 삭제"
+                          <AsyncButton onClick={()=>deleteSuggestion(s.id)} aria-label="건의 삭제" busyLabel={<><RefreshCw size={12} className="animate-spin"/> 삭제 중</>}
                             className="flex items-center gap-0.5 text-xs text-red-400 hover:text-red-600 transition-colors">
                             <Trash2 size={12}/> 삭제
-                          </button>
+                          </AsyncButton>
                         )}
                       </div>
                     </div>
@@ -1992,9 +2021,9 @@ export default function App() {
                 {(pendingCount+pendingMemberCount)>0&&<span className="bg-red-500 text-white rounded-full px-1.5 py-0.5 text-[10px] md:text-xs">{pendingCount+pendingMemberCount}</span>}
               </button>
             )}
-            <button onClick={handleLogout} aria-label="로그아웃" className="flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 rounded-lg border border-red-400 text-red-400 hover:bg-red-400 hover:text-white transition-colors text-xs md:text-sm font-medium whitespace-nowrap">
+            <AsyncButton onClick={handleLogout} aria-label="로그아웃" busyLabel={<><RefreshCw size={13} className="animate-spin"/><span className="hidden sm:inline">로그아웃 중...</span></>} className="flex items-center gap-1 px-2 md:px-3 py-1 md:py-1.5 rounded-lg border border-red-400 text-red-400 hover:bg-red-400 hover:text-white transition-colors text-xs md:text-sm font-medium whitespace-nowrap">
               <LogOut size={13}/> <span className="hidden sm:inline">로그아웃</span>
-            </button>
+            </AsyncButton>
           </div>
         ):(
           <button onClick={()=>setShowLogin(true)} className="flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-1 md:py-1.5 rounded-lg border border-green-700 text-green-700 hover:bg-green-700 hover:text-white transition-colors text-xs md:text-sm font-medium whitespace-nowrap"><LogIn size={13}/> 로그인</button>
@@ -2216,10 +2245,10 @@ export default function App() {
                 className={`flex-1 py-2.5 rounded-xl text-sm border font-medium transition-colors ${dark?"border-gray-700 text-gray-300 hover:bg-gray-800":"border-gray-300 text-gray-600 hover:bg-gray-50"}`}>
                 취소
               </button>
-              <button onClick={handleWithdraw}
-                className="flex-1 py-2.5 rounded-xl text-sm bg-red-500 hover:bg-red-600 text-white font-medium transition-colors">
+              <AsyncButton onClick={handleWithdraw} busyLabel="탈퇴 처리 중..."
+                className="flex-1 py-2.5 rounded-xl text-sm bg-red-500 hover:bg-red-600 text-white font-medium transition-colors flex items-center justify-center">
                 탈퇴하기
-              </button>
+              </AsyncButton>
             </div>
           </div>
         </div>
@@ -2265,10 +2294,11 @@ export default function App() {
               className="w-full py-2 text-white rounded-lg text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50">
               {authBusy?"처리 중...":"동의하고 가입 완료"}
             </button>
-            <button onClick={async()=>{ await supabase.auth.signOut(); setShowTermsAgree(false); setPendingAuthUser(null); setTermsCheck({service:false,privacy:false}); }}
+            <AsyncButton onClick={async()=>{ await supabase.auth.signOut(); setShowTermsAgree(false); setPendingAuthUser(null); setTermsCheck({service:false,privacy:false}); }}
+              busyLabel="처리 중..."
               className={`w-full py-1.5 text-xs mt-2 ${dark?"text-gray-500":"text-gray-400"} hover:underline`}>
               취소 (로그아웃)
-            </button>
+            </AsyncButton>
           </div>
         </div>
       )}
@@ -2323,19 +2353,19 @@ export default function App() {
                         </div>
                         {m.role==="pending"&&(
                           <div className="flex gap-2 flex-wrap">
-                            <button onClick={()=>approveMember(m.id,'reporter')} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white"><CheckCircle size={12}/> 기자 승인</button>
-                            <button onClick={()=>approveMember(m.id,'columnist')} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white"><CheckCircle size={12}/> 칼럼니스트 승인</button>
-                            <button onClick={()=>rejectMember(m.id)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white"><XCircle size={12}/> 거절</button>
+                            <AsyncButton onClick={()=>approveMember(m.id,'reporter')} busyLabel={<><RefreshCw size={12} className="animate-spin"/> 처리 중</>} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white"><CheckCircle size={12}/> 기자 승인</AsyncButton>
+                            <AsyncButton onClick={()=>approveMember(m.id,'columnist')} busyLabel={<><RefreshCw size={12} className="animate-spin"/> 처리 중</>} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white"><CheckCircle size={12}/> 칼럼니스트 승인</AsyncButton>
+                            <AsyncButton onClick={()=>rejectMember(m.id)} busyLabel={<><RefreshCw size={12} className="animate-spin"/> 처리 중</>} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white"><XCircle size={12}/> 거절</AsyncButton>
                           </div>
                         )}
                         {(m.role==="columnist"||m.role==="reporter")&&(
-                          <button onClick={()=>rejectMember(m.id)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-red-400 text-red-400 hover:bg-red-50"><XCircle size={12}/> 승인 취소</button>
+                          <AsyncButton onClick={()=>rejectMember(m.id)} busyLabel={<><RefreshCw size={12} className="animate-spin"/> 처리 중</>} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-red-400 text-red-400 hover:bg-red-50"><XCircle size={12}/> 승인 취소</AsyncButton>
                         )}
                         {m.role==="rejected"&&(
                           <div className="flex gap-2 flex-wrap items-center">
                             <span className="text-xs text-red-400 font-medium flex items-center gap-1"><XCircle size={12}/> 거절됨</span>
-                            <button onClick={()=>approveMember(m.id,'reporter')} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white"><CheckCircle size={12}/> 기자로 재승인</button>
-                            <button onClick={()=>approveMember(m.id,'columnist')} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white"><CheckCircle size={12}/> 칼럼니스트로 재승인</button>
+                            <AsyncButton onClick={()=>approveMember(m.id,'reporter')} busyLabel={<><RefreshCw size={12} className="animate-spin"/> 처리 중</>} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white"><CheckCircle size={12}/> 기자로 재승인</AsyncButton>
+                            <AsyncButton onClick={()=>approveMember(m.id,'columnist')} busyLabel={<><RefreshCw size={12} className="animate-spin"/> 처리 중</>} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white"><CheckCircle size={12}/> 칼럼니스트로 재승인</AsyncButton>
                           </div>
                         )}
                       </div>
@@ -2366,7 +2396,7 @@ export default function App() {
                           <p className="text-sm font-medium truncate flex items-center gap-1.5"><Mail size={13} className="text-gray-400 flex-shrink-0"/> {s.email}</p>
                           {s.created_at&&<p className="text-xs text-gray-400 mt-0.5">{new Date(s.created_at).toLocaleDateString('ko-KR')} 구독</p>}
                         </div>
-                        <button onClick={()=>deleteSubscriber(s.id)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white flex-shrink-0"><Trash2 size={12}/> 삭제</button>
+                        <AsyncButton onClick={()=>deleteSubscriber(s.id)} busyLabel={<><RefreshCw size={12} className="animate-spin"/> 삭제 중</>} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white flex-shrink-0"><Trash2 size={12}/> 삭제</AsyncButton>
                       </div>
                     ))}
                   </div>
@@ -2395,9 +2425,9 @@ export default function App() {
                     </div>
                     <div className="flex gap-2 mt-3 flex-wrap">
                       <button onClick={()=>{setSelected(a);setPage("home");}} className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border ${dark?"border-gray-700 text-gray-300":"border-gray-300 text-gray-600"}`}><Eye size={12}/> 미리보기</button>
-                      {a.status!=="published"&&<button onClick={()=>updateStatus(a.id,"published")} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white"><CheckCircle size={12}/> 승인 게재</button>}
-                      {a.status!=="rejected"&&<button onClick={()=>updateStatus(a.id,"rejected")} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white"><XCircle size={12}/> 반려</button>}
-                      {a.status==="published"&&<button onClick={()=>toggleHero(a.id,!a.hero)} className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border transition-colors ${a.hero?(dark?"border-yellow-500 text-yellow-400 bg-yellow-500/10":"border-yellow-500 text-yellow-600 bg-yellow-50"):(dark?"border-gray-700 text-gray-300":"border-gray-300 text-gray-600")}`}>{a.hero?"⭐ 헤드라인":"☆ 헤드라인 설정"}</button>}
+                      {a.status!=="published"&&<AsyncButton onClick={()=>updateStatus(a.id,"published")} busyLabel={<><RefreshCw size={12} className="animate-spin"/> 처리 중</>} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white"><CheckCircle size={12}/> 승인 게재</AsyncButton>}
+                      {a.status!=="rejected"&&<AsyncButton onClick={()=>updateStatus(a.id,"rejected")} busyLabel={<><RefreshCw size={12} className="animate-spin"/> 처리 중</>} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white"><XCircle size={12}/> 반려</AsyncButton>}
+                      {a.status==="published"&&<AsyncButton onClick={()=>toggleHero(a.id,!a.hero)} busyLabel={<><RefreshCw size={12} className="animate-spin"/> 처리 중</>} className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border transition-colors ${a.hero?(dark?"border-yellow-500 text-yellow-400 bg-yellow-500/10":"border-yellow-500 text-yellow-600 bg-yellow-50"):(dark?"border-gray-700 text-gray-300":"border-gray-300 text-gray-600")}`}>{a.hero?"⭐ 헤드라인":"☆ 헤드라인 설정"}</AsyncButton>}
                       <button onClick={()=>startEdit(a)} style={{backgroundColor:SC}} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg text-white hover:opacity-90"><Edit2 size={12}/> 수정</button>
                       <button onClick={()=>setConfirmDel(a.id)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white"><Trash2 size={12}/> 삭제</button>
                     </div>
@@ -2433,9 +2463,9 @@ export default function App() {
               {user.role==="rejected"&&(
                 <div className={`border-t pt-4 mt-2 ${dark?"border-gray-700":"border-gray-200"}`}>
                   <p className="text-sm text-red-500 mb-3">가입 신청이 거절되었습니다. 재승인을 요청할 수 있습니다.</p>
-                  <button onClick={requestReApproval} style={{backgroundColor:SC}} className="flex items-center gap-1.5 px-4 py-2 text-white rounded-lg text-sm font-medium hover:opacity-90">
+                  <AsyncButton onClick={requestReApproval} busyLabel={<><RefreshCw size={13} className="animate-spin"/> 요청 중...</>} style={{backgroundColor:SC}} className="flex items-center gap-1.5 px-4 py-2 text-white rounded-lg text-sm font-medium hover:opacity-90">
                     <RefreshCw size={13}/> 재승인 요청
-                  </button>
+                  </AsyncButton>
                 </div>
               )}
               {user.role==="pending"&&(
@@ -2871,7 +2901,7 @@ export default function App() {
                   <input value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="이메일 주소를 입력하세요" className="flex-1 px-4 py-2.5 md:py-3 rounded-lg text-sm md:text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-400 shadow-sm"/>
                   {/* 허니팟: 사람에겐 안 보이고 봇만 채움 → 서버가 차단 */}
                   <input id="cv_hp" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" style={{position:'absolute',left:'-9999px',width:'1px',height:'1px',opacity:0}}/>
-                  <button onClick={async()=>{
+                  <AsyncButton onClick={async()=>{
                     if(!email){ setSubscribeErr("이메일을 입력해주세요."); return; }
                     setSubscribeErr("");
                     try{
@@ -2881,7 +2911,7 @@ export default function App() {
                       else if(r.status===429){ setSubscribeErr("요청이 너무 많습니다. 잠시 후 다시 시도해주세요."); }
                       else { setSubscribeErr("구독 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."); }
                     }catch{ setSubscribeErr("네트워크 오류로 구독에 실패했습니다."); }
-                  }} style={{backgroundColor:SC}} className="px-5 md:px-6 py-2.5 md:py-3 text-white rounded-lg text-sm md:text-base font-medium hover:opacity-90 border border-green-400 transition-opacity whitespace-nowrap">구독하기</button>
+                  }} busyLabel="구독 처리 중..." style={{backgroundColor:SC}} className="px-5 md:px-6 py-2.5 md:py-3 text-white rounded-lg text-sm md:text-base font-medium hover:opacity-90 border border-green-400 transition-opacity whitespace-nowrap flex items-center justify-center gap-1.5">구독하기</AsyncButton>
                 </div>
                 {subscribeErr&&<p className="text-red-300 text-xs md:text-sm mt-2 text-center">{subscribeErr}</p>}
               </div>
