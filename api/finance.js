@@ -16,8 +16,18 @@ const YF_HEADERS = { headers: { 'User-Agent': 'Mozilla/5.0' } };
 // 야후 차트 API 호스트. 한쪽이 429·차단될 때 다른 쪽이 응답하는 경우가 많아 순차로 시도한다.
 const YF_HOSTS = ['query1.finance.yahoo.com', 'query2.finance.yahoo.com'];
 
-// 기준금리 API(한국은행 ECOS) 미설정 시 사용할 최후 폴백값
-const RATE_FALLBACK = '2.75%';
+// 기준금리 폴백값(한국은행 ECOS 키 미설정·조회 실패 시 사용).
+// 인증 없이 값만 갱신하려면 Vercel 환경변수 BASE_RATE 를 설정한다.
+//   예: BASE_RATE="2.50%"  또는  "2.5" (숫자만 넣어도 %가 자동으로 붙음)
+// 미설정 시 아래 기본값. (금통위 결정 때만 바뀌므로 변경 시에만 환경변수 수정 후 재배포)
+function resolveBaseRateFallback() {
+  const v = (process.env.BASE_RATE || '').trim();
+  if (!v) return '2.75%';
+  if (/%\s*$/.test(v)) return v;                 // 이미 % 포함 → 그대로
+  const n = parseFloat(v);
+  return isFinite(n) ? n.toFixed(2) + '%' : v;   // 숫자면 소수 2자리 + %, 아니면 원문
+}
+const RATE_FALLBACK = resolveBaseRateFallback();
 
 function calcChange(closes) {
   const cur  = closes[closes.length - 1];
