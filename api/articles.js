@@ -107,7 +107,9 @@ export default async function handler(req, res) {
         type: optStr(body.type, '기사', 40),
         body: content,
         image: optStr(body.image, '', 2000),
+        image_source: optStr(body.image_source, '', 500),
         summary: optStr(body.summary, '', 2000),
+        author_email: optStr(body.author_email, '', 320),
         date: optStr(body.date, new Date().toISOString().slice(0, 10), 30),
         // 서버가 강제하는 값 — 클라이언트 입력 무시
         status: 'pending',
@@ -135,7 +137,7 @@ export default async function handler(req, res) {
 
       // 내용 필드만 화이트리스트로 반영하되, 각 값을 문자열·길이로 검증.
       // status/hero/author/views는 절대 변경하지 않음.
-      const LIMITS = { title: 300, category: 40, type: 40, body: MAX_BODY_CHARS, image: 2000, summary: 2000 };
+      const LIMITS = { title: 300, category: 40, type: 40, body: MAX_BODY_CHARS, image: 2000, image_source: 500, summary: 2000, author_email: 320 };
       const patch = {};
       for (const k of Object.keys(LIMITS)) {
         if (body[k] === undefined) continue;

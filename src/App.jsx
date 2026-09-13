@@ -1354,7 +1354,7 @@ export default function App() {
   const [bookmarks,setBookmarks]     = useState([]);
   const [bookmarkedArticles,setBookmarkedArticles] = useState([]);
   const [readProgress,setReadProgress] = useState(0);
-  const [form,setForm]               = useState({title:"",category:"경제",type:"기사",body:"",image:""});
+  const [form,setForm]               = useState({title:"",category:"경제",type:"기사",summary:"",body:"",image:"",imageSource:"",email:""});
   const bodyRef                      = useRef(null);
   const applyFormat = (type) => {
     const ta = bodyRef.current;
@@ -1789,7 +1789,12 @@ export default function App() {
     const fields={
       title:form.title.trim(), category:form.category, type:form.type,
       body:form.body, image:form.image||"",
-      summary:makeSummary(form.body), status:"pending",
+      // 사진 출처: 사진이 있을 때만 저장(사진 없으면 출처도 비움)
+      image_source: form.image ? (form.imageSource?.trim()||"") : "",
+      // 요약: 작성자가 직접 기재. 비우면 본문에서 자동 생성해 카드/미리보기 일관성 유지.
+      summary: form.summary?.trim() || makeSummary(form.body),
+      author_email: form.email?.trim()||"",
+      status:"pending",
       author: user?.name,
       author_id: user?.id != null ? String(user.id) : null,
     };
@@ -1809,7 +1814,7 @@ export default function App() {
         if(article) setArticles(prev=>[article,...prev]);
       }
       setEditId(null);
-      setForm({title:"",category:"경제",type:allowedTypes(user?.role)[0]||"기사",body:"",image:""});
+      setForm({title:"",category:"경제",type:allowedTypes(user?.role)[0]||"기사",summary:"",body:"",image:"",imageSource:"",email:""});
       setPage(user?.role==="admin"?"admin":"home");
     } catch(e) {
       if(e?.message==='TIMEOUT'){
@@ -1913,7 +1918,7 @@ export default function App() {
       }
     }
   };
-  const startEdit=a=>{ setForm({title:a.title,category:a.category,type:a.type||"기사",body:a.body,image:a.image||""}); setEditId(a.id); setSelected(null); setPage("write"); };
+  const startEdit=a=>{ setForm({title:a.title,category:a.category,type:a.type||"기사",summary:a.summary||"",body:a.body,image:a.image||"",imageSource:a.image_source||"",email:a.author_email||""}); setEditId(a.id); setSelected(null); setPage("write"); };
   const openArticle=async(article)=>{
     if(!article) return;
     if(!selected) listScrollRef.current = window.scrollY;   // 목록에서 열 때만 위치 저장
@@ -2048,7 +2053,7 @@ export default function App() {
               );
             })}
             {user&&canWrite(user.role)&&(
-              <button onClick={()=>{setEditId(null);setForm({title:"",category:"경제",type:allowedTypes(user.role)[0],body:"",image:""});setPage("write");}}
+              <button onClick={()=>{setEditId(null);setForm({title:"",category:"경제",type:allowedTypes(user.role)[0],summary:"",body:"",image:"",imageSource:"",email:""});setPage("write");}}
                 className="ml-2 px-3 lg:px-4 py-1.5 bg-white/15 hover:bg-white/25 text-white rounded-lg text-sm font-medium border border-white/30 transition-colors">✏️ 글 작성</button>
             )}
           </nav>
@@ -2493,7 +2498,7 @@ export default function App() {
                 ?<div className={`rounded-xl border p-10 text-center ${card}`}>
                   <div className="text-5xl mb-2 opacity-60">📝</div>
                   <p className={`text-sm ${dark?"text-gray-300":"text-gray-600"} mb-1`}>아직 작성한 글이 없습니다</p>
-                  {canWrite(user.role)&&<button onClick={()=>{setEditId(null);setForm({title:"",category:"경제",type:allowedTypes(user.role)[0],body:"",image:""});setPage("write");}} style={{backgroundColor:SC}} className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-medium hover:opacity-90">✏️ 글 작성하기</button>}
+                  {canWrite(user.role)&&<button onClick={()=>{setEditId(null);setForm({title:"",category:"경제",type:allowedTypes(user.role)[0],summary:"",body:"",image:"",imageSource:"",email:""});setPage("write");}} style={{backgroundColor:SC}} className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-medium hover:opacity-90">✏️ 글 작성하기</button>}
                 </div>
                 :<div className="space-y-3">
                   {myArticles.map(a=>(
@@ -2591,6 +2596,11 @@ export default function App() {
                   <p className="text-xs text-gray-500 mt-1">로그인된 계정 <strong>{user.id}</strong> 으로 자동 설정됩니다.</p>
                 </div>
                 <div>
+                  <label className="text-sm font-medium mb-1 block">기자 이메일 <span className={`text-xs font-normal ${dark?"text-gray-500":"text-gray-400"}`}>(선택 · 게재 시 기사 하단에 공개)</span></label>
+                  <input type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="reporter@example.com" maxLength={320} className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
+                  <p className="text-xs text-gray-500 mt-1">독자가 기자에게 문의할 수 있도록 기사 하단에 표시됩니다.</p>
+                </div>
+                <div>
                   <label className="text-sm font-medium mb-1 block">제목 *</label>
                   <input value={form.title} onChange={e=>setForm({...form,title:e.target.value})} placeholder="제목을 입력하세요" maxLength={100} className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
                 </div>
@@ -2614,6 +2624,15 @@ export default function App() {
                   }}/>
                 </label>
                 {form.image&&<div className="mt-2 relative"><img src={form.image} alt="" className="w-full h-36 object-cover rounded-lg"/><button onClick={()=>setForm(f=>({...f,image:""}))} className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-0.5"><X size={14}/></button></div>}
+                {form.image&&<div className="mt-2">
+                  <label className="text-sm font-medium mb-1 block">사진 출처 <span className={`text-xs font-normal ${dark?"text-gray-500":"text-gray-400"}`}>(사진 하단에 표시)</span></label>
+                  <input value={form.imageSource} onChange={e=>setForm({...form,imageSource:e.target.value})} placeholder="예: 본교 홍보팀 제공 / 게티이미지 / 직접 촬영" maxLength={200} className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 ${inp}`}/>
+                </div>}
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">기사 요약 <span className={`text-xs font-normal ${dark?"text-gray-500":"text-gray-400"}`}>(선택 · 기사 상단에 굵게 표시)</span></label>
+                <textarea value={form.summary} onChange={e=>setForm({...form,summary:e.target.value})} rows={2} maxLength={300} placeholder="기사의 핵심을 한두 문장으로 요약하세요. (비우면 본문에서 자동 생성)" className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 resize-none ${inp}`}/>
+                <p className={`text-xs text-right mt-0.5 ${dark?"text-gray-500":"text-gray-400"}`}>{form.summary.length} / 300자</p>
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">본문 *</label>
@@ -2668,9 +2687,14 @@ export default function App() {
                 </div>
                 <button onClick={()=>setShowShare(true)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-colors hover:opacity-80" style={{borderColor:accentText,color:accentText}}><Share2 size={12}/> 공유</button>
               </div>
-              <ArticleImage image={selected.image} category={selected.category} title={selected.title} priority className="w-full rounded-xl mb-6 md:mb-7 h-48 sm:h-64 md:h-80 lg:h-[420px]"/>
+              <figure className="mb-6 md:mb-7">
+                <ArticleImage image={selected.image} category={selected.category} title={selected.title} priority className="w-full rounded-xl h-48 sm:h-64 md:h-80 lg:h-[420px]"/>
+                {selected.image&&selected.image_source&&<figcaption className={`text-xs mt-1.5 text-right ${dark?"text-gray-500":"text-gray-400"}`}>▲ 사진 출처: {selected.image_source}</figcaption>}
+              </figure>
               {selected.author&&<div className="border-l-4 border-amber-400 pl-4 mb-5 py-1.5"><p className="text-xs md:text-sm text-amber-600 font-medium">{selected.type==="칼럼" ? `✒️ 칼럼 — ${selected.author} 기고` : `✍️ 기사 — ${selected.author} 작성`}</p></div>}
+              {selected.summary&&<p className={`font-bold text-[15px] md:text-lg leading-relaxed mb-5 ${dark?"text-gray-100":"text-gray-900"}`}>{selected.summary}</p>}
               <div className="text-[15px] md:text-[17px] leading-relaxed md:leading-[1.85]">{renderArticleBody(selected.body)}</div>
+              {selected.author_email&&<div className={`mt-6 pt-4 border-t text-sm ${dark?"border-gray-800 text-gray-400":"border-gray-200 text-gray-600"}`}><span className="inline-flex items-center gap-1.5 flex-wrap"><Mail size={14}/> 기자에게 연락: <a href={`mailto:${selected.author_email}`} className="font-medium hover:underline break-all" style={{color:accentText}}>{selected.author_email}</a></span></div>}
 
               <LikeButton articleId={selected.id} user={user} dark={dark}/>
 
