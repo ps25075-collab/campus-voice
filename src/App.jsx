@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { supabase, supabasePublic } from './lib/supabase';
-import { Search, X, TrendingUp, Instagram, Facebook, Youtube, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle, ChevronLeft, ChevronRight, Share2, Copy, Link, Mail, Bookmark, BookmarkCheck, BookOpen, Download } from "lucide-react";
+import { Search, X, TrendingUp, Instagram, Facebook, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle, ChevronLeft, ChevronRight, Share2, Copy, Link, Mail, Bookmark, BookmarkCheck, BookOpen, Download } from "lucide-react";
 
 /* ── 날짜 헬퍼 ── */
 const today = () => {
@@ -306,27 +306,36 @@ function FinancePanel({ dark }) {
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchData = async (attempt=0) => {
-    if (attempt===0){ setLoading(true); setError(false); }
+  // force  : 엣지 캐시(s-maxage=120)를 쿼리스트링으로 우회해 즉시 신선값을 받음(수동 새로고침).
+  // silent : 기존 값을 지우지 않고 조용히 교체(자동 갱신·데이터 있는 상태의 수동 새로고침).
+  const fetchData = async (attempt=0, { force=false, silent=false } = {}) => {
+    if (attempt===0){ if (silent) setRefreshing(true); else { setLoading(true); setError(false); } }
     try {
-      // 재시도는 쿼리스트링으로 엣지 캐시를 우회해 '신선한' 응답을 받는다(부분 응답 고정 방지).
-      const url = attempt===0 ? '/api/finance' : `/api/finance?r=${attempt}&t=${Date.now()}`;
-      const res = await fetch(url);
+      const bust = attempt>0 || force;
+      const url = bust ? `/api/finance?r=${attempt}&t=${Date.now()}` : '/api/finance';
+      const res = await fetch(url, { cache: 'no-store' });   // 브라우저 캐시도 우회
       if (!res.ok) throw new Error();
       const json = await res.json();
       if (json.error) throw new Error();
-      setData(json); setLoading(false);
-      // 주가 지수 중 누락이 있으면(야후 일시 차단) 백그라운드로 한 번 더 시도(최대 2회).
+      setData(json); setLoading(false); setRefreshing(false);
+      // 주가 지수 중 누락이 있으면(야후 일시 차단) 백그라운드로 한 번 더 시도(최대 2회, 캐시 우회).
       const missing = ['kospi','kosdaq','nasdaq','sp500','dow'].some(k => json[k]==null);
-      if (missing && attempt < 2) setTimeout(()=>fetchData(attempt+1), 4000);
+      if (missing && attempt < 2) setTimeout(()=>fetchData(attempt+1, { force:true, silent }), 4000);
     } catch {
-      if (attempt===0) setError(true);
-      setLoading(false);
+      if (attempt===0 && !silent) setError(true);
+      setLoading(false); setRefreshing(false);
     }
   };
 
-  useEffect(()=>{ fetchData(); },[]);
+  // 최초 1회(캐시 허용, 빠른 표시) + 60초마다 조용히 갱신.
+  // 자동 갱신은 캐시 가능한 요청이라 서버 s-maxage=120이 야후 호출 폭주를 막아준다.
+  useEffect(()=>{
+    fetchData();
+    const id = setInterval(()=>fetchData(0, { silent:true }), 60000);
+    return ()=>clearInterval(id);
+  },[]);
 
   const card = dark ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-100";
   const sub  = dark ? "text-gray-400" : "text-gray-500";
@@ -351,8 +360,8 @@ function FinancePanel({ dark }) {
         <span className={`text-xs md:text-sm font-bold flex items-center gap-1.5 ${sub}`}>
           <RefreshCw size={13}/> 실시간 금융 지표
         </span>
-        <button onClick={()=>fetchData()} className={`transition-colors ${dark?"text-gray-600 hover:text-gray-300":"text-gray-300 hover:text-gray-600"}`} title="새로고침">
-          <RefreshCw size={15}/>
+        <button onClick={()=>fetchData(0,{force:true, silent:!!data})} disabled={refreshing} className={`transition-colors disabled:opacity-60 ${dark?"text-gray-600 hover:text-gray-300":"text-gray-300 hover:text-gray-600"}`} title="새로고침">
+          <RefreshCw size={15} className={refreshing?"animate-spin":""}/>
         </button>
       </div>
       {loading && (
@@ -1998,8 +2007,6 @@ export default function App() {
   const SNS=[
     {icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.265 5.632L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg>,label:"X (트위터)",color:dark?"text-gray-100":"text-gray-800",href:"https://twitter.com/intent/follow?screen_name=se_al_official_"},
     {icon:<Instagram size={14}/>,label:"인스타그램",color:"text-pink-500",href:null},
-    {icon:<Facebook size={14}/>,label:"페이스북",color:"text-blue-600",href:null},
-    {icon:<Youtube size={14}/>,label:"유튜브",color:"text-red-600",href:null},
   ];
 
   return (
