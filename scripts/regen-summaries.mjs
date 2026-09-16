@@ -15,6 +15,7 @@ const supabase = createClient(url, key, { auth: { persistSession: false } });
 
 // ── App.jsx 와 동일한 로직 (복사본) ──
 const stripMarkdown = (s) => (s || '')
+  .replace(/\{사진:[^}\n]*\}/g, '')
   .replace(/\{\/?(작게|크게|아주크게)\}/g, '')
   .replace(/\*\*([^*]+)\*\*/g, '$1')
   .replace(/__([^_]+)__/g, '$1')

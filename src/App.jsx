@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { supabase, supabasePublic } from './lib/supabase';
-import { Search, X, TrendingUp, Instagram, Facebook, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle, ChevronLeft, ChevronRight, Share2, Copy, Link, Mail, Bookmark, BookmarkCheck, BookOpen, Download } from "lucide-react";
+import { Search, X, TrendingUp, Instagram, Facebook, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle, ChevronLeft, ChevronRight, Share2, Copy, Link, Mail, Bookmark, BookmarkCheck, BookOpen, Download, ImagePlus } from "lucide-react";
 
 /* ── 날짜 헬퍼 ── */
 const today = () => {
@@ -62,6 +62,7 @@ const readingTime = (body) => Math.max(1, Math.round((body||'').length / 700));
 
 // 카드 요약용: 마크다운 문법 문자(**굵게**, _기울임_, - 목록 등)를 제거한 순수 텍스트
 const stripMarkdown = (s) => (s||"")
+  .replace(/\{사진:[^}\n]*\}/g, "")
   .replace(/\{\/?(작게|크게|아주크게)\}/g, "")
   .replace(/\*\*([^*]+)\*\*/g, "$1")
   .replace(/__([^_]+)__/g, "$1")
@@ -101,7 +102,13 @@ const relTime = (ts) => {
   return new Date(ts).toLocaleDateString('ko-KR');
 };
 
-function renderArticleBody(text){
+// 본문 중간 사진 문법(한 줄 전체): {사진:https://주소|설명|출처} — 주소는 https만 허용.
+const INLINE_IMAGE_RE = /^\{사진:(https:\/\/[^|}\s]+)\|([^|}]*)\|([^|}]*)\}\s*$/;
+const makeInlineImageTag = (url, caption="", source="") =>
+  `{사진:${url}|${caption.replace(/[|}\n]/g," ")}|${source.replace(/[|}\n]/g," ")}}`;
+
+// preview: 작성 화면 미리보기 — 출처가 빠진 사진에 경고를 표시한다.
+function renderArticleBody(text, { preview=false } = {}){
   if(!text) return null;
   const lines = text.split("\n");
   const out = [];
@@ -114,7 +121,21 @@ function renderArticleBody(text){
     }
   };
   lines.forEach((line)=>{
+    const img = INLINE_IMAGE_RE.exec(line);
     if(/^- /.test(line)){ list.push(line.slice(2)); }
+    else if(img){
+      flushList();
+      const [, src, caption, source] = img;
+      out.push(
+        <figure key={`img${key++}`} className="my-5 md:my-6">
+          <img src={src} alt={caption.trim()} loading="lazy" className="w-full rounded-xl"/>
+          {caption.trim()&&<figcaption className="text-sm text-gray-500 text-center mt-2 leading-snug">{caption.trim()}</figcaption>}
+          {source.trim()
+            ? <p className="text-xs text-gray-400 text-right mt-1">▲ 사진 출처: {source.trim()}</p>
+            : preview&&<p className="text-xs text-red-500 text-right mt-1">⚠ 사진 출처를 입력해 주세요 (마지막 | 뒤)</p>}
+        </figure>
+      );
+    }
     else{
       flushList();
       if(line.trim()===""){ out.push(<div key={`sp${key++}`} className="h-3"/>); }
@@ -1340,6 +1361,7 @@ export default function App() {
   const [readProgress,setReadProgress] = useState(0);
   const [form,setForm]               = useState({title:"",category:"경제",type:"기사",summary:"",body:"",image:"",imageSource:"",email:""});
   const bodyRef                      = useRef(null);
+  const [bodyTab,setBodyTab]         = useState("write");   // 본문 작성 | 미리보기
   const applyFormat = (type) => {
     const ta = bodyRef.current;
     if(!ta) return;
@@ -1865,12 +1887,13 @@ export default function App() {
     }
     return compressViaImg(file);
   };
-  const uploadImage = async (file) => {
-    if (uploading) return;
-    if (!file.type.startsWith('image/')) { alert('이미지 파일만 업로드할 수 있습니다.'); return; }
+  // 압축 → 서명 URL 발급 → 업로드. 성공 시 공개 URL, 실패 시 null(사용자에게 알림은 여기서 처리).
+  const uploadImageFile = async (file) => {
+    if (uploading) return null;
+    if (!file.type.startsWith('image/')) { alert('이미지 파일만 업로드할 수 있습니다.'); return null; }
     if (file.size > MAX_IMAGE_MB * 1024 * 1024) {
       alert(`이미지 크기는 ${MAX_IMAGE_MB}MB 이하만 업로드할 수 있습니다. (현재 ${(file.size/1024/1024).toFixed(1)}MB)`);
-      return;
+      return null;
     }
     setUploading(true);
     try {
@@ -1886,17 +1909,51 @@ export default function App() {
         const res = await fetch('/api/upload-url', { method:'POST', headers:{ 'Content-Type':'application/json', ...(await articleAuthHeaders()) }, body: JSON.stringify({ ext }) });
         su = await res.json();
         if (!res.ok) throw new Error(su?.error || 'no-permit');
-      } catch { alert('이미지 업로드 권한이 없거나 서버 오류가 발생했습니다.'); return; }
+      } catch { alert('이미지 업로드 권한이 없거나 서버 오류가 발생했습니다.'); return null; }
       // 네트워크/세션 문제로 업로드가 멈추는 경우를 대비한 타임아웃(무한 로딩 방지)
       const { error } = await Promise.race([
         supabase.storage.from('article-images').uploadToSignedUrl(su.path, su.token, blob, { contentType: blob.type || file.type }),
         new Promise((resolve) => setTimeout(() => resolve({ error: { message: 'timeout' } }), 30000)),
       ]);
-      if (error) { alert(error.message==='timeout' ? '이미지 업로드 시간이 초과됐습니다. 다시 시도해주세요.' : '이미지 업로드에 실패했습니다.'); return; }
-      setForm(fm => ({ ...fm, image: su.publicUrl }));
+      if (error) { alert(error.message==='timeout' ? '이미지 업로드 시간이 초과됐습니다. 다시 시도해주세요.' : '이미지 업로드에 실패했습니다.'); return null; }
+      return su.publicUrl;
     } finally {
       setUploading(false);
     }
+  };
+  // 대표(표지) 이미지
+  const uploadImage = async (file) => {
+    const url = await uploadImageFile(file);
+    if (url) setForm(fm => ({ ...fm, image: url }));
+  };
+  // 본문 중간 사진: 업로드 후 커서 위치에 {사진:주소||} 한 줄을 넣고 커서를 '설명' 칸에 둔다.
+  const insertBodyImage = async (file) => {
+    const url = await uploadImageFile(file);
+    if (!url) return;
+    const ta = bodyRef.current;
+    const tag = makeInlineImageTag(url);
+    // 업로드 중에도 입력이 계속될 수 있으므로 화면의 최신 본문(ta.value)을 기준으로 삽입
+    const body = ta ? ta.value : form.body;
+    const pos = ta ? Math.min(ta.selectionEnd, body.length) : body.length;
+    const before = body.slice(0, pos), after = body.slice(pos);
+    const pre = before && !before.endsWith("\n") ? "\n" : "";
+    const post = after.startsWith("\n") ? "" : "\n";
+    const caret = before.length + pre.length + tag.length - 2;   // 첫 '|' 바로 뒤(설명 입력 위치)
+    setForm(f => ({ ...f, body: before + pre + tag + post + after }));
+    setBodyTab("write");
+    setTimeout(() => { if (ta) { ta.focus(); ta.setSelectionRange(caret, caret); } }, 0);
+  };
+  const handleBodyImagePaste = (e) => {
+    const file = [...(e.clipboardData?.items || [])].find(it => it.type?.startsWith('image/'))?.getAsFile();
+    if (!file) return;                       // 텍스트 붙여넣기는 기본 동작
+    e.preventDefault(); e.stopPropagation(); // 폼 전체의 대표 이미지 붙여넣기로 번지지 않게
+    insertBodyImage(file);
+  };
+  const handleBodyImageDrop = (e) => {
+    const file = [...(e.dataTransfer?.files || [])].find(f => f.type.startsWith('image/'));
+    if (!file) return;
+    e.preventDefault();
+    insertBodyImage(file);
   };
   // 클립보드 붙여넣기(Ctrl+V)로 이미지 추가. 이미지가 없으면 기본 동작(텍스트 붙여넣기) 유지.
   const handleImagePaste = (e) => {
@@ -1909,7 +1966,7 @@ export default function App() {
       }
     }
   };
-  const startEdit=a=>{ setForm({title:a.title,category:a.category,type:a.type||"기사",summary:a.summary||"",body:a.body,image:a.image||"",imageSource:a.image_source||"",email:a.author_email||""}); setEditId(a.id); setSelected(null); setPage("write"); };
+  const startEdit=a=>{ setForm({title:a.title,category:a.category,type:a.type||"기사",summary:a.summary||"",body:a.body,image:a.image||"",imageSource:a.image_source||"",email:a.author_email||""}); setBodyTab("write"); setEditId(a.id); setSelected(null); setPage("write"); };
   const openArticle=async(article)=>{
     if(!article) return;
     if(!selected) listScrollRef.current = window.scrollY;   // 목록에서 열 때만 위치 저장
@@ -2621,8 +2678,17 @@ export default function App() {
                 <p className={`text-xs text-right mt-0.5 ${dark?"text-gray-500":"text-gray-400"}`}>{form.summary.length} / 300자</p>
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">본문 *</label>
-                <div className={`flex gap-1 mb-1 p-1 rounded border ${dark?"bg-gray-800 border-gray-700":"bg-gray-50 border-gray-200"}`}>
+                <div className="flex items-end justify-between mb-1">
+                  <label className="text-sm font-medium block">본문 *</label>
+                  <div className={`flex rounded-lg border overflow-hidden text-xs ${dark?"border-gray-700":"border-gray-200"}`}>
+                    {[["write","작성"],["preview","미리보기"]].map(([k,l])=>(
+                      <button key={k} type="button" onClick={()=>setBodyTab(k)}
+                        className={`px-3 py-1 font-medium transition-colors ${bodyTab===k?"text-white":(dark?"text-gray-400 hover:bg-gray-800":"text-gray-500 hover:bg-gray-100")}`}
+                        style={bodyTab===k?{backgroundColor:SC}:{}}>{l}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className={`${bodyTab==="write"?"flex":"hidden"} flex-wrap items-center gap-1 mb-1 p-1 rounded border ${dark?"bg-gray-800 border-gray-700":"bg-gray-50 border-gray-200"}`}>
                   <button type="button" onClick={()=>applyFormat("bold")} title="굵게 (선택 영역을 **로 감쌈)" className={`p-1.5 rounded transition-colors ${dark?"text-gray-300 hover:bg-gray-700":"text-gray-600 hover:bg-gray-200"}`}><Bold size={14}/></button>
                   <button type="button" onClick={()=>applyFormat("italic")} title="기울임 (선택 영역을 _로 감쌈)" className={`p-1.5 rounded transition-colors ${dark?"text-gray-300 hover:bg-gray-700":"text-gray-600 hover:bg-gray-200"}`}><Italic size={14}/></button>
                   <button type="button" onClick={()=>applyFormat("list")} title="목록 (각 줄 앞에 - 추가)" className={`p-1.5 rounded transition-colors ${dark?"text-gray-300 hover:bg-gray-700":"text-gray-600 hover:bg-gray-200"}`}><List size={14}/></button>
@@ -2633,9 +2699,22 @@ export default function App() {
                     <option value="크게">크게</option>
                     <option value="아주크게">아주 크게</option>
                   </select>
+                  <label title="본문에 사진 넣기 (본문 칸에 붙여넣기·끌어다 놓기도 가능)" className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${uploading?"opacity-60 cursor-not-allowed":"cursor-pointer"} ${dark?"text-gray-300 hover:bg-gray-700":"text-gray-600 hover:bg-gray-200"}`}>
+                    {uploading?<RefreshCw size={14} className="animate-spin"/>:<ImagePlus size={14}/>} 사진
+                    <input type="file" accept="image/*" disabled={uploading} className="hidden" onChange={e=>{
+                      const f=e.target.files?.[0]; if(f) insertBodyImage(f);
+                      e.target.value="";
+                    }}/>
+                  </label>
                   <span className={`ml-auto self-center text-[10px] pr-1 hidden sm:inline ${dark?"text-gray-500":"text-gray-400"}`}>마크다운: **굵게** _기울임_ - 목록 {"{크게}"}…{"{/크게}"}</span>
                 </div>
-                <textarea ref={bodyRef} value={form.body} onChange={e=>setForm({...form,body:e.target.value})} rows={8} maxLength={MAX_BODY_CHARS} placeholder="본문을 입력하세요..." className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 resize-none ${inp}`}/>
+                <textarea ref={bodyRef} value={form.body} onChange={e=>setForm({...form,body:e.target.value})} onPaste={handleBodyImagePaste} onDrop={handleBodyImageDrop} onDragOver={e=>{ if([...(e.dataTransfer?.types||[])].includes("Files")) e.preventDefault(); }} rows={8} maxLength={MAX_BODY_CHARS} placeholder="본문을 입력하세요... (사진은 붙여넣기·끌어다 놓기로 원하는 위치에 넣을 수 있어요)" className={`${bodyTab==="write"?"block":"hidden"} w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 resize-y ${inp}`}/>
+                {bodyTab==="write"&&<p className={`text-[11px] mt-1 ${dark?"text-gray-500":"text-gray-400"}`}>📷 사진 줄 형식: {"{사진:주소|설명|출처}"} — 사진을 넣으면 커서가 '설명' 자리에 놓여요. 두 번째 | 뒤에 출처를 적어주세요.</p>}
+                {bodyTab==="preview"&&(
+                  <div className={`border rounded-lg px-4 py-3 min-h-[12rem] text-[15px] md:text-[17px] leading-relaxed md:leading-[1.85] ${dark?"border-gray-700 bg-gray-900":"border-gray-200 bg-white"}`}>
+                    {form.body.trim() ? renderArticleBody(form.body, { preview:true }) : <p className={`text-sm ${dark?"text-gray-500":"text-gray-400"}`}>본문을 입력하면 기사 화면과 같은 모양으로 미리 볼 수 있어요.</p>}
+                  </div>
+                )}
                 <p className={`text-xs text-right mt-0.5 ${form.body.length>MAX_BODY_CHARS*0.9?(dark?"text-red-400":"text-red-500"):dark?"text-gray-500":"text-gray-400"}`}>{form.body.length.toLocaleString()} / {MAX_BODY_CHARS.toLocaleString()}자</p>
               </div>
               {submitErr&&<p className="text-sm text-red-500 text-center">{submitErr}</p>}

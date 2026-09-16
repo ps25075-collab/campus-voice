@@ -18,7 +18,7 @@ export function escapeHtml(str) {
 }
 
 export function summarize(s, max = 180) {
-  const clean = String(s || '').replace(/\{\/?(작게|크게|아주크게)\}/g, '').replace(/\s+/g, ' ').trim();
+  const clean = String(s || '').replace(/\{사진:[^}\n]*\}/g, '').replace(/\{\/?(작게|크게|아주크게)\}/g, '').replace(/\s+/g, ' ').trim();
   if (clean.length <= max) return clean;
   return clean.slice(0, max - 1) + '…';
 }
@@ -32,7 +32,10 @@ function inlineMd(escaped) {
     .replace(/_([^_]+?)_/g, '<em>$1</em>');
 }
 
-// 기사 본문(줄바꿈·- 목록·빈 줄 문단 구분)을 안전한 HTML로 변환.
+// 본문 중간 사진(한 줄 전체): {사진:https://주소|설명|출처} — App.jsx와 동일한 규칙.
+const INLINE_IMAGE_RE = /^\{사진:(https:\/\/[^|}\s]+)\|([^|}]*)\|([^|}]*)\}\s*$/;
+
+// 기사 본문(줄바꿈·- 목록·빈 줄 문단 구분·사진 줄)을 안전한 HTML로 변환.
 export function renderBodyToHtml(body) {
   const lines = String(body || '').split('\n');
   const out = [];
@@ -44,8 +47,18 @@ export function renderBodyToHtml(body) {
     }
   };
   for (const line of lines) {
+    const img = INLINE_IMAGE_RE.exec(line);
     if (/^- /.test(line)) {
       list.push(line.slice(2));
+    } else if (img) {
+      flush();
+      const [, src, caption, source] = img.map((v) => String(v).trim());
+      out.push(
+        `<figure><img src="${escapeHtml(src)}" alt="${escapeHtml(caption)}" loading="lazy" style="max-width:100%">` +
+        (caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : '') +
+        (source ? `<p>▲ 사진 출처: ${escapeHtml(source)}</p>` : '') +
+        '</figure>'
+      );
     } else {
       flush();
       if (line.trim() !== '') out.push(`<p>${inlineMd(escapeHtml(line))}</p>`);
