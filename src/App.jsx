@@ -340,26 +340,29 @@ function FinancePanel({ dark }) {
   const card = dark ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-100";
   const sub  = dark ? "text-gray-400" : "text-gray-500";
 
+  // 사이드바(좁은 폭)용: 한 줄에 지표명 · 값 · 등락을 나란히 세로로 쌓는다.
   const renderCard = (label, value, change) => {
     if (value == null) return null;
     const up = change?.startsWith("+");
     return (
-      <div key={label} className={`rounded-xl border px-3 py-2.5 md:px-4 md:py-3 ${card}`}>
-        <p className="text-[11px] md:text-xs font-medium mb-0.5 md:mb-1 text-gray-400">{label}</p>
-        <p className={`text-lg md:text-2xl font-extrabold leading-tight ${dark?"text-gray-100":"text-gray-800"}`}>{value}</p>
-        {change && (
-          <p className={`text-xs md:text-sm font-semibold mt-0.5 ${up?"text-red-500":"text-blue-500"}`}>{change}</p>
-        )}
+      <div key={label} className={`rounded-lg border px-3 py-2 flex items-center justify-between gap-2 ${card}`}>
+        <p className="text-xs font-medium text-gray-400 flex-shrink-0">{label}</p>
+        <div className="text-right min-w-0">
+          <p className={`text-sm font-extrabold leading-tight ${dark?"text-gray-100":"text-gray-800"}`}>{value}</p>
+          {change && (
+            <p className={`text-[11px] font-semibold leading-tight ${up?"text-red-500":"text-blue-500"}`}>{change}</p>
+          )}
+        </div>
       </div>
     );
   };
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3 md:mb-4">
-        <span className={`text-xs md:text-sm font-bold flex items-center gap-1.5 ${sub}`}>
-          <RefreshCw size={13}/> 실시간 금융 지표
-        </span>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className={`font-bold text-sm flex items-center gap-1.5 ${dark?"text-gray-100":"text-gray-900"}`}>
+          📈 실시간 금융 지표
+        </h3>
         <button onClick={()=>fetchData(0,{force:true, silent:!!data})} disabled={refreshing} className={`transition-colors disabled:opacity-60 ${dark?"text-gray-600 hover:text-gray-300":"text-gray-300 hover:text-gray-600"}`} title="새로고침">
           <RefreshCw size={15} className={refreshing?"animate-spin":""}/>
         </button>
@@ -373,8 +376,8 @@ function FinancePanel({ dark }) {
       {!loading&&!error&&data&&(
         <div className="space-y-3">
           <div>
-            <p className={`text-[11px] md:text-xs font-bold mb-1.5 md:mb-2 ${sub}`}>📈 주가 지수</p>
-            <div className="grid grid-cols-3 md:grid-cols-5 gap-2 md:gap-3">
+            <p className={`text-[11px] font-bold mb-1.5 ${sub}`}>주가 지수</p>
+            <div className="space-y-1.5">
               {renderCard("코스피",   data.kospi,   data.kospi_change)}
               {renderCard("코스닥",   data.kosdaq,  data.kosdaq_change)}
               {renderCard("NASDAQ",  data.nasdaq,  data.nasdaq_change)}
@@ -383,8 +386,8 @@ function FinancePanel({ dark }) {
             </div>
           </div>
           <div>
-            <p className={`text-[11px] md:text-xs font-bold mb-1.5 md:mb-2 ${sub}`}>💱 환율 · 금리 · 원자재</p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
+            <p className={`text-[11px] font-bold mb-1.5 ${sub}`}>💱 환율 · 금리 · 원자재</p>
+            <div className="space-y-1.5">
               {renderCard("원/달러",  data.usdkrw!=null?data.usdkrw+"원":null, null)}
               {renderCard("기준금리", data.rate,         null)}
               {renderCard("WTI 원유", data.oil!=null?"$"+data.oil:null,      data.oil_change)}
@@ -490,11 +493,11 @@ function WeatherPanel({ dark }) {
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-3 md:mb-4 flex-wrap">
-        <span className={`text-xs md:text-sm font-bold flex items-center gap-1.5 ${dark?"text-gray-400":"text-gray-500"}`}>
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <h3 className={`font-bold text-sm flex items-center gap-1.5 ${dark?"text-gray-100":"text-gray-900"}`}>
           🌤️ 현재 날씨
-        </span>
-        <span className={`text-[11px] md:text-xs ${dark?"text-gray-600":"text-gray-400"}`}>제주 표선 기준</span>
+        </h3>
+        <span className={`text-[11px] ${dark?"text-gray-500":"text-gray-400"}`}>제주 표선 기준</span>
       </div>
       {loading && (
         <div className={`flex items-center gap-2 py-2 ${dark?"text-gray-500":"text-gray-400"}`}>
@@ -504,20 +507,22 @@ function WeatherPanel({ dark }) {
       {error && <span className="text-sm text-red-400">날씨 데이터 로드 실패</span>}
       {!loading&&!error&&weather&&(
         <>
-          <div className="grid grid-cols-3 md:grid-cols-5 gap-2 md:gap-3 mb-4 md:mb-5">
-            <div className={`rounded-xl border px-2.5 py-2.5 md:px-3 md:py-3 ${card}`}>
-              <p className="text-[11px] md:text-xs font-medium mb-0.5 md:mb-1 text-gray-400">날씨</p>
-              <p className="text-2xl md:text-3xl leading-tight">{WMO_ICON[code]??"🌡️"}</p>
-              <p className={`text-xs md:text-sm font-semibold mt-0.5 md:mt-1 ${dark?"text-gray-300":"text-gray-600"}`}>{WMO_LABEL[code]??"알 수 없음"}</p>
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <div className={`col-span-2 rounded-xl border px-3 py-2.5 flex items-center gap-3 ${card}`}>
+              <p className="text-3xl leading-none">{WMO_ICON[code]??"🌡️"}</p>
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium text-gray-400">날씨</p>
+                <p className={`text-sm font-semibold ${dark?"text-gray-300":"text-gray-600"}`}>{WMO_LABEL[code]??"알 수 없음"}</p>
+              </div>
               {precip > 0 && (
-                <div className="flex items-center gap-1 mt-1 text-[11px] font-medium text-blue-400 leading-tight" title="현재 강수량">
+                <div className="flex items-center gap-1 ml-auto text-[11px] font-medium text-blue-400 leading-tight" title="현재 강수량">
                   <span>☔</span><span>{precip}mm</span>
                 </div>
               )}
             </div>
-            <div className={`rounded-xl border px-2.5 py-2.5 md:px-3 md:py-3 ${card}`}>
-              <p className="text-[11px] md:text-xs font-medium mb-0.5 md:mb-1 text-gray-400">기온</p>
-              <p className={`text-lg md:text-2xl font-extrabold leading-tight ${val}`}>{weather.temperature_2m}°C</p>
+            <div className={`rounded-xl border px-2.5 py-2.5 ${card}`}>
+              <p className="text-[11px] font-medium mb-0.5 text-gray-400">기온</p>
+              <p className={`text-lg font-extrabold leading-tight ${val}`}>{weather.temperature_2m}°C</p>
               {tLevel && (
                 <>
                   <div className={`flex items-center gap-1 mt-1 text-xs font-medium ${tLevel.color}`}>
@@ -531,9 +536,9 @@ function WeatherPanel({ dark }) {
                 </>
               )}
             </div>
-            <div className={`rounded-xl border px-2.5 py-2.5 md:px-3 md:py-3 ${card}`}>
-              <p className="text-[11px] md:text-xs font-medium mb-0.5 md:mb-1 text-gray-400">습도</p>
-              <p className={`text-lg md:text-2xl font-extrabold leading-tight ${val}`}>{weather.relative_humidity_2m}%</p>
+            <div className={`rounded-xl border px-2.5 py-2.5 ${card}`}>
+              <p className="text-[11px] font-medium mb-0.5 text-gray-400">습도</p>
+              <p className={`text-lg font-extrabold leading-tight ${val}`}>{weather.relative_humidity_2m}%</p>
               {hLevel && (
                 <>
                   <div className={`flex items-center gap-1 mt-1 text-xs font-medium ${hLevel.color}`}>
@@ -547,9 +552,9 @@ function WeatherPanel({ dark }) {
                 </>
               )}
             </div>
-            <div className={`rounded-xl border px-2.5 py-2.5 md:px-3 md:py-3 ${card}`}>
-              <p className="text-[11px] md:text-xs font-medium mb-0.5 md:mb-1 text-gray-400">풍속</p>
-              <p className={`text-lg md:text-2xl font-extrabold leading-tight ${val}`}>{weather.wind_speed_10m}<span className="text-xs md:text-sm font-medium"> km/h</span></p>
+            <div className={`rounded-xl border px-2.5 py-2.5 ${card}`}>
+              <p className="text-[11px] font-medium mb-0.5 text-gray-400">풍속</p>
+              <p className={`text-lg font-extrabold leading-tight ${val}`}>{weather.wind_speed_10m}<span className="text-xs font-medium"> km/h</span></p>
               {wLevel && (
                 <>
                   <div className={`flex items-center gap-1 mt-1 text-xs font-medium ${wLevel.color}`}>
@@ -563,9 +568,9 @@ function WeatherPanel({ dark }) {
                 </>
               )}
             </div>
-            <div className={`rounded-xl border px-2.5 py-2.5 md:px-3 md:py-3 ${card}`}>
-              <p className="text-[11px] md:text-xs font-medium mb-0.5 md:mb-1 text-gray-400">미세먼지</p>
-              <p className={`text-lg md:text-2xl font-extrabold leading-tight ${val}`}>{pm10!=null?Math.round(pm10):"–"}<span className="text-xs md:text-sm font-medium"> ㎍</span></p>
+            <div className={`rounded-xl border px-2.5 py-2.5 ${card}`}>
+              <p className="text-[11px] font-medium mb-0.5 text-gray-400">미세먼지</p>
+              <p className={`text-lg font-extrabold leading-tight ${val}`}>{pm10!=null?Math.round(pm10):"–"}<span className="text-xs font-medium"> ㎍</span></p>
               {dustLevel ? (
                 <>
                   <div className={`flex items-center gap-1 mt-1 text-xs font-medium ${dustLevel.color}`}>
@@ -586,16 +591,19 @@ function WeatherPanel({ dark }) {
           {daily && (
             <div>
               <p className={`text-xs font-bold mb-2 ${sub}`}>📅 일주일 예보</p>
-              <div className="grid grid-cols-7 gap-1">
+              <div className="space-y-1">
                 {daily.time.map((dateStr,i)=>{
                   const d  = new Date(dateStr);
                   const dc = daily.weather_code[i];
                   return (
-                    <div key={i} className={`rounded-xl border px-1 py-2 text-center ${card} ${i===0?"ring-2 ring-green-500":""}`}>
-                      <p className={`text-xs font-bold mb-1 ${i===0?"text-green-500":sub}`}>{i===0?"오늘":DAY_NAMES[d.getDay()]}</p>
+                    <div key={i} className={`rounded-lg border px-3 py-1.5 flex items-center gap-2 ${card} ${i===0?"ring-2 ring-green-500":""}`}>
+                      <p className={`text-xs font-bold w-8 flex-shrink-0 ${i===0?"text-green-500":sub}`}>{i===0?"오늘":DAY_NAMES[d.getDay()]}</p>
                       <p className="text-lg leading-tight">{WMO_ICON[dc]??"🌡️"}</p>
-                      <p className={`text-xs font-bold mt-1 ${val}`}>{daily.temperature_2m_max[i]}°</p>
-                      <p className="text-xs text-blue-400">{daily.temperature_2m_min[i]}°</p>
+                      <p className="ml-auto text-xs whitespace-nowrap">
+                        <span className={`font-bold ${val}`}>{daily.temperature_2m_max[i]}°</span>
+                        <span className={`mx-1 ${sub}`}>/</span>
+                        <span className="text-blue-400">{daily.temperature_2m_min[i]}°</span>
+                      </p>
                     </div>
                   );
                 })}
@@ -607,62 +615,13 @@ function WeatherPanel({ dark }) {
     </div>
   );
 }
-/* ── 정보 캐러셀 (금융 지표 ↔ 날씨) ── */
-function InfoCarousel({ dark }) {
-  const SC = useContext(SCContext);
-  const [slide, setSlide] = useState(0);
-  const TOTAL = 2;
-  const intervalRef = useRef(null);
-
-  const startAutoPlay = () => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(() => {
-      setSlide(prev => (prev + 1) % TOTAL);
-    }, 10000);
-  };
-
-  useEffect(() => {
-    startAutoPlay();
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, []);
-
-  const handleGoTo = (idx) => {
-    setSlide(idx);
-    startAutoPlay();
-  };
-
-  const arrowBtn = `flex items-center justify-center w-8 h-8 rounded-full border transition-colors flex-shrink-0 ${dark?"border-gray-700 text-gray-400 hover:bg-gray-800 hover:text-gray-100":"border-gray-200 text-gray-400 hover:bg-gray-100 hover:text-gray-700"}`;
-
+/* ── 사이드바 정보 박스 (금융 지표 + 날씨, 세로로 쌓임) ── */
+function SidebarInfo({ dark, card }) {
   return (
-    <div className={`border-b shadow-sm ${dark?"bg-gray-900 border-gray-800":"bg-white border-gray-200"}`}
-      onMouseEnter={()=>{ if(intervalRef.current) clearInterval(intervalRef.current); }}
-      onMouseLeave={()=>startAutoPlay()}>
-      <div className="max-w-6xl mx-auto px-3 py-3 md:px-6 md:py-5">
-        <div className="flex items-center gap-2 md:gap-3">
-          <button onClick={()=>handleGoTo((slide-1+TOTAL)%TOTAL)} className={arrowBtn}>
-            <ChevronLeft size={16}/>
-          </button>
-          <div className="flex-1 min-w-0 grid">
-            <div className={`col-start-1 row-start-1 transition-opacity duration-300 ${slide===0?"opacity-100":"opacity-0 pointer-events-none"}`}>
-              <FinancePanel dark={dark}/>
-            </div>
-            <div className={`col-start-1 row-start-1 transition-opacity duration-300 ${slide===1?"opacity-100":"opacity-0 pointer-events-none"}`} aria-hidden={slide!==1}>
-              <WeatherPanel dark={dark}/>
-            </div>
-          </div>
-          <button onClick={()=>handleGoTo((slide+1)%TOTAL)} className={arrowBtn}>
-            <ChevronRight size={16}/>
-          </button>
-        </div>
-        <div className="flex justify-center gap-2 mt-3 md:mt-4">
-          {Array.from({length:TOTAL}).map((_,i)=>(
-            <button key={i} onClick={()=>handleGoTo(i)}
-              className={`rounded-full transition-all duration-300 ${slide===i?"w-5 h-2":"w-2 h-2"}`}
-              style={{backgroundColor: slide===i?(dark?SC_DARK:SC): dark?"#374151":"#d1d5db"}}/>
-          ))}
-        </div>
-      </div>
-    </div>
+    <>
+      <div className={`rounded-xl border p-4 lg:p-5 ${card}`}><FinancePanel dark={dark}/></div>
+      <div className={`rounded-xl border p-4 lg:p-5 ${card}`}><WeatherPanel dark={dark}/></div>
+    </>
   );
 }
 function LikeButton({ articleId, user, dark }) {
@@ -2314,8 +2273,6 @@ export default function App() {
           </div>
         </div>
       )}
-      {/* 실시간 금융 */}
-      <InfoCarousel dark={dark}/>
 
       <main className="max-w-6xl mx-auto px-3 md:px-4 py-5 md:py-6">
 
@@ -2719,7 +2676,7 @@ export default function App() {
               </div>
             </article>
             <aside className="md:w-64 lg:w-72 space-y-4 flex-shrink-0">
-              <div className={`rounded-xl border p-4 lg:p-5 md:sticky md:top-20 ${card}`}>
+              <div className={`rounded-xl border p-4 lg:p-5 ${card}`}>
                 <h3 className="font-bold text-sm mb-3 flex items-center gap-1.5"><TrendingUp size={15} className="text-red-500"/> 가장 많이 본 뉴스</h3>
                 <ol className="space-y-2.5">
                   {topViewed.map((a,i)=>(
@@ -2731,6 +2688,7 @@ export default function App() {
                   ))}
                 </ol>
               </div>
+              <SidebarInfo dark={dark} card={card}/>
               <div className={`rounded-xl border p-4 lg:p-5 ${card}`}>
                 <h3 className="font-bold text-sm mb-3">세계를 알리다 SNS</h3>
                 <div className="space-y-2">
@@ -2886,7 +2844,7 @@ export default function App() {
                 )}
               </div>
               <aside className="md:w-64 lg:w-72 space-y-4 md:flex-shrink-0">
-                <div className={`rounded-xl border p-4 lg:p-5 md:sticky md:top-20 ${card}`}>
+                <div className={`rounded-xl border p-4 lg:p-5 ${card}`}>
                   <h3 className="font-bold text-sm mb-3 flex items-center gap-1.5"><TrendingUp size={15} className="text-red-500"/> 가장 많이 본 뉴스</h3>
                   <ol className="space-y-2.5">
                     {topViewed.map((a,i)=>(
@@ -2898,6 +2856,7 @@ export default function App() {
                     ))}
                   </ol>
                 </div>
+                <SidebarInfo dark={dark} card={card}/>
                 <div className={`rounded-xl border p-4 lg:p-5 ${card}`}>
                   <h3 className="font-bold text-sm mb-3">세계를 알리다 SNS</h3>
                   <div className="space-y-2">
