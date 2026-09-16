@@ -18,14 +18,16 @@ export function escapeHtml(str) {
 }
 
 export function summarize(s, max = 180) {
-  const clean = String(s || '').replace(/\s+/g, ' ').trim();
+  const clean = String(s || '').replace(/\{\/?(작게|크게|아주크게)\}/g, '').replace(/\s+/g, ' ').trim();
   if (clean.length <= max) return clean;
   return clean.slice(0, max - 1) + '…';
 }
 
-// 인라인 마크다운(**굵게**, _기울임_)을 HTML로. 입력은 반드시 이스케이프된 문자열.
+// 인라인 마크다운(**굵게**, _기울임_, {크게}글자 크기{/크게})을 HTML로. 입력은 반드시 이스케이프된 문자열.
+const FONT_SIZES = { 작게: '0.85em', 크게: '1.25em', 아주크게: '1.6em' };
 function inlineMd(escaped) {
   return escaped
+    .replace(/\{(작게|크게|아주크게)\}([\s\S]+?)\{\/\1\}/g, (_, k, inner) => `<span style="font-size:${FONT_SIZES[k]}">${inner}</span>`)
     .replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>')
     .replace(/_([^_]+?)_/g, '<em>$1</em>');
 }

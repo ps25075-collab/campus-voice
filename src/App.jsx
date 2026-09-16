@@ -26,11 +26,24 @@ const HEADER_GREEN = "#1a6b3c";   // 헤더는 다크 모드에서도 브랜드 
 const SCContext = createContext(SC);
 const SCD = "#145530";
 
+// 글자 크기 문법: {크게}텍스트{/크게} — em 단위라 본문 반응형 크기에 비례한다.
+const FONT_SIZES = { 작게:"0.85em", 크게:"1.25em", 아주크게:"1.6em" };
+const FONT_SIZE_RE = /^\{(작게|크게|아주크게)\}/;
+
 function renderInlineMarkdown(text){
   const tokens = [];
   let i = 0, buf = "", key = 0;
   const flush = () => { if(buf){ tokens.push(buf); buf = ""; } };
   while(i < text.length){
+    if(text[i]==="{"){
+      const m = FONT_SIZE_RE.exec(text.slice(i));
+      const end = m ? text.indexOf(`{/${m[1]}}`, i+m[0].length) : -1;
+      if(end > i+m[0].length){
+        flush();
+        tokens.push(<span key={`s${key++}`} style={{fontSize:FONT_SIZES[m[1]], lineHeight:1.4}}>{renderInlineMarkdown(text.slice(i+m[0].length,end))}</span>);
+        i = end + m[1].length + 3; continue;
+      }
+    }
     if(text[i]==="*" && text[i+1]==="*"){
       const end = text.indexOf("**", i+2);
       if(end > i+2){ flush(); tokens.push(<strong key={`b${key++}`}>{text.slice(i+2,end)}</strong>); i = end+2; continue; }
@@ -49,6 +62,7 @@ const readingTime = (body) => Math.max(1, Math.round((body||'').length / 700));
 
 // 카드 요약용: 마크다운 문법 문자(**굵게**, _기울임_, - 목록 등)를 제거한 순수 텍스트
 const stripMarkdown = (s) => (s||"")
+  .replace(/\{\/?(작게|크게|아주크게)\}/g, "")
   .replace(/\*\*([^*]+)\*\*/g, "$1")
   .replace(/__([^_]+)__/g, "$1")
   .replace(/_([^_]+)_/g, "$1")
@@ -1341,6 +1355,13 @@ export default function App() {
       const inner = sel || "기울임";
       newBody = before + "_" + inner + "_" + after;
       newStart = start + 1; newEnd = newStart + inner.length;
+    } else if(type.startsWith("size:")){
+      const size = type.slice(5);
+      // 이미 크기 태그로 감싼 선택 영역이면 태그를 벗겨 새 크기로 교체(중첩 방지)
+      const inner = (sel || "텍스트").replace(/^\{(작게|크게|아주크게)\}([\s\S]*)\{\/\1\}$/, "$2");
+      const open = `{${size}}`;
+      newBody = before + open + inner + `{/${size}}` + after;
+      newStart = start + open.length; newEnd = newStart + inner.length;
     } else {
       const baseSel = sel || "항목";
       const listed = baseSel.split("\n").map(l => /^- /.test(l) ? l : "- " + l).join("\n");
@@ -2605,7 +2626,14 @@ export default function App() {
                   <button type="button" onClick={()=>applyFormat("bold")} title="굵게 (선택 영역을 **로 감쌈)" className={`p-1.5 rounded transition-colors ${dark?"text-gray-300 hover:bg-gray-700":"text-gray-600 hover:bg-gray-200"}`}><Bold size={14}/></button>
                   <button type="button" onClick={()=>applyFormat("italic")} title="기울임 (선택 영역을 _로 감쌈)" className={`p-1.5 rounded transition-colors ${dark?"text-gray-300 hover:bg-gray-700":"text-gray-600 hover:bg-gray-200"}`}><Italic size={14}/></button>
                   <button type="button" onClick={()=>applyFormat("list")} title="목록 (각 줄 앞에 - 추가)" className={`p-1.5 rounded transition-colors ${dark?"text-gray-300 hover:bg-gray-700":"text-gray-600 hover:bg-gray-200"}`}><List size={14}/></button>
-                  <span className={`ml-auto self-center text-[10px] pr-1 ${dark?"text-gray-500":"text-gray-400"}`}>마크다운: **굵게** _기울임_ - 목록</span>
+                  <select value="" onChange={e=>{ if(e.target.value) applyFormat("size:"+e.target.value); }} title="글자 크기 (선택 영역을 {크게}…{/크게}로 감쌈)"
+                    className={`text-xs rounded px-1.5 py-1 border cursor-pointer focus:outline-none ${dark?"bg-gray-800 border-gray-700 text-gray-300":"bg-white border-gray-200 text-gray-600"}`}>
+                    <option value="">글자 크기</option>
+                    <option value="작게">작게</option>
+                    <option value="크게">크게</option>
+                    <option value="아주크게">아주 크게</option>
+                  </select>
+                  <span className={`ml-auto self-center text-[10px] pr-1 hidden sm:inline ${dark?"text-gray-500":"text-gray-400"}`}>마크다운: **굵게** _기울임_ - 목록 {"{크게}"}…{"{/크게}"}</span>
                 </div>
                 <textarea ref={bodyRef} value={form.body} onChange={e=>setForm({...form,body:e.target.value})} rows={8} maxLength={MAX_BODY_CHARS} placeholder="본문을 입력하세요..." className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 resize-none ${inp}`}/>
                 <p className={`text-xs text-right mt-0.5 ${form.body.length>MAX_BODY_CHARS*0.9?(dark?"text-red-400":"text-red-500"):dark?"text-gray-500":"text-gray-400"}`}>{form.body.length.toLocaleString()} / {MAX_BODY_CHARS.toLocaleString()}자</p>
