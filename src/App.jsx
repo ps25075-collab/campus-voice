@@ -224,10 +224,24 @@ function AsyncButton({ onClick, children, busyLabel, busyIcon=true, disabled=fal
   );
 }
 
-function ArticleImage({ image, category, title, priority=false, className="", style={} }) {
+// fit: 잘라내지 않고 원본 비율 그대로 전체를 보여준다(헤드라인 전용). 높이는 이미지가 정하고,
+// 너무 긴 세로 사진은 80vh로 제한하되 남는 여백은 같은 사진을 흐리게 깔아 채운다.
+function ArticleImage({ image, category, title, priority=false, fit=false, className="", style={} }) {
   const [failed, setFailed] = useState(false);
   const show = image && !failed;
   const emoji = CAT_EMOJI[category];
+  if (fit && show) return (
+    <div className={`relative overflow-hidden flex items-center justify-center ${className}`}
+      style={{ background: catGradient[category]||"linear-gradient(135deg,#374151,#6b7280)", ...style }}>
+      <img src={image} alt="" aria-hidden="true" decoding="async"
+        className="absolute inset-0 w-full h-full object-cover blur-2xl scale-110 opacity-60"/>
+      <img src={image} alt={title||""}
+        loading={priority?"eager":"lazy"}
+        fetchpriority={priority?"high":"auto"}
+        decoding="async"
+        className="relative block w-full h-auto max-h-[80vh] object-contain" onError={()=>setFailed(true)}/>
+    </div>
+  );
   return (
     <div className={`relative overflow-hidden ${className}`}
       style={{ background: catGradient[category]||"linear-gradient(135deg,#374151,#6b7280)", ...style }}>
@@ -2856,8 +2870,9 @@ export default function App() {
               </div>
             )}
             {hero&&activeCategory==="전체"&&activeType==="전체"&&!search&&(
-              <div onClick={()=>openArticle(hero)} className="cursor-pointer rounded-2xl overflow-hidden mb-6 md:mb-10 relative group h-56 sm:h-72 md:h-[360px] lg:h-[420px] shadow-md hover:shadow-2xl transition-shadow duration-300">
-                <ArticleImage image={hero.image} category={hero.category} title={hero.title} priority className="w-full h-full group-hover:scale-[1.04] transition-transform duration-700 ease-out"/>
+              <div onClick={()=>openArticle(hero)} className="cursor-pointer rounded-2xl overflow-hidden mb-6 md:mb-10 relative group shadow-md hover:shadow-2xl transition-shadow duration-300">
+                <ArticleImage image={hero.image} category={hero.category} title={hero.title} priority fit
+                  className={`w-full group-hover:scale-[1.04] transition-transform duration-700 ease-out ${hero.image?"min-h-56 sm:min-h-64":"h-56 sm:h-72 md:h-[360px] lg:h-[420px]"}`}/>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent"/>
                 <div className="absolute top-3 left-3 md:top-5 md:left-5">
                   <span className="bg-red-500 text-white text-[11px] md:text-xs font-bold px-2.5 py-1 rounded-full shadow-lg tracking-wide uppercase animate-pulse">⚡ Top</span>
