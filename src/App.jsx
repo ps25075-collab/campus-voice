@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { supabase, supabasePublic } from './lib/supabase';
-import { Search, X, TrendingUp, Instagram, Facebook, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle, ChevronLeft, ChevronRight, Share2, Copy, Link, Mail, Bookmark, BookmarkCheck, BookOpen, Download, ImagePlus } from "lucide-react";
+import { Search, X, TrendingUp, Instagram, Facebook, ArrowLeft, Bold, Italic, List, LogIn, LogOut, Edit2, Trash2, Save, Eye, AlertTriangle, ShieldCheck, Clock, CheckCircle, XCircle, FileText, PenLine, MessageSquarePlus, RefreshCw, Send, Inbox, MessageCircle, ChevronLeft, ChevronRight, Share2, Copy, Link, Mail, Bookmark, BookmarkCheck, BookOpen, Download, ImagePlus, Heart, Menu } from "lucide-react";
 
 /* ── 날짜 헬퍼 ── */
 const today = () => {
@@ -674,7 +674,8 @@ function SidebarInfo({ dark, card }) {
     </>
   );
 }
-function LikeButton({ articleId, user, dark }) {
+// 좋아요 상태는 본문 공감 버튼과 모바일 하단 바가 함께 쓰므로 App에서 한 번만 만들어 넘긴다.
+function useArticleLike(articleId, user) {
   const [liked, setLiked]   = useState(false);
   const [count, setCount]   = useState(0);
   const [bounce, setBounce] = useState(false);
@@ -685,6 +686,8 @@ function LikeButton({ articleId, user, dark }) {
   const db = user?.isMember ? supabase : supabasePublic;
 
   useEffect(()=>{
+    if(!articleId) return;
+    setLiked(false); setCount(0);
     (async()=>{
       try{
         const { data } = await db.from('articles').select('like_count').eq('id', articleId).single();
@@ -722,6 +725,11 @@ function LikeButton({ articleId, user, dark }) {
     try{ const { error } = await db.rpc('bump_article_like', { p_id: articleId, p_delta: newLiked?1:-1 }); if(error) await db.from('articles').update({ like_count: newCount }).eq('id', articleId); }catch{}
   };
 
+  return { liked, count, bounce, toggle };
+}
+
+function LikeButton({ like, dark }) {
+  const { liked, count, bounce, toggle } = like;
   return (
     <div className="flex justify-center my-6 md:my-8">
       <button onClick={toggle}
@@ -940,7 +948,8 @@ function CommentSection({ articleId, user, dark }) {
 }
 
 /* ── 건의함 ── */
-function SuggestionBox({ user, dark, onRequireLogin, onSessionExpired }) {
+// raised: 모바일 기사 화면에선 하단 액션 바가 있으므로 그 위로 올려 겹치지 않게 한다.
+function SuggestionBox({ user, dark, onRequireLogin, onSessionExpired, raised=false }) {
   const SC = useContext(SCContext);
   const [open, setOpen]         = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
@@ -999,7 +1008,7 @@ function SuggestionBox({ user, dark, onRequireLogin, onSessionExpired }) {
 
   return (
     <>
-      <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-40 flex flex-col gap-2 items-end">
+      <div className={`fixed right-4 md:bottom-6 md:right-6 z-40 flex flex-col gap-2 items-end ${raised?"bottom-[calc(4.5rem+env(safe-area-inset-bottom))]":"bottom-4"}`}>
         {canReadBox(user?.role)&&(
           <button onClick={()=>setViewOpen(true)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-full text-white text-xs font-medium shadow-lg hover:scale-105 transition-transform"
@@ -1413,6 +1422,8 @@ export default function App() {
   const [delPw,setDelPw]             = useState('');     // 삭제 재인증(비밀번호)
   const [delBusy,setDelBusy]         = useState(false);
   const [user,setUser]               = useState(null);
+  const like                         = useArticleLike(selected?.id, user);
+  const [menuOpen,setMenuOpen]       = useState(false);   // 모바일 ≡ 메뉴
   const [showLogin,setShowLogin]     = useState(false);
   const [loginForm,setLoginForm]     = useState({id:"",pw:"",code:""});
   const [mfaStep,setMfaStep]         = useState(false);   // 직원 2단계 인증(이메일 OTP) 코드 입력 단계
@@ -1980,6 +1991,12 @@ export default function App() {
     }
   };
   const startEdit=a=>{ setForm({title:a.title,category:a.category,type:a.type||"기사",summary:a.summary||"",body:a.body,image:a.image||"",imageSource:a.image_source||"",email:a.author_email||""}); setBodyTab("write"); setEditId(a.id); setSelected(null); setPage("write"); };
+  const closeArticle=()=>{ setSelected(null); document.title="세계를 알리다 — 표선고등학교 학생 언론사"; if(window.location.pathname.startsWith('/article/')){ window.history.pushState({}, '', '/'); } window.location.hash=""; if(user?.role==="admin"&&selected.status!=="published") setPage("admin"); };
+  const shareArticle=a=>{
+    // 휴대폰 기본 공유창이 있으면 바로 띄우고, 없으면(대부분의 PC) 기존 공유 모달을 연다.
+    if(navigator.share){ navigator.share({ title:a.title, text:a.summary||a.body?.slice(0,80)||'', url:`${window.location.origin}/article/${a.id}` }).catch(()=>{}); }
+    else setShowShare(true);
+  };
   const openArticle=async(article)=>{
     if(!article) return;
     if(!selected) listScrollRef.current = window.scrollY;   // 목록에서 열 때만 위치 저장
@@ -2064,8 +2081,8 @@ export default function App() {
     <SCContext.Provider value={SC}>
     <div className={`min-h-screen ${bg} transition-colors duration-300`}>
 
-      {/* TOP BAR */}
-      <div className={`w-full flex justify-end items-center px-3 md:px-4 py-1.5 text-xs gap-2 md:gap-3 ${dark?"bg-gray-900 border-b border-gray-800 text-gray-400":"bg-gray-100 border-b border-gray-200 text-gray-900"}`}>
+      {/* TOP BAR — 모바일에선 숨기고 헤더의 ≡ 메뉴로 대체 */}
+      <div className={`w-full hidden md:flex justify-end items-center px-3 md:px-4 py-1.5 text-xs gap-2 md:gap-3 ${dark?"bg-gray-900 border-b border-gray-800 text-gray-400":"bg-gray-100 border-b border-gray-200 text-gray-900"}`}>
         <span className="hidden sm:inline">{dark?"🌙 다크 모드":"☀️ 라이트 모드"}</span>
         <button onClick={toggleDark} aria-label="다크 모드 전환" style={{position:"relative",width:40,height:20,borderRadius:999,background:dark?"#2563eb":"#d1d5db",transition:"background 0.3s",flexShrink:0,border:"none",cursor:"pointer",padding:0}}>
           <span style={{position:"absolute",top:2,left:2,width:16,height:16,borderRadius:"50%",background:"white",boxShadow:"0 1px 3px rgba(0,0,0,.3)",transition:"transform 0.3s",transform:dark?"translateX(20px)":"translateX(0)",display:"block"}}/>
@@ -2095,11 +2112,11 @@ export default function App() {
 
       {/* HEADER */}
       <header style={{backgroundColor:HEADER_GREEN}} className="sticky top-0 z-40 shadow-md backdrop-blur supports-[backdrop-filter]:bg-opacity-95">
-        <div className="max-w-6xl mx-auto px-3 md:px-6 py-2.5 md:py-3.5 flex items-center justify-between gap-2 md:gap-6">
+        <div className="relative max-w-6xl mx-auto px-3 md:px-6 py-2 md:py-3.5 flex items-center justify-between gap-2 md:gap-6">
           <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-shrink-0">
-            <button onClick={()=>{setPage("home");setSelected(null);setActiveCat("전체");setActiveType("전체");setSearch("");setSearchOpen(false);document.title="세계를 알리다 — 표선고등학교 학생 언론사";}} className="text-white font-bold text-lg md:text-[22px] tracking-tight truncate hover:opacity-90 transition-opacity">📰 세계를 알리다</button>
+            <button onClick={()=>{setPage("home");setSelected(null);setActiveCat("전체");setActiveType("전체");setSearch("");setSearchOpen(false);setMenuOpen(false);document.title="세계를 알리다 — 표선고등학교 학생 언론사";}} className="text-white font-bold text-lg md:text-[22px] tracking-tight truncate hover:opacity-90 transition-opacity">📰 세계를 알리다</button>
           </div>
-          <nav className="flex items-center gap-0.5 lg:gap-1 flex-1 justify-center flex-wrap">
+          <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 flex-1 justify-center flex-wrap">
             {CATEGORIES.map(c=>{
               const active = activeCategory===c&&page==="home"&&!selected;
               return (
@@ -2115,21 +2132,92 @@ export default function App() {
                 className="ml-2 px-3 lg:px-4 py-1.5 bg-white/15 hover:bg-white/25 text-white rounded-lg text-sm font-medium border border-white/30 transition-colors">✏️ 글 작성</button>
             )}
           </nav>
-          <div className="flex items-center gap-2 relative flex-shrink-0" data-search-region>
+          <div className="flex items-center gap-1 md:gap-2 md:relative flex-shrink-0" data-search-region>
             {searchOpen && (
-              <div className="flex items-center gap-1 bg-white rounded-lg overflow-hidden shadow-sm">
+              // 모바일: 헤더 한 줄 전체를 덮는 검색창 / 데스크톱: 기존처럼 검색 아이콘 옆에 펼침
+              <div className="max-md:absolute max-md:inset-0 max-md:z-10 max-md:px-3 flex items-center gap-2" style={{backgroundColor:HEADER_GREEN}}>
+              <div className="flex items-center gap-1 bg-white rounded-lg overflow-hidden shadow-sm max-md:flex-1">
                 <input ref={searchRef} autoFocus value={search}
                   onChange={e=>{ setSearch(e.target.value); setShowDrop(true); }}
                   onKeyDown={e=>{ if(e.key==="Escape"){ setSearch(""); setSearchOpen(false); setShowDrop(false); } if(e.key==="Enter"&&search.trim()){ setShowDrop(false); const q=search.trim(); setRecentSearches(prev=>{ const n=[q,...prev.filter(x=>x!==q)].slice(0,5); try{localStorage.setItem("cv_recent_q",JSON.stringify(n));}catch{}; return n; }); } }}
                   onFocus={()=>setShowDrop(true)}
                   placeholder="제목, 내용, 작성자 검색..."
-                  className="px-3 py-1.5 text-sm text-gray-900 w-40 sm:w-52 md:w-64 lg:w-72 focus:outline-none bg-transparent"/>
-                {search && <button onClick={()=>{ setSearch(""); setShowDrop(false); searchRef.current?.focus(); }} aria-label="검색어 지우기" className="pr-2 text-gray-400 hover:text-gray-600"><X size={14}/></button>}
+                  className="px-3 py-2 md:py-1.5 text-sm text-gray-900 w-full md:w-64 lg:w-72 focus:outline-none bg-transparent"/>
+                {search && <button onClick={()=>{ setSearch(""); setShowDrop(false); searchRef.current?.focus(); }} aria-label="검색어 지우기" className="px-2 py-2 text-gray-400 hover:text-gray-600"><X size={16}/></button>}
+              </div>
+              <button onClick={()=>{ setSearch(""); setShowDrop(false); setSearchOpen(false); }} className="md:hidden text-white text-sm font-medium px-1 min-h-[44px] flex-shrink-0">취소</button>
               </div>
             )}
-            <button aria-label="검색" onClick={()=>{ if(searchOpen){ setSearch(""); setShowDrop(false); } setSearchOpen(s=>!s); }} className="text-white hover:text-green-200 flex-shrink-0 p-1 rounded-md hover:bg-white/10 transition-colors"><Search size={20}/></button>
+            <button aria-label="검색" onClick={()=>{ if(searchOpen){ setSearch(""); setShowDrop(false); } setSearchOpen(s=>!s); setMenuOpen(false); }} className="text-white hover:text-green-200 flex-shrink-0 p-2.5 md:p-1 rounded-md hover:bg-white/10 transition-colors"><Search size={20}/></button>
+            <button aria-label="메뉴" aria-expanded={menuOpen} onClick={()=>{ setMenuOpen(o=>!o); setSearchOpen(false); setShowDrop(false); }} className="md:hidden relative text-white flex-shrink-0 p-2.5 rounded-md hover:bg-white/10 transition-colors">
+              {menuOpen?<X size={20}/>:<Menu size={20}/>}
+              {!menuOpen&&user?.role==="admin"&&(pendingCount+pendingMemberCount)>0&&<span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500"/>}
+            </button>
           </div>
         </div>
+        {/* 모바일 카테고리 탭(가로 스크롤) + 기사/칼럼 필터 */}
+        <div className="md:hidden flex items-stretch border-t border-white/10">
+          <div className="flex-1 min-w-0 flex overflow-x-auto no-scrollbar px-1">
+            {CATEGORIES.map(c=>{
+              const active = activeCategory===c&&page==="home"&&!selected;
+              return (
+                <button key={c} onClick={()=>{setActiveCat(c);setPage("home");setSelected(null);setMenuOpen(false);}}
+                  className={`relative flex-shrink-0 px-3 min-h-[44px] text-sm font-medium ${active?"text-white":"text-green-100"}`}>
+                  {c}
+                  {active&&<span className="absolute left-2 right-2 bottom-1 h-0.5 bg-white rounded-full"/>}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex-shrink-0 flex items-center gap-1 pl-2 pr-3 border-l border-white/15">
+            {["기사","칼럼"].map(t=>{
+              const active = activeType===t;
+              return (
+                <button key={t} onClick={()=>{setActiveType(active?"전체":t);setPage("home");setSelected(null);setMenuOpen(false);}} aria-pressed={active}
+                  className={`px-2.5 min-h-[32px] rounded-full text-xs font-medium border transition-colors ${active?"bg-white border-white":"border-white/30 text-green-100"}`}
+                  style={active?{color:HEADER_GREEN}:{}}>
+                  {t}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        {/* 모바일 ≡ 메뉴 */}
+        {menuOpen&&(
+          <div className={`md:hidden absolute top-full left-0 right-0 z-50 border-b shadow-xl ${dark?"bg-gray-900 border-gray-700 text-gray-100":"bg-white border-gray-200 text-gray-900"}`}>
+            <div className="px-3 py-2">
+              {user&&<p className="px-3 pt-2 pb-1 text-xs font-medium truncate" style={{color:accentText}}>{roleLabel[user.role]} {user.name}</p>}
+              {user&&canWrite(user.role)&&(
+                <button onClick={()=>{setMenuOpen(false);setEditId(null);setForm({title:"",category:"경제",type:allowedTypes(user.role)[0],summary:"",body:"",image:"",imageSource:"",email:""});setPage("write");}}
+                  className={`w-full flex items-center gap-3 px-3 min-h-[48px] rounded-lg text-sm font-medium ${dark?"active:bg-gray-800":"active:bg-gray-100"}`}><PenLine size={18}/> 글 작성</button>
+              )}
+              {user?(<>
+                <button onClick={()=>{setMenuOpen(false);setPage("mypage");loadMyArticles(user.id, user.name);loadBookmarks(user.id, !!user.isMember);}}
+                  className={`w-full flex items-center gap-3 px-3 min-h-[48px] rounded-lg text-sm font-medium ${dark?"active:bg-gray-800":"active:bg-gray-100"}`}><Bookmark size={18}/> 마이페이지</button>
+                {user.role==="admin"&&(
+                  <button onClick={()=>{setMenuOpen(false);setPage("admin");loadMembers();}}
+                    className={`w-full flex items-center gap-3 px-3 min-h-[48px] rounded-lg text-sm font-medium ${dark?"active:bg-gray-800":"active:bg-gray-100"}`}>
+                    <ShieldCheck size={18}/> 관리자 메뉴
+                    {(pendingCount+pendingMemberCount)>0&&<span className="ml-auto bg-red-500 text-white rounded-full px-2 py-0.5 text-xs">{pendingCount+pendingMemberCount}</span>}
+                  </button>
+                )}
+                <AsyncButton onClick={async()=>{ setMenuOpen(false); await handleLogout(); }} busyLabel={<><RefreshCw size={18} className="animate-spin"/> 로그아웃 중...</>}
+                  className={`w-full flex items-center gap-3 px-3 min-h-[48px] rounded-lg text-sm font-medium text-red-500 ${dark?"active:bg-gray-800":"active:bg-gray-100"}`}><LogOut size={18}/> 로그아웃</AsyncButton>
+              </>):(
+                <button onClick={()=>{setMenuOpen(false);setShowLogin(true);}}
+                  className={`w-full flex items-center gap-3 px-3 min-h-[48px] rounded-lg text-sm font-medium ${dark?"active:bg-gray-800":"active:bg-gray-100"}`}><LogIn size={18}/> 로그인 / 회원가입</button>
+              )}
+              <div className={`my-1 border-t ${dark?"border-gray-800":"border-gray-100"}`}/>
+              <button onClick={toggleDark} role="switch" aria-checked={dark}
+                className={`w-full flex items-center gap-3 px-3 min-h-[48px] rounded-lg text-sm font-medium ${dark?"active:bg-gray-800":"active:bg-gray-100"}`}>
+                <span className="w-[18px] text-center">{dark?"🌙":"☀️"}</span> 다크 모드
+                <span className="ml-auto relative inline-block w-11 h-6 rounded-full transition-colors" style={{background:dark?"#2563eb":"#d1d5db"}}>
+                  <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform" style={{transform:dark?"translateX(20px)":"translateX(0)"}}/>
+                </span>
+              </button>
+            </div>
+          </div>
+        )}
         {/* 검색 드롭다운 */}
         {searchOpen&&showDrop&&search.trim()&&(
           <div data-search-region>
@@ -2150,7 +2238,7 @@ export default function App() {
               <div className="flex flex-wrap gap-2">
                 {recentSearches.map((q,i)=>(
                   <button key={i} onClick={()=>{ setSearch(q); setShowDrop(true); }}
-                    className={"flex items-center gap-1 px-3 py-1 rounded-full text-xs border transition-colors " + (dark?"border-gray-700 text-gray-300 hover:border-green-500 hover:text-green-400":"border-gray-300 text-gray-600 hover:border-green-500 hover:text-green-600")}>
+                    className={"flex items-center gap-1 px-3 py-2 md:py-1 rounded-full text-sm md:text-xs border transition-colors " + (dark?"border-gray-700 text-gray-300 hover:border-green-500 hover:text-green-400":"border-gray-300 text-gray-600 hover:border-green-500 hover:text-green-600")}>
                     <Search size={10}/> {q}
                   </button>
                 ))}
@@ -2159,6 +2247,7 @@ export default function App() {
           </div>
         )}
       </header>
+      {menuOpen&&<div className="md:hidden fixed inset-0 z-30 bg-black/40" onClick={()=>setMenuOpen(false)}/>}
 
       {/* LOGIN MODAL */}
       {showLogin&&(
@@ -2743,8 +2832,8 @@ export default function App() {
         {page==="home"&&selected&&(
           <div className="flex flex-col md:flex-row gap-6 lg:gap-10">
             <ReadingProgress dark={dark}/>
-            <article className="flex-1 min-w-0 md:max-w-3xl">
-              <button onClick={()=>{ setSelected(null); document.title="세계를 알리다 — 표선고등학교 학생 언론사"; if(window.location.pathname.startsWith('/article/')){ window.history.pushState({}, '', '/'); } window.location.hash=""; if(user?.role==="admin"&&selected.status!=="published") setPage("admin"); }}
+            <article className="flex-1 min-w-0 md:max-w-3xl pb-16 md:pb-0">
+              <button onClick={closeArticle}
                 className="flex items-center gap-1 text-sm hover:underline mb-4" style={{color:accentText}}>
                 <ArrowLeft size={15}/> {user?.role==="admin"&&selected.status!=="published"?"관리자 메뉴로":"목록으로"}
               </button>
@@ -2770,7 +2859,7 @@ export default function App() {
                   <span className="flex items-center gap-1"><Eye size={12}/> {(selected.views||0).toLocaleString()}</span>
                   <span className="flex items-center gap-1"><BookOpen size={12}/> 읽는시간:{readingTime(selected.body)}분</span>
                 </div>
-                <button onClick={()=>setShowShare(true)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-colors hover:opacity-80" style={{borderColor:accentText,color:accentText}}><Share2 size={12}/> 공유</button>
+                <button onClick={()=>setShowShare(true)} className="hidden md:flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-colors hover:opacity-80" style={{borderColor:accentText,color:accentText}}><Share2 size={12}/> 공유</button>
               </div>
               <figure className="mb-6 md:mb-7">
                 <ArticleImage image={selected.image} category={selected.category} title={selected.title} priority className="w-full rounded-xl h-48 sm:h-64 md:h-80 lg:h-[420px]"/>
@@ -2781,9 +2870,10 @@ export default function App() {
               <div className="text-[15px] md:text-[17px] leading-relaxed md:leading-[1.85]">{renderArticleBody(selected.body)}</div>
               {selected.author_email&&<div className={`mt-6 pt-4 border-t text-sm ${dark?"border-gray-800 text-gray-400":"border-gray-200 text-gray-600"}`}><span className="inline-flex items-center gap-1.5 flex-wrap"><Mail size={14}/> 기자에게 연락: <a href={`mailto:${selected.author_email}`} className="font-medium hover:underline break-all" style={{color:accentText}}>{selected.author_email}</a></span></div>}
 
-              <LikeButton articleId={selected.id} user={user} dark={dark}/>
+              <LikeButton like={like} dark={dark}/>
 
-              <div className="flex justify-center -mt-2 mb-6">
+              {/* 모바일은 하단 액션 바의 공유 버튼을 쓴다 */}
+              <div className="hidden md:flex justify-center -mt-2 mb-6">
                 <button onClick={()=>setShowShare(true)} style={{borderColor:accentText,color:accentText}}
                   className="flex items-center gap-2 px-5 py-2 rounded-full border-2 text-sm font-medium hover:opacity-80 transition-opacity">
                   <Share2 size={14}/> 이 기사 공유하기
@@ -2792,11 +2882,27 @@ export default function App() {
 
               <RelatedArticles current={selected} articles={articles} onOpen={openArticle} dark={dark}/>
 
+              {/* 모바일: 사이드바 대신 '가장 많이 본 뉴스'만 가로 스크롤로 */}
+              {topViewed.some(a=>a.id!==selected.id)&&(
+                <div className="md:hidden mt-6">
+                  <h3 className="font-bold text-sm mb-2.5 flex items-center gap-1.5"><TrendingUp size={15} className="text-red-500"/> 가장 많이 본 뉴스</h3>
+                  <div className="-mx-3 px-3 flex gap-2.5 overflow-x-auto no-scrollbar snap-x snap-mandatory">
+                    {topViewed.filter(a=>a.id!==selected.id).map(a=>(
+                      <button key={a.id} onClick={()=>openArticle(a)}
+                        className={`snap-start flex-shrink-0 w-40 text-left rounded-xl border overflow-hidden active:scale-[0.98] transition-transform ${card}`}>
+                        <ArticleImage image={a.image} category={a.category} title={a.title} className="w-full h-24"/>
+                        <span className="block p-2.5 text-xs font-medium leading-snug line-clamp-2">{a.title}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className={`border-t mt-8 pt-2 ${dark?"border-gray-800":"border-gray-200"}`}>
                 <CommentSection articleId={selected.id} user={user} dark={dark}/>
               </div>
             </article>
-            <aside className="md:w-64 lg:w-72 space-y-4 flex-shrink-0">
+            <aside className="hidden md:block md:w-64 lg:w-72 space-y-4 flex-shrink-0">
               <div className={`rounded-xl border p-4 lg:p-5 ${card}`}>
                 <h3 className="font-bold text-sm mb-3 flex items-center gap-1.5"><TrendingUp size={15} className="text-red-500"/> 가장 많이 본 뉴스</h3>
                 <ol className="space-y-2.5">
@@ -2832,7 +2938,8 @@ export default function App() {
         {/* HOME */}
         {page==="home"&&!selected&&(
           <div>
-            <div className="flex flex-wrap gap-2 mb-3">
+            {/* 카테고리·유형 필터 — 모바일에선 헤더 아래 탭으로 대체 */}
+            <div className="hidden md:flex flex-wrap gap-2 mb-3">
               {CATEGORIES.map(c=>(
                 <button key={c} onClick={()=>setActiveCat(c)}
                   className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all hover:-translate-y-0.5 ${activeCategory===c?"shadow-md":"hover:shadow-sm"}`}
@@ -2841,7 +2948,7 @@ export default function App() {
                 </button>
               ))}
             </div>
-            <div className="flex gap-2 mb-5 md:mb-6">
+            <div className="hidden md:flex gap-2 mb-6">
               {["전체","기사","칼럼"].map(t=>(
                 <button key={t} onClick={()=>setActiveType(t)}
                   className={`px-3 py-1 rounded-full text-xs font-medium border transition-all hover:-translate-y-0.5 ${activeType===t?"shadow":""}`}
@@ -2870,7 +2977,7 @@ export default function App() {
               </div>
             )}
             {hero&&activeCategory==="전체"&&activeType==="전체"&&!search&&(
-              <div onClick={()=>openArticle(hero)} className="cursor-pointer rounded-2xl overflow-hidden mb-6 md:mb-10 relative group shadow-md hover:shadow-2xl transition-shadow duration-300">
+              <div onClick={()=>openArticle(hero)} className="cursor-pointer rounded-2xl overflow-hidden mb-6 md:mb-10 relative group shadow-md hover:shadow-2xl active:scale-[0.99] transition-[box-shadow,transform] duration-300">
                 <ArticleImage image={hero.image} category={hero.category} title={hero.title} priority fit
                   className={`w-full group-hover:scale-[1.04] transition-transform duration-700 ease-out ${hero.image?"min-h-56 sm:min-h-64":"h-56 sm:h-72 md:h-[360px] lg:h-[420px]"}`}/>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent"/>
@@ -2937,7 +3044,7 @@ export default function App() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5">
                   {filtered.slice(0,visibleCount).map(a=>(
                     <div key={a.id} onClick={()=>openArticle(a)}
-                      className={`cursor-pointer rounded-xl border overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-200 group ${card} ${a.type==="칼럼"?"border-l-4 border-l-amber-400":""}`}>
+                      className={`cursor-pointer rounded-xl border overflow-hidden hover:shadow-xl hover:-translate-y-1 active:scale-[0.98] transition-all duration-200 group ${card} ${a.type==="칼럼"?"border-l-4 border-l-amber-400":""}`}>
                       <div className="relative overflow-hidden">
                         <ArticleImage image={a.image} category={a.category} title={a.title} className="w-full group-hover:scale-105 transition-transform duration-500 h-36 sm:h-40 md:h-44 lg:h-48"/>
                       </div>
@@ -3060,8 +3167,30 @@ export default function App() {
         </div>
       </footer>
 
+      {/* 모바일 기사 하단 액션 바 */}
+      {page==="home"&&selected&&(()=>{
+        const saved = bookmarks.includes(selected.id);
+        const itemCls = `flex flex-col items-center justify-center gap-0.5 min-h-[56px] text-[11px] font-medium active:scale-95 transition-transform ${dark?"text-gray-300":"text-gray-600"}`;
+        return (
+          <nav aria-label="기사 도구" className={`md:hidden fixed bottom-0 inset-x-0 z-40 border-t pb-[env(safe-area-inset-bottom)] ${dark?"bg-gray-900/95 border-gray-800":"bg-white/95 border-gray-200"} backdrop-blur`}>
+            <div className="grid grid-cols-4">
+              <button onClick={closeArticle} className={itemCls}><ArrowLeft size={20}/> 목록</button>
+              <button onClick={like.toggle} aria-pressed={like.liked} className={itemCls}>
+                <Heart size={20} className={like.liked?"text-red-500":""} fill={like.liked?"currentColor":"none"}/>
+                <span className={like.liked?"text-red-500":""}>{like.count>0?like.count:"좋아요"}</span>
+              </button>
+              <button onClick={()=>{ if(!user){ setShowLogin(true); return; } toggleBookmark(selected.id, !saved); }} aria-pressed={saved} className={itemCls}>
+                {saved?<BookmarkCheck size={20} className="text-amber-500"/>:<Bookmark size={20}/>}
+                <span className={saved?"text-amber-500":""}>{saved?"저장됨":"저장"}</span>
+              </button>
+              <button onClick={()=>shareArticle(selected)} className={itemCls}><Share2 size={20}/> 공유</button>
+            </div>
+          </nav>
+        );
+      })()}
+
       <SuggestionBox user={user} dark={dark} onRequireLogin={()=>setShowLogin(true)}
-        onSessionExpired={handleStaffSessionExpired}/>
+        onSessionExpired={handleStaffSessionExpired} raised={page==="home"&&!!selected}/>
     </div>
     </SCContext.Provider>
   );

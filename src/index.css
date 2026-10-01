@@ -5,3 +5,16 @@
 * {
   box-sizing: border-box;
 }
+
+/* iOS 사파리는 16px 미만 입력칸에 초점이 가면 화면을 자동 확대한다 → 모바일에선 16px로 고정 */
+@media (max-width: 767px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
+/* 가로 스크롤 탭·카드 목록의 스크롤바 숨김(스크롤은 그대로 동작) */
+@layer utilities {
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+}
