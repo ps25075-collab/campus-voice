@@ -2074,7 +2074,7 @@ export default function App() {
   const inp =dark?"bg-gray-800 border-gray-700 text-white placeholder-gray-500":"bg-white border-gray-300 placeholder-gray-400";
 
   const SNS=[
-    {icon:<Instagram size={14}/>,label:"인스타그램",color:"text-pink-500",href:"https://www.instagram.com/se.alnews_official/"},
+    {icon:<Instagram size={14}/>,label:"인스타그램",color:"text-pink-500",href:"https://www.instagram.com/pyoseon_news_?cplk=djlidzZjN3lwYXF5"},
   ];
 
   return (
