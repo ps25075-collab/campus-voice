@@ -2880,6 +2880,10 @@ export default function App() {
                 </button>
               </div>
 
+              <div className={`border-t mt-8 pt-2 ${dark?"border-gray-800":"border-gray-200"}`}>
+                <CommentSection articleId={selected.id} user={user} dark={dark}/>
+              </div>
+
               <RelatedArticles current={selected} articles={articles} onOpen={openArticle} dark={dark}/>
 
               {/* 모바일: 사이드바 대신 '가장 많이 본 뉴스'만 가로 스크롤로 */}
@@ -2898,9 +2902,6 @@ export default function App() {
                 </div>
               )}
 
-              <div className={`border-t mt-8 pt-2 ${dark?"border-gray-800":"border-gray-200"}`}>
-                <CommentSection articleId={selected.id} user={user} dark={dark}/>
-              </div>
             </article>
             <aside className="hidden md:block md:w-64 lg:w-72 space-y-4 flex-shrink-0">
               <div className={`rounded-xl border p-4 lg:p-5 ${card}`}>
