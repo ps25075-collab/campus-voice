@@ -4,6 +4,7 @@ import {
   escapeHtml,
   summarize,
   renderBodyToHtml,
+  renderRelatedLinks,
   fetchTemplate,
   injectIntoRoot,
   SSR_STYLE,
@@ -31,19 +32,43 @@ export default async function handler(req, res) {
 
   // 2) 기사 조회 (게재된 글만) — 유효한 정수 id일 때만 조회
   let article = null;
+  let lookupFailed = false;
+  let published = [];
   if (idv.ok) try {
     const supabase = createClient(
       process.env.VITE_SUPABASE_URL,
       process.env.VITE_SUPABASE_ANON_KEY
     );
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('articles')
       .select('*')
       .eq('id', idv.value)
       .eq('status', 'published')
-      .single();
-    article = data;
-  } catch {}
+      .maybeSingle();
+    if (error) lookupFailed = true;
+    else article = data;
+
+    // 내부 링크용 기사 목록 — 실패해도 기사 자체는 정상 응답한다.
+    if (article) {
+      const { data: list } = await supabase
+        .from('articles')
+        .select('id, title, category')
+        .eq('status', 'published')
+        .order('created_at', { ascending: false });
+      published = list || [];
+    }
+  } catch {
+    lookupFailed = true;
+  }
+
+  // 일시적 조회 실패: 검색엔진이 삭제로 오해하지 않도록 503으로 재방문을 유도한다.
+  if (lookupFailed) {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Retry-After', '300');
+    res.status(503).send(html);
+    return;
+  }
 
   if (article) {
     const title = `${article.title} — 세계를 알리다`;
@@ -116,11 +141,18 @@ export default async function handler(req, res) {
       (article.summary ? `<p style="font-size:18px;color:#374151;margin-bottom:16px">${escapeHtml(article.summary)}</p>` : '') +
       imgTag +
       `<div>${renderBodyToHtml(article.body)}</div>` +
+      renderRelatedLinks(published, article.id, article.category) +
       `</article>`;
     html = injectIntoRoot(html, content);
+  } else {
+    // 없는 기사·미게재 기사: 화면은 앱이 그리되 404 + noindex로 색인에서 제외한다.
+    // (200 + 홈 canonical로 응답하면 소프트 404 또는 '대체 페이지'로 분류된다.)
+    html = html
+      .replace(/<meta name="robots"[^>]*>/, '<meta name="robots" content="noindex" />')
+      .replace(/<link rel="canonical"[^>]*>\s*/, '');
   }
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
-  res.status(200).send(html);
+  res.status(article ? 200 : 404).send(html);
 }

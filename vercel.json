@@ -1,5 +1,9 @@
 {
+  "redirects": [
+    { "source": "/index.html", "destination": "/", "permanent": true }
+  ],
   "rewrites": [
+    { "source": "/", "destination": "/api/home" },
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/article/:id", "destination": "/api/article/:id" },
     { "source": "/api/admin/:resource", "destination": "/api/admin?resource=:resource" }
@@ -11,6 +15,12 @@
     }
   ],
   "headers": [
+    {
+      "source": "/_shell.html",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex" }
+      ]
+    },
     {
       "source": "/(.*)",
       "headers": [

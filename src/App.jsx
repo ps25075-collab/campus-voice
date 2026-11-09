@@ -288,8 +288,8 @@ function RelatedArticles({ current, articles, onOpen, dark }) {
       <h3 className="font-bold text-base md:text-lg mb-4 flex items-center gap-2"><FileText size={17} style={{color:dark?SC_DARK:SC}}/> 이 기사와 관련된 글</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
         {related.map(a => (
-          <div key={a.id} onClick={()=>onOpen(a)}
-            className={`cursor-pointer rounded-xl border overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group ${card} ${a.type==="칼럼"?"border-l-4 border-l-amber-400":""}`}>
+          <ArticleLink key={a.id} article={a} onOpen={onOpen}
+            className={`block cursor-pointer rounded-xl border overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group ${card} ${a.type==="칼럼"?"border-l-4 border-l-amber-400":""}`}>
             <ArticleImage image={a.image} category={a.category} title={a.title} className="w-full h-24 sm:h-28"/>
             <div className="p-3">
               <div className="flex gap-1 mb-1.5">
@@ -298,11 +298,21 @@ function RelatedArticles({ current, articles, onOpen, dark }) {
               </div>
               <p className="font-semibold text-sm leading-snug line-clamp-2 group-hover:opacity-80 transition-opacity">{a.title}</p>
             </div>
-          </div>
+          </ArticleLink>
         ))}
       </div>
     </div>
   );
+}
+
+/* ── 기사 링크: 검색엔진이 따라갈 수 있는 실제 링크. 일반 클릭은 새로고침 없이 앱 안에서 연다 ── */
+function ArticleLink({ article, onOpen, className, children }) {
+  const handleClick = e => {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    onOpen(article);
+  };
+  return <a href={`/article/${article.id}`} onClick={handleClick} className={className}>{children}</a>;
 }
 
 /* ── 읽기 진도바 ── */
@@ -2892,11 +2902,11 @@ export default function App() {
                   <h3 className="font-bold text-sm mb-2.5 flex items-center gap-1.5"><TrendingUp size={15} className="text-red-500"/> 가장 많이 본 뉴스</h3>
                   <div className="-mx-3 px-3 flex gap-2.5 overflow-x-auto no-scrollbar snap-x snap-mandatory">
                     {topViewed.filter(a=>a.id!==selected.id).map(a=>(
-                      <button key={a.id} onClick={()=>openArticle(a)}
+                      <ArticleLink key={a.id} article={a} onOpen={openArticle}
                         className={`snap-start flex-shrink-0 w-40 text-left rounded-xl border overflow-hidden active:scale-[0.98] transition-transform ${card}`}>
                         <ArticleImage image={a.image} category={a.category} title={a.title} className="w-full h-24"/>
                         <span className="block p-2.5 text-xs font-medium leading-snug line-clamp-2">{a.title}</span>
-                      </button>
+                      </ArticleLink>
                     ))}
                   </div>
                 </div>
@@ -2908,11 +2918,11 @@ export default function App() {
                 <h3 className="font-bold text-sm mb-3 flex items-center gap-1.5"><TrendingUp size={15} className="text-red-500"/> 가장 많이 본 뉴스</h3>
                 <ol className="space-y-2.5">
                   {topViewed.map((a,i)=>(
-                    <li key={a.id} onClick={()=>openArticle(a)} className="cursor-pointer flex gap-2 items-start group">
+                    <li key={a.id}><ArticleLink article={a} onOpen={openArticle} className="cursor-pointer flex gap-2 items-start group">
                       <span className={`font-bold text-sm w-5 flex-shrink-0 ${i===0?"text-red-500":i===1?"text-orange-400":i===2?"text-yellow-500":"text-gray-400"}`}>{i+1}</span>
                       <div className="min-w-0"><span className="text-xs leading-snug group-hover:underline line-clamp-2">{a.title}</span>
                       {a.type==="칼럼"&&<span className="text-xs text-amber-500 block">✒️ 칼럼</span>}</div>
-                    </li>
+                    </ArticleLink></li>
                   ))}
                 </ol>
               </div>
@@ -2967,18 +2977,18 @@ export default function App() {
                 </div>
                 <div className="space-y-2">
                   {urgent.slice(0,3).map(a=>(
-                    <div key={a.id} onClick={()=>openArticle(a)}
+                    <ArticleLink key={a.id} article={a} onOpen={openArticle}
                       className={`cursor-pointer flex items-center gap-3 border border-red-200 rounded-xl px-3 md:px-4 py-2.5 md:py-3 transition-colors ${dark?"bg-red-950 hover:bg-red-900":"bg-red-50 hover:bg-red-100"}`}>
                       <span className="text-xs font-bold text-white bg-red-600 px-2 py-0.5 rounded-full flex-shrink-0">긴급</span>
                       <span className="text-sm font-semibold text-red-900 line-clamp-1 min-w-0">{a.title}</span>
                       <span className="text-xs text-red-400 flex-shrink-0 ml-auto whitespace-nowrap">{a.date}</span>
-                    </div>
+                    </ArticleLink>
                   ))}
                 </div>
               </div>
             )}
             {hero&&activeCategory==="전체"&&activeType==="전체"&&!search&&(
-              <div onClick={()=>openArticle(hero)} className="cursor-pointer rounded-2xl overflow-hidden mb-6 md:mb-10 relative group shadow-md hover:shadow-2xl active:scale-[0.99] transition-[box-shadow,transform] duration-300">
+              <ArticleLink article={hero} onOpen={openArticle} className="block cursor-pointer rounded-2xl overflow-hidden mb-6 md:mb-10 relative group shadow-md hover:shadow-2xl active:scale-[0.99] transition-[box-shadow,transform] duration-300">
                 <ArticleImage image={hero.image} category={hero.category} title={hero.title} priority fit
                   className={`w-full group-hover:scale-[1.04] transition-transform duration-700 ease-out ${hero.image?"min-h-56 sm:min-h-64":"h-56 sm:h-72 md:h-[360px] lg:h-[420px]"}`}/>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent"/>
@@ -2998,7 +3008,7 @@ export default function App() {
                     <span className="flex items-center gap-1"><Eye size={12}/> {hero.views?.toLocaleString()||0}</span>
                   </div>
                 </div>
-              </div>
+              </ArticleLink>
             )}
 
             <div className="flex flex-col md:flex-row gap-6 lg:gap-8">
@@ -3044,8 +3054,8 @@ export default function App() {
                 )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5">
                   {filtered.slice(0,visibleCount).map(a=>(
-                    <div key={a.id} onClick={()=>openArticle(a)}
-                      className={`cursor-pointer rounded-xl border overflow-hidden hover:shadow-xl hover:-translate-y-1 active:scale-[0.98] transition-all duration-200 group ${card} ${a.type==="칼럼"?"border-l-4 border-l-amber-400":""}`}>
+                    <ArticleLink key={a.id} article={a} onOpen={openArticle}
+                      className={`block cursor-pointer rounded-xl border overflow-hidden hover:shadow-xl hover:-translate-y-1 active:scale-[0.98] transition-all duration-200 group ${card} ${a.type==="칼럼"?"border-l-4 border-l-amber-400":""}`}>
                       <div className="relative overflow-hidden">
                         <ArticleImage image={a.image} category={a.category} title={a.title} className="w-full group-hover:scale-105 transition-transform duration-500 h-36 sm:h-40 md:h-44 lg:h-48"/>
                       </div>
@@ -3061,7 +3071,7 @@ export default function App() {
                         {a.author&&<p className="text-xs text-amber-600 mb-0.5">✒️ {a.author}</p>}
                         <p className="text-xs text-gray-500 line-clamp-2">{a.summary||makeSummary(a.body)}</p>
                       </div>
-                    </div>
+                    </ArticleLink>
                   ))}
                 </div>
                 {filtered.length>visibleCount&&(
@@ -3078,11 +3088,11 @@ export default function App() {
                   <h3 className="font-bold text-sm mb-3 flex items-center gap-1.5"><TrendingUp size={15} className="text-red-500"/> 가장 많이 본 뉴스</h3>
                   <ol className="space-y-2.5">
                     {topViewed.map((a,i)=>(
-                      <li key={a.id} onClick={()=>openArticle(a)} className="cursor-pointer flex gap-2 items-start group">
+                      <li key={a.id}><ArticleLink article={a} onOpen={openArticle} className="cursor-pointer flex gap-2 items-start group">
                         <span className={`font-bold text-sm w-5 flex-shrink-0 ${i===0?"text-red-500":i===1?"text-orange-400":i===2?"text-yellow-500":"text-gray-400"}`}>{i+1}</span>
                         <div className="min-w-0"><span className="text-xs leading-snug group-hover:underline line-clamp-2">{a.title}</span>
                         {a.type==="칼럼"&&<span className="text-xs text-amber-500 block">✒️ 칼럼</span>}</div>
-                      </li>
+                      </ArticleLink></li>
                     ))}
                   </ol>
                 </div>
